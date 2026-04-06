@@ -1,0 +1,57 @@
+@import "tailwindcss";
+
+@font-face {
+  font-family: 'Helvetica Custom';
+  src: url('/fonts/Helvetica.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Helvetica Custom';
+  src: url('/fonts/Helvetica-Bold.ttf') format('truetype');
+  font-weight: bold;
+  font-style: normal;
+  font-display: swap;
+}
+
+@theme {
+  --color-primary: #4272D7;
+  --color-secondary: #EFF6FF;
+  --font-sans: 'Helvetica Custom', ui-sans-serif, system-ui, sans-serif;
+}
+
+@layer base {
+  body {
+    background-color: #F8F8F8;
+  }
+}
+
+.modal-quill .ql-toolbar.ql-snow {
+  border-top-left-radius: 0.5rem;
+  border-top-right-radius: 0.5rem;
+  border-color: #d1d5db;
+  background-color: #f8f9fa;
+  padding: 8px 12px;
+}
+
+.modal-quill .ql-container.ql-snow {
+  border-bottom-left-radius: 0.5rem;
+  border-bottom-right-radius: 0.5rem;
+  border-color: #d1d5db;
+  font-family: inherit;
+  font-size: 0.875rem;
+}
+
+.modal-quill .ql-editor {
+  min-height: 12rem;
+}
+
+.modal-quill:focus-within .ql-toolbar.ql-snow {
+  border-color: #4279df;
+}
+
+.modal-quill:focus-within .ql-container.ql-snow {
+  border-color: #4279df;
+}
