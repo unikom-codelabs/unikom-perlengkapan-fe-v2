@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Helmet } from "react-helmet-async";
 import {
   MagnifyingGlassIcon,
@@ -6,48 +6,79 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
   PlusIcon,
-  PencilSquareIcon,
 } from "@heroicons/react/24/outline";
 import ModalTambahBarang from "../components/Element/ModalTambahBarang";
 import ModalKonfirmasiHapus from "../components/Element/ModalKonfirmasiHapus";
+import { createBarang, deleteBarang, listBarang } from "../api/barangService";
 
-const DUMMY_DATA_ATK = {
-  tahunan: [
-    { id: 1, nama: "Kertas HVS A4 70gr", satuan: "Rim" },
-    { id: 2, nama: "Kertas HVS F4 70gr", satuan: "Rim" },
-    { id: 3, nama: "Tinta Printer Hitam", satuan: "Botol" },
-    { id: 4, nama: "Tinta Printer Warna", satuan: "Botol" },
-    { id: 5, nama: "Isi Staples", satuan: "Box" },
-  ],
-  ujian: [
-    { id: 1, nama: "Amplop F4 / D", satuan: "Buah" },
-    { id: 2, nama: "Amplop A3 / XL", satuan: "Buah" },
-    { id: 3, nama: "Lembar Jawaban", satuan: "Lembar" },
-    { id: 4, nama: "Kertas Buram", satuan: "Pack" },
-  ],
-  kelas: [
-    { id: 1, nama: "Spidol Whiteboard Hitam", satuan: "Box" },
-    { id: 2, nama: "Spidol Whiteboard Biru", satuan: "Box" },
-    { id: 3, nama: "Penghapus Whiteboard", satuan: "Buah" },
-    { id: 4, nama: "Tinta Spidol Hitam", satuan: "Botol" },
-  ],
+const getApiErrorMessage = (error, fallbackMessage) => {
+  const responseData = error?.response?.data;
+
+  if (responseData?.errors && typeof responseData.errors === "object") {
+    const detailedErrors = Object.values(responseData.errors)
+      .flat()
+      .filter(
+        (message) => typeof message === "string" && message.trim().length > 0,
+      );
+
+    if (detailedErrors.length > 0) {
+      return detailedErrors.join("\n");
+    }
+  }
+
+  if (responseData?.message) {
+    return responseData.message;
+  }
+
+  return fallbackMessage;
 };
 
 const BarangPengajuanPage = () => {
   const [activeTab, setActiveTab] = useState("tahunan");
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [barangList, setBarangList] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [pageError, setPageError] = useState("");
+  const [createError, setCreateError] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isModalHapusOpen, setIsModalHapusOpen] = useState(false);
+  const [selectedBarang, setSelectedBarang] = useState(null);
   const itemsPerPage = 10;
 
+  const fetchBarang = async () => {
+    setIsLoading(true);
+    setPageError("");
+
+    try {
+      const data = await listBarang();
+      setBarangList(data);
+    } catch (error) {
+      setPageError(
+        getApiErrorMessage(error, "Gagal mengambil data barang. Coba lagi."),
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchBarang();
+  }, []);
+
   const currentTabData = useMemo(
-    () => DUMMY_DATA_ATK[activeTab] || [],
-    [activeTab],
+    () => barangList.filter((item) => item.kategori === activeTab),
+    [activeTab, barangList],
   );
 
-  const filteredData = currentTabData.filter((item) =>
-    item.nama.toLowerCase().includes(searchQuery.toLowerCase()),
+  const filteredData = useMemo(
+    () =>
+      currentTabData.filter((item) =>
+        item.nama.toLowerCase().includes(searchQuery.toLowerCase()),
+      ),
+    [currentTabData, searchQuery],
   );
 
   const totalPages = Math.ceil(filteredData.length / itemsPerPage);
@@ -55,6 +86,17 @@ const BarangPengajuanPage = () => {
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage,
   );
+
+  useEffect(() => {
+    if (totalPages === 0 && currentPage !== 1) {
+      setCurrentPage(1);
+      return;
+    }
+
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
 
   const handleSearch = (e) => {
     setSearchQuery(e.target.value);
@@ -65,6 +107,63 @@ const BarangPengajuanPage = () => {
     setActiveTab(tab);
     setCurrentPage(1);
     setSearchQuery("");
+  };
+
+  const handleOpenTambahBarang = () => {
+    setCreateError("");
+    setIsModalOpen(true);
+  };
+
+  const handleCreateBarang = async (payload) => {
+    setCreateError("");
+    setIsSubmitting(true);
+
+    try {
+      await createBarang(payload);
+      setIsModalOpen(false);
+      await fetchBarang();
+    } catch (error) {
+      setCreateError(
+        getApiErrorMessage(error, "Gagal menambahkan barang. Coba lagi."),
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleOpenDeleteModal = (barang) => {
+    setSelectedBarang(barang);
+    setIsModalHapusOpen(true);
+  };
+
+  const handleCloseDeleteModal = () => {
+    if (isDeleting) {
+      return;
+    }
+
+    setIsModalHapusOpen(false);
+    setSelectedBarang(null);
+  };
+
+  const handleDeleteBarang = async () => {
+    if (!selectedBarang?.id) {
+      return;
+    }
+
+    setIsDeleting(true);
+    setPageError("");
+
+    try {
+      await deleteBarang(selectedBarang.id);
+      handleCloseDeleteModal();
+      await fetchBarang();
+    } catch (error) {
+      setPageError(
+        getApiErrorMessage(error, "Gagal menghapus barang. Coba lagi."),
+      );
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const getPageNumbers = () => {
@@ -160,7 +259,7 @@ const BarangPengajuanPage = () => {
                 />
               </div>
               <button
-                onClick={() => setIsModalOpen(true)}
+                onClick={handleOpenTambahBarang}
                 className="flex items-center space-x-1.5 bg-[#4279df] hover:bg-blue-600 text-white px-5 py-2.5 rounded-full transition-colors text-sm shadow-sm"
               >
                 <span>Tambah Barang</span>
@@ -168,6 +267,12 @@ const BarangPengajuanPage = () => {
               </button>
             </div>
           </div>
+
+          {pageError ? (
+            <p className="mb-4 rounded border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700">
+              {pageError}
+            </p>
+          ) : null}
 
           <div className="overflow-x-auto border border-gray-200">
             <table className="w-full text-left border-collapse">
@@ -188,7 +293,13 @@ const BarangPengajuanPage = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {currentData.length > 0 ? (
+                {isLoading ? (
+                  <tr>
+                    <td colSpan="4" className="py-8 text-center text-gray-500">
+                      Memuat data barang...
+                    </td>
+                  </tr>
+                ) : currentData.length > 0 ? (
                   currentData.map((item, index) => (
                     <tr key={item.id} className="hover:bg-gray-50 bg-white">
                       <td className="py-4 px-6 border-r border-gray-200 text-gray-500 text-center">
@@ -203,8 +314,9 @@ const BarangPengajuanPage = () => {
                       <td className="py-4 px-6 text-center">
                         <div className="flex items-center justify-center space-x-3 text-sm">
                           <button
-                            onClick={() => setIsModalHapusOpen(true)}
-                            className="text-red-500 hover:text-red-600 flex items-center space-x-1.5 transition-colors"
+                            onClick={() => handleOpenDeleteModal(item)}
+                            className="text-red-500 hover:text-red-600 flex items-center space-x-1.5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            disabled={isDeleting}
                           >
                             <span>Hapus</span>
                             <TrashIcon className="h-4 w-4" />
@@ -270,13 +382,14 @@ const BarangPengajuanPage = () => {
       <ModalTambahBarang
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
+        onSubmit={handleCreateBarang}
+        isSubmitting={isSubmitting}
+        errorMessage={createError}
       />
       <ModalKonfirmasiHapus
         isOpen={isModalHapusOpen}
-        onClose={() => setIsModalHapusOpen(false)}
-        onConfirm={() => {
-          setIsModalHapusOpen(false);
-        }}
+        onClose={handleCloseDeleteModal}
+        onConfirm={handleDeleteBarang}
       />
     </>
   );
