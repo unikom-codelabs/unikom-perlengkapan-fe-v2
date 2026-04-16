@@ -4,6 +4,8 @@ import "./index.css";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import MainLayout from "./components/Layouts/MainLayout";
+import ProtectedRoute from "./components/Auth/ProtectedRoute";
+import { AuthProvider } from "./context/AuthContext";
 import ErrorPage from "./pages/404";
 import DashboardPage from "./pages/DashboardPage";
 import BarangPengajuanPage from "./pages/BarangPengajuanPage";
@@ -16,113 +18,83 @@ import CetakBerkasNonRutinPage from "./pages/CetakBerkasNonRutinPage";
 import HistoriPengajuanPage from "./pages/HistoriPengajuanPage";
 import PengumumanPage from "./pages/PengumumanPage";
 import ProfilPage from "./pages/ProfilPage";
+import LoginPage from "./pages/LoginPage";
+
+const withProtectedLayout = (page) => (
+  <ProtectedRoute>
+    <MainLayout>{page}</MainLayout>
+  </ProtectedRoute>
+);
 
 const router = createBrowserRouter([
   {
     path: "/",
-    element: (
-      <MainLayout>
-        <DashboardPage />
-      </MainLayout>
-    ),
+    element: withProtectedLayout(<DashboardPage />),
+    errorElement: <ErrorPage />,
+  },
+  {
+    path: "/login",
+    element: <LoginPage />,
     errorElement: <ErrorPage />,
   },
   {
     path: "/pengajuan",
-    element: (
-      <MainLayout>
-        <BarangPengajuanPage />
-      </MainLayout>
-    ),
+    element: withProtectedLayout(<BarangPengajuanPage />),
     errorElement: <ErrorPage />,
   },
   {
     path: "/daftar-pengajuan/rutin",
-    element: (
-      <MainLayout>
-        <PengajuanRutinPage />
-      </MainLayout>
-    ),
+    element: withProtectedLayout(<PengajuanRutinPage />),
     errorElement: <ErrorPage />,
   },
   {
     path: "/daftar-pengajuan/non-rutin",
-    element: (
-      <MainLayout>
-        <PengajuanNonRutinPage />
-      </MainLayout>
-    ),
+    element: withProtectedLayout(<PengajuanNonRutinPage />),
     errorElement: <ErrorPage />,
   },
   {
     path: "/cetak-berkas/rutin",
-    element: (
-      <MainLayout>
-        <CetakBerkasRutinPage />
-      </MainLayout>
-    ),
+    element: withProtectedLayout(<CetakBerkasRutinPage />),
     errorElement: <ErrorPage />,
   },
   {
     path: "/cetak-berkas/non-rutin",
-    element: (
-      <MainLayout>
-        <CetakBerkasNonRutinPage />
-      </MainLayout>
-    ),
+    element: withProtectedLayout(<CetakBerkasNonRutinPage />),
     errorElement: <ErrorPage />,
   },
   {
     path: "/histori-pengajuan",
-    element: (
-      <MainLayout>
-        <HistoriPengajuanPage />
-      </MainLayout>
-    ),
+    element: withProtectedLayout(<HistoriPengajuanPage />),
     errorElement: <ErrorPage />,
   },
   {
     path: "/manajemen-pengguna",
-    element: (
-      <MainLayout>
-        <ManajemenPenggunaPage />
-      </MainLayout>
-    ),
+    element: withProtectedLayout(<ManajemenPenggunaPage />),
     errorElement: <ErrorPage />,
   },
   {
     path: "/aktivasi",
-    element: (
-      <MainLayout>
-        <AktivasiPage />
-      </MainLayout>
-    ),
+    element: withProtectedLayout(<AktivasiPage />),
     errorElement: <ErrorPage />,
   },
   {
     path: "/pengumuman",
-    element: (
-      <MainLayout>
-        <PengumumanPage />
-      </MainLayout>
-    ),
+    element: withProtectedLayout(<PengumumanPage />),
     errorElement: <ErrorPage />,
   },
   {
     path: "/profil",
-    element: (
-      <MainLayout>
-        <ProfilPage />
-      </MainLayout>
-    ),
+    element: withProtectedLayout(<ProfilPage />),
     errorElement: <ErrorPage />,
   },
 ]);
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
-    <HelmetProvider>
-      <RouterProvider router={router} />
-    </HelmetProvider>
+    <AuthProvider>
+      <HelmetProvider>
+        <RouterProvider router={router} />
+      </HelmetProvider>
+    </AuthProvider>
   </StrictMode>,
 );
