@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   CloudArrowUpIcon,
   XMarkIcon,
@@ -7,13 +7,51 @@ import {
 import ReactQuill from "react-quill-new";
 import "react-quill-new/dist/quill.snow.css";
 
-const ModalBuatPengumuman = ({ isOpen, onClose }) => {
+const ALLOWED_IMAGE_TYPES = [
+  "image/jpeg",
+  "image/jpg",
+  "image/png",
+  "image/webp",
+];
+const MAX_IMAGE_SIZE_BYTES = 900 * 1024;
+
+const stripHtml = (htmlText = "") =>
+  String(htmlText)
+    .replace(/<[^>]*>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+const getImageValidationError = (file) => {
+  if (!file) {
+    return "";
+  }
+
+  if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+    return "File gambar harus berformat jpg, jpeg, png, atau webp.";
+  }
+
+  if (file.size > MAX_IMAGE_SIZE_BYTES) {
+    return "Ukuran gambar terlalu besar. Maksimal 900KB.";
+  }
+
+  return "";
+};
+
+const ModalBuatPengumuman = ({
+  isOpen,
+  onClose,
+  onSubmit,
+  isSubmitting = false,
+  errorMessage = "",
+  initialData = null,
+}) => {
   const [shouldRender, setRender] = useState(isOpen);
   const [show, setShow] = useState(false);
+  const [judul, setJudul] = useState("");
   const [content, setContent] = useState("");
-
   const [isDragging, setIsDragging] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
+  const [fileError, setFileError] = useState("");
   const fileInputRef = useRef(null);
 
   const modules = {
@@ -29,6 +67,10 @@ const ModalBuatPengumuman = ({ isOpen, onClose }) => {
 
   useEffect(() => {
     if (isOpen) {
+      setJudul(initialData?.judul || "");
+      setContent(initialData?.teks || initialData?.deskripsi || "");
+      setSelectedFile(null);
+      setFileError("");
       setRender(true);
       const timer = setTimeout(() => setShow(true), 10);
       return () => clearTimeout(timer);
@@ -40,7 +82,15 @@ const ModalBuatPengumuman = ({ isOpen, onClose }) => {
         setSelectedFile(null);
       }, 150);
     }
-  }, [isOpen]);
+  }, [initialData, isOpen]);
+
+  const handleClose = () => {
+    if (isSubmitting) {
+      return;
+    }
+
+    onClose();
+  };
 
   const handleDragOver = (e) => {
     e.preventDefault();
@@ -56,23 +106,67 @@ const ModalBuatPengumuman = ({ isOpen, onClose }) => {
     e.preventDefault();
     setIsDragging(false);
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      setSelectedFile(e.dataTransfer.files[0]);
+      const droppedFile = e.dataTransfer.files[0];
+
+      const validationError = getImageValidationError(droppedFile);
+      if (validationError) {
+        setSelectedFile(null);
+        setFileError(validationError);
+        return;
+      }
+
+      setFileError("");
+      setSelectedFile(droppedFile);
     }
   };
 
   const handleFileInputChange = (e) => {
     if (e.target.files && e.target.files.length > 0) {
-      setSelectedFile(e.target.files[0]);
+      const file = e.target.files[0];
+
+      const validationError = getImageValidationError(file);
+      if (validationError) {
+        setSelectedFile(null);
+        setFileError(validationError);
+        e.target.value = "";
+        return;
+      }
+
+      setFileError("");
+      setSelectedFile(file);
     }
   };
 
   const handleRemoveFile = (e) => {
     e.stopPropagation();
     setSelectedFile(null);
+    setFileError("");
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
   };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!onSubmit || isSubmitting) {
+      return;
+    }
+
+    if (!initialData && !selectedFile) {
+      setFileError("Gambar wajib diunggah saat membuat pengumuman.");
+      return;
+    }
+
+    await onSubmit({
+      judul: judul.trim(),
+      teks: content,
+      gambar: selectedFile,
+    });
+  };
+
+  const isInvalid =
+    !judul.trim() || !stripHtml(content) || (!initialData && !selectedFile);
 
   if (!shouldRender) return null;
 
@@ -83,7 +177,7 @@ const ModalBuatPengumuman = ({ isOpen, onClose }) => {
           ? "bg-black/30 backdrop-blur-sm opacity-100"
           : "bg-transparent opacity-0"
       }`}
-      onClick={onClose}
+      onClick={handleClose}
     >
       <div
         className={`bg-white rounded-lg shadow-lg w-full max-w-3xl overflow-hidden flex flex-col max-h-[90vh] transition-all duration-150 transform ${
@@ -92,22 +186,31 @@ const ModalBuatPengumuman = ({ isOpen, onClose }) => {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="bg-[#4279df] text-white px-6 py-4 flex justify-between items-center shrink-0">
-          <h2 className="text-xl font-medium">Buat Pengumuman</h2>
+          <h2 className="text-xl font-medium">
+            {initialData ? "Edit Pengumuman" : "Buat Pengumuman"}
+          </h2>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="hover:text-gray-200 transition-colors"
+            disabled={isSubmitting}
           >
             <XMarkIcon className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="p-6 bg-[#f8f9fa] flex flex-col gap-4 overflow-y-auto">
+        <form
+          onSubmit={handleSubmit}
+          className="p-6 bg-[#f8f9fa] flex flex-col gap-4 overflow-y-auto"
+        >
           <div className="flex flex-col gap-1.5">
             <label className="text-gray-600 font-medium text-sm">Judul</label>
             <input
               type="text"
+              value={judul}
+              onChange={(e) => setJudul(e.target.value)}
               className="w-full px-4 py-2 bg-white border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-[#4279df] focus:border-transparent text-gray-700 text-sm placeholder-gray-400"
               placeholder="Masukkan Judul"
+              required
             />
           </div>
 
@@ -142,7 +245,7 @@ const ModalBuatPengumuman = ({ isOpen, onClose }) => {
                 type="file"
                 ref={fileInputRef}
                 onChange={handleFileInputChange}
-                accept="image/png, image/jpeg, image/svg+xml"
+                accept=".jpg,.jpeg,.png,.webp,image/png,image/jpeg,image/jpg,image/webp"
                 className="hidden"
               />
 
@@ -153,7 +256,9 @@ const ModalBuatPengumuman = ({ isOpen, onClose }) => {
                     Drag your file(s) or{" "}
                     <span className="text-[#4279df] font-semibold">browse</span>
                   </p>
-                  <p className="text-xs text-gray-400">jpg, png, or svg</p>
+                  <p className="text-xs text-gray-400">
+                    jpg, jpeg, png, atau webp
+                  </p>
                 </>
               ) : (
                 <div
@@ -186,23 +291,39 @@ const ModalBuatPengumuman = ({ isOpen, onClose }) => {
                 </div>
               )}
             </div>
+            {fileError ? (
+              <p className="text-xs text-red-600 mt-2">{fileError}</p>
+            ) : null}
           </div>
+
+          {errorMessage ? (
+            <p className="text-sm text-red-600 whitespace-pre-line">
+              {errorMessage}
+            </p>
+          ) : null}
 
           <div className="flex justify-end gap-3 mt-4 shrink-0">
             <button
-              onClick={onClose}
+              type="button"
+              onClick={handleClose}
               className="px-6 py-2 border border-primary text-primary font-medium rounded-full hover:bg-blue-50 transition-colors text-sm"
+              disabled={isSubmitting}
             >
               Batal
             </button>
             <button
-              className="px-6 py-2 bg-gray-100 text-gray-400 font-medium rounded-full cursor-not-allowed text-sm"
-              disabled
+              type="submit"
+              className="px-6 py-2 bg-[#4279df] text-white font-medium rounded-full hover:bg-blue-700 transition-colors text-sm disabled:bg-gray-200 disabled:text-gray-500 disabled:cursor-not-allowed"
+              disabled={isSubmitting || isInvalid}
             >
-              Kirim
+              {isSubmitting
+                ? "Menyimpan..."
+                : initialData
+                  ? "Simpan Perubahan"
+                  : "Kirim"}
             </button>
           </div>
-        </div>
+        </form>
       </div>
     </div>
   );

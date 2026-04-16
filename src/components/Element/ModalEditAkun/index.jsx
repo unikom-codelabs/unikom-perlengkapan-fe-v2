@@ -1,8 +1,33 @@
 import React, { useState, useEffect } from "react";
+import { listJabatan } from "../../../api/jabatanService";
 
 const ModalEditAkun = ({ isOpen, onClose }) => {
   const [shouldRender, setRender] = useState(isOpen);
   const [show, setShow] = useState(false);
+  const [jabatanList, setJabatanList] = useState([]);
+  const [selectedJabatanId, setSelectedJabatanId] = useState("");
+  const [isLoadingJabatan, setIsLoadingJabatan] = useState(false);
+
+  const fetchJabatanList = async () => {
+    setIsLoadingJabatan(true);
+
+    try {
+      const data = await listJabatan();
+      setJabatanList(data);
+      if (data.length > 0) {
+        setSelectedJabatanId(String(data[0].id));
+      }
+    } catch {
+      setJabatanList([]);
+      setSelectedJabatanId("");
+    } finally {
+      setIsLoadingJabatan(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchJabatanList();
+  }, []);
 
   useEffect(() => {
     if (isOpen) {
@@ -138,14 +163,22 @@ const ModalEditAkun = ({ isOpen, onClose }) => {
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-gray-600 font-medium text-sm">Bagian</label>
+            <label className="text-gray-600 font-medium text-sm">Jabatan</label>
             <div className="relative">
-              <select className="w-full px-4 py-2 bg-white border border-gray-300 rounded-full appearance-none focus:outline-none focus:ring-2 focus:ring-[#4279df] focus:border-transparent text-gray-700 text-sm">
-                <option value="" disabled selected hidden>
-                  -- Pilih --
+              <select
+                value={selectedJabatanId}
+                onChange={(e) => setSelectedJabatanId(e.target.value)}
+                disabled={isLoadingJabatan || jabatanList.length === 0}
+                className="w-full px-4 py-2 bg-white border border-gray-300 rounded-full appearance-none focus:outline-none focus:ring-2 focus:ring-[#4279df] focus:border-transparent text-gray-700 text-sm disabled:bg-gray-100 disabled:text-gray-500"
+              >
+                <option value="">
+                  {isLoadingJabatan ? "Memuat jabatan..." : "Pilih jabatan"}
                 </option>
-                <option value="1">Bagian 1</option>
-                <option value="2">Bagian 2</option>
+                {jabatanList.map((jabatan) => (
+                  <option key={jabatan.id} value={jabatan.id}>
+                    {jabatan.nama}
+                  </option>
+                ))}
               </select>
               <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-500">
                 <svg
