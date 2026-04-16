@@ -148,7 +148,6 @@ const CetakBerkasRutinPage = () => {
 
   const renderAtkTahunanContent = () => (
     <>
-      {/* Filters ATK Tahunan */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
         <div>
           <label className="block text-sm text-gray-500 mb-2">Unit Kerja</label>
