@@ -1,11 +1,33 @@
 import React, { useState } from "react";
 import { Helmet } from "react-helmet-async";
 import ProfileLogo from "/src/assets/img/logo-unikom.png";
+import { useAuth } from "../context/useAuth";
 
 const ProfilPage = () => {
   const [activeTab, setActiveTab] = useState("Profil");
+  const { currentUser } = useAuth();
 
   const menuItems = ["Profil", "Akun", "Photo"];
+
+  const profileData = {
+    nip: currentUser?.nip || "-",
+    nama:
+      currentUser?.nama ||
+      currentUser?.name ||
+      currentUser?.full_name ||
+      currentUser?.username ||
+      "-",
+    jenisKelamin: currentUser?.jenis_kelamin || "-",
+    jabatan:
+      currentUser?.jabatan?.nama ||
+      currentUser?.jabatan_nama ||
+      currentUser?.jabatan ||
+      "-",
+    unit: currentUser?.unit?.nama || currentUser?.unit || "-",
+    email: currentUser?.email || "-",
+    username: currentUser?.username || "-",
+    role: currentUser?.role || "-",
+  };
 
   const renderProfilTab = () => (
     <div className="flex flex-col gap-6">
@@ -14,7 +36,7 @@ const ProfilPage = () => {
         <input
           type="text"
           className="w-full px-4 py-2 bg-white border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-[#4279df] focus:border-transparent text-gray-700 text-sm"
-          value="41270201012"
+          value={profileData.nip}
           readOnly
         />
       </div>
@@ -26,40 +48,30 @@ const ProfilPage = () => {
         <input
           type="text"
           className="w-full px-4 py-2 bg-white border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-[#4279df] focus:border-transparent text-gray-700 text-sm"
-          value="Yayah Sutisnawati, S.E., M.M"
+          value={profileData.nama}
           readOnly
         />
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <label className="text-gray-600 font-medium text-sm">Bagian</label>
-        <div className="flex items-center gap-6 px-1 py-1 text-sm text-gray-500">
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="radio"
-              name="jenis_kelamin"
-              className="w-4 h-4 accent-[#4279df] text-[#4279df] focus:ring-[#4279df] border-gray-300"
-            />
-            <span>Laki-laki</span>
-          </label>
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="radio"
-              name="jenis_kelamin"
-              className="w-4 h-4 accent-[#4279df] text-[#4279df] focus:ring-[#4279df] border-gray-300"
-              defaultChecked
-            />
-            <span>Perempuan</span>
-          </label>
-        </div>
+        <label className="text-gray-600 font-medium text-sm">
+          Jenis Kelamin
+        </label>
+        <input
+          type="text"
+          className="w-full px-4 py-2 bg-white border border-gray-300 rounded-full focus:outline-none text-gray-700 text-sm"
+          value={profileData.jenisKelamin}
+          readOnly
+        />
       </div>
 
       <div className="flex flex-col gap-1.5">
         <label className="text-gray-600 font-medium text-sm">Jabatan</label>
         <input
           type="text"
-          className="w-full px-4 py-2 bg-white border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-[#4279df] focus:border-transparent text-gray-400 text-sm"
-          defaultValue="Direktur"
+          className="w-full px-4 py-2 bg-white border border-gray-300 rounded-full focus:outline-none text-gray-700 text-sm"
+          value={profileData.jabatan}
+          readOnly
         />
       </div>
 
@@ -67,8 +79,8 @@ const ProfilPage = () => {
         <label className="text-gray-600 font-medium text-sm">Bagian</label>
         <input
           type="text"
-          className="w-full px-4 py-2 bg-gray-100 border border-gray-200 rounded-full focus:outline-none text-gray-400 text-sm cursor-not-allowed"
-          value="Direktur"
+          className="w-full px-4 py-2 bg-gray-100 border border-gray-200 rounded-full focus:outline-none text-gray-700 text-sm cursor-not-allowed"
+          value={profileData.unit}
           readOnly
           disabled
         />
@@ -90,8 +102,9 @@ const ProfilPage = () => {
         </label>
         <input
           type="email"
-          className="w-full px-4 py-2 bg-white border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-[#4279df] focus:border-transparent text-gray-400 text-sm"
-          defaultValue="evi-ps@unikom.ac.id"
+          className="w-full px-4 py-2 bg-white border border-gray-300 rounded-full focus:outline-none text-gray-700 text-sm"
+          value={profileData.email}
+          readOnly
         />
       </div>
 
@@ -99,17 +112,19 @@ const ProfilPage = () => {
         <label className="text-gray-600 font-medium text-sm">Username</label>
         <input
           type="text"
-          className="w-full px-4 py-2 bg-white border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-[#4279df] focus:border-transparent text-gray-400 text-sm"
-          defaultValue="perlengkapan"
+          className="w-full px-4 py-2 bg-white border border-gray-300 rounded-full focus:outline-none text-gray-700 text-sm"
+          value={profileData.username}
+          readOnly
         />
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <label className="text-gray-600 font-medium text-sm">Password</label>
+        <label className="text-gray-600 font-medium text-sm">Role</label>
         <input
-          type="password"
-          className="w-full px-4 py-2 bg-white border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-[#4279df] focus:border-transparent text-gray-400 text-sm"
-          defaultValue="bismilah123"
+          type="text"
+          className="w-full px-4 py-2 bg-white border border-gray-300 rounded-full focus:outline-none text-gray-700 text-sm"
+          value={profileData.role}
+          readOnly
         />
       </div>
 
@@ -166,7 +181,7 @@ const ProfilPage = () => {
               className="w-32 h-32 object-contain mb-6"
             />
             <h2 className="text-gray-900 font-bold text-[15px] mb-8 text-center">
-              Yayah Sutisnawati, S.E., M.M
+              {profileData.nama}
             </h2>
 
             <div className="w-full flex flex-col gap-2">
