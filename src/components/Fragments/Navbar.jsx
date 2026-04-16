@@ -1,9 +1,26 @@
 import Profile from "/src/assets/img/Profile.png";
 import { useLocation, Link } from "react-router-dom";
+import { useAuth } from "../../context/useAuth";
 
 const Navbar = () => {
+  const { currentUser } = useAuth();
   const location = useLocation();
   const pathnames = location.pathname.split("/").filter((x) => x);
+
+  const displayName =
+    currentUser?.nama ||
+    currentUser?.name ||
+    currentUser?.username ||
+    currentUser?.full_name ||
+    "Pengguna";
+
+  const displayRole =
+    currentUser?.jabatan?.nama ||
+    currentUser?.jabatan_nama ||
+    currentUser?.jabatan ||
+    currentUser?.role ||
+    currentUser?.unit?.nama ||
+    "-";
 
   const formatPathName = (name) => {
     return name
@@ -53,10 +70,8 @@ const Navbar = () => {
           className="w-10 h-10 object-contain"
         />
         <div className="flex flex-col">
-          <span className="text-sm font-bold text-gray-900">
-            Yayah Sutisnawati, S.E., M.M
-          </span>
-          <span className="text-xs text-gray-500">Direktur Logistik</span>
+          <span className="text-sm font-bold text-gray-900">{displayName}</span>
+          <span className="text-xs text-gray-500">{displayRole}</span>
         </div>
       </Link>
     </header>

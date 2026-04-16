@@ -1,6 +1,8 @@
 import { useState } from "react";
 import Logo from "/src/assets/img/logo-unikom.png";
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "../../context/useAuth";
+import ModalKonfirmasiHapus from "../Element/ModalKonfirmasiHapus";
 import {
   HomeIcon as HomeOutline,
   ArchiveBoxIcon as ArchiveOutline,
@@ -29,14 +31,42 @@ import {
 const Sidebar = () => {
   const [isDaftarPengajuanOpen, setIsDaftarPengajuanOpen] = useState(true);
   const [isCetakBerkasOpen, setIsCetakBerkasOpen] = useState(true);
+  const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { logoutUser } = useAuth();
 
   const isDaftarPengajuanActive =
     location.pathname.startsWith("/daftar-pengajuan");
   const isCetakBerkasActive = location.pathname.startsWith("/cetak_berkas");
 
+  const handleOpenLogoutConfirm = () => {
+    setIsLogoutConfirmOpen(true);
+  };
+
+  const handleCloseLogoutConfirm = () => {
+    if (isLoggingOut) {
+      return;
+    }
+
+    setIsLogoutConfirmOpen(false);
+  };
+
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+
+    try {
+      await logoutUser();
+      navigate("/login", { replace: true });
+      setIsLogoutConfirmOpen(false);
+    } finally {
+      setIsLoggingOut(false);
+    }
+  };
+
   return (
-    <div className="w-72 bg-white h-screen fixed flex flex-col">
+    <div className="w-72 bg-white h-screen fixed z-20 flex flex-col">
       <div className="px-6 pt-6 shrink-0">
         <img src={Logo} alt="Logo" />
         <div className="border-b border-gray-200 py-4 mb-4" />
@@ -329,9 +359,7 @@ const Sidebar = () => {
         <ul className="p-2">
           <li className="mb-4">
             <button
-              onClick={() => {
-                console.log("Keluar diklik");
-              }}
+              onClick={handleOpenLogoutConfirm}
               className="w-full flex gap-2 items-center text-red-600 hover:text-red-800 transition-colors cursor-pointer"
             >
               <LogoutOutline className="w-5 h-5" />
@@ -340,6 +368,18 @@ const Sidebar = () => {
           </li>
         </ul>
       </div>
+
+      <ModalKonfirmasiHapus
+        isOpen={isLogoutConfirmOpen}
+        onClose={handleCloseLogoutConfirm}
+        onConfirm={handleLogout}
+        title="Konfirmasi Keluar"
+        message="Apakah Anda yakin ingin keluar dari aplikasi?"
+        confirmLabel="Ya, Keluar"
+        cancelLabel="Batal"
+        isProcessing={isLoggingOut}
+        confirmButtonClassName="bg-[#4279df] hover:bg-blue-700"
+      />
     </div>
   );
 };
