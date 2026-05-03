@@ -8,20 +8,37 @@ import ProtectedRoute from "./components/Auth/ProtectedRoute";
 import { AuthProvider } from "./context/AuthContext";
 import ErrorPage from "./pages/404";
 import DashboardPage from "./pages/DashboardPage";
-import BarangPengajuanPage from "./pages/BarangPengajuanPage";
-import PengajuanRutinPage from "./pages/PengajuanRutinPage";
-import CetakBerkasRutinPage from "./pages/CetakBerkasRutinPage";
-import ManajemenPenggunaPage from "./pages/ManajemenPenggunaPage";
-import AktivasiPage from "./pages/AktivasiPage";
-import PengajuanNonRutinPage from "./pages/PenhajuanNonRutin";
-import CetakBerkasNonRutinPage from "./pages/CetakBerkasNonRutinPage";
-import HistoriPengajuanPage from "./pages/HistoriPengajuanPage";
-import PengumumanPage from "./pages/PengumumanPage";
+import BarangPengajuanPage from "./pages/admin/BarangPengajuanPage";
+import PengajuanRutinPage from "./pages/admin/PengajuanRutinPage";
+import PengajuanAtkTahunanPage from "./pages/user/PengajuanAtkPage";
+import DaftarPengajuanUserPage from "./pages/user/DaftarPengajuanUserPage";
+import CetakBerkasRutinPage from "./pages/admin/CetakBerkasRutinPage";
+import ManajemenPenggunaPage from "./pages/admin/ManajemenPenggunaPage";
+import VendorPage from "./pages/admin/VendorPage";
+import JabatanPage from "./pages/admin/JabatanPage";
+import BagianPage from "./pages/admin/BagianPage";
+import AktivasiPage from "./pages/admin/AktivasiPage";
+import PengajuanNonRutinPage from "./pages/admin/PengajuanNonRutinPage";
+import CetakBerkasNonRutinPage from "./pages/admin/CetakBerkasNonRutinPage";
+import HistoriPengajuanPenggunaPage from "./pages/user/HistoriPengajuanPenggunaPage";
+import PengumumanPage from "./pages/admin/PengumumanPage";
 import ProfilPage from "./pages/ProfilPage";
 import LoginPage from "./pages/LoginPage";
 
 const withProtectedLayout = (page) => (
   <ProtectedRoute>
+    <MainLayout>{page}</MainLayout>
+  </ProtectedRoute>
+);
+
+const withAdminLayout = (page) => (
+  <ProtectedRoute allowedRoles={["admin"]}>
+    <MainLayout>{page}</MainLayout>
+  </ProtectedRoute>
+);
+
+const withUserLayout = (page) => (
+  <ProtectedRoute allowedRoles={["user"]}>
     <MainLayout>{page}</MainLayout>
   </ProtectedRoute>
 );
@@ -39,47 +56,77 @@ const router = createBrowserRouter([
   },
   {
     path: "/pengajuan",
-    element: withProtectedLayout(<BarangPengajuanPage />),
+    element: withAdminLayout(<BarangPengajuanPage />),
+    errorElement: <ErrorPage />,
+  },
+  {
+    path: "/daftar-pengajuan",
+    element: withUserLayout(<DaftarPengajuanUserPage />),
     errorElement: <ErrorPage />,
   },
   {
     path: "/daftar-pengajuan/rutin",
-    element: withProtectedLayout(<PengajuanRutinPage />),
+    element: withAdminLayout(<PengajuanRutinPage />),
+    errorElement: <ErrorPage />,
+  },
+  {
+    path: "/pengajuan-rutin/tahunan",
+    element: withUserLayout(<PengajuanAtkTahunanPage />),
     errorElement: <ErrorPage />,
   },
   {
     path: "/daftar-pengajuan/non-rutin",
-    element: withProtectedLayout(<PengajuanNonRutinPage />),
+    element: withAdminLayout(<PengajuanNonRutinPage />),
     errorElement: <ErrorPage />,
   },
   {
     path: "/cetak-berkas/rutin",
-    element: withProtectedLayout(<CetakBerkasRutinPage />),
+    element: withAdminLayout(<CetakBerkasRutinPage />),
     errorElement: <ErrorPage />,
   },
   {
     path: "/cetak-berkas/non-rutin",
-    element: withProtectedLayout(<CetakBerkasNonRutinPage />),
+    element: withAdminLayout(<CetakBerkasNonRutinPage />),
     errorElement: <ErrorPage />,
   },
   {
     path: "/histori-pengajuan",
-    element: withProtectedLayout(<HistoriPengajuanPage />),
+    element: withProtectedLayout(<HistoriPengajuanPenggunaPage />),
     errorElement: <ErrorPage />,
   },
   {
     path: "/manajemen-pengguna",
-    element: withProtectedLayout(<ManajemenPenggunaPage />),
+    element: withAdminLayout(<ManajemenPenggunaPage />),
+    errorElement: <ErrorPage />,
+  },
+  {
+    path: "/manajemen/pengguna",
+    element: withAdminLayout(<ManajemenPenggunaPage />),
+    errorElement: <ErrorPage />,
+  },
+  {
+    path: "/manajemen/vendor",
+    element: withAdminLayout(<VendorPage />),
+    errorElement: <ErrorPage />,
+  },
+  {
+    path: "/manajemen/jabatan",
+    element: withAdminLayout(<JabatanPage />),
+    errorElement: <ErrorPage />,
+  },
+  {
+    path: "/manajemen/bagian",
+    element: withAdminLayout(<BagianPage />),
     errorElement: <ErrorPage />,
   },
   {
     path: "/aktivasi",
-    element: withProtectedLayout(<AktivasiPage />),
+    element: withAdminLayout(<AktivasiPage />),
     errorElement: <ErrorPage />,
   },
   {
     path: "/pengumuman",
-    element: withProtectedLayout(<PengumumanPage />),
+    element: withAdminLayout(<PengumumanPage />),
     errorElement: <ErrorPage />,
   },
   {

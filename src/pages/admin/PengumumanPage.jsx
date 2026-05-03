@@ -6,15 +6,15 @@ import {
   PencilSquareIcon,
   TrashIcon,
 } from "@heroicons/react/24/outline";
-import ModalBuatPengumuman from "../components/Element/ModalBuatPengumuman";
-import ModalKonfirmasiHapus from "../components/Element/ModalKonfirmasiHapus";
-import ModalDetailPengumuman from "../components/Element/ModalDetailPengumuman";
+import ModalBuatPengumuman from "../../components/Element/ModalBuatPengumuman";
+import ModalKonfirmasiHapus from "../../components/Element/ModalKonfirmasiHapus";
+import ModalDetailPengumuman from "../../components/Element/ModalDetailPengumuman";
 import {
   createPengumuman,
   deletePengumuman,
   listPengumuman,
   updatePengumuman,
-} from "../api/pengumumanService";
+} from "../../api/pengumumanService";
 
 const decodeHtmlEntities = (text = "") => {
   const parser = new DOMParser();

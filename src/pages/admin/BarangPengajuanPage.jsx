@@ -7,9 +7,13 @@ import {
   ChevronRightIcon,
   PlusIcon,
 } from "@heroicons/react/24/outline";
-import ModalTambahBarang from "../components/Element/ModalTambahBarang";
-import ModalKonfirmasiHapus from "../components/Element/ModalKonfirmasiHapus";
-import { createBarang, deleteBarang, listBarang } from "../api/barangService";
+import ModalTambahBarang from "../../components/Element/ModalTambahBarang";
+import ModalKonfirmasiHapus from "../../components/Element/ModalKonfirmasiHapus";
+import {
+  createBarang,
+  deleteBarang,
+  listBarang,
+} from "../../api/barangService";
 
 const getApiErrorMessage = (error, fallbackMessage) => {
   const responseData = error?.response?.data;
