@@ -316,11 +316,7 @@ const ModalBuatPengumuman = ({
               className="px-6 py-2 bg-[#4279df] text-white font-medium rounded-full hover:bg-blue-700 transition-colors text-sm disabled:bg-gray-200 disabled:text-gray-500 disabled:cursor-not-allowed"
               disabled={isSubmitting || isInvalid}
             >
-              {isSubmitting
-                ? "Menyimpan..."
-                : initialData
-                  ? "Simpan Perubahan"
-                  : "Kirim"}
+              {isSubmitting ? "Menyimpan..." : "Simpan"}
             </button>
           </div>
         </form>

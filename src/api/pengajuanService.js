@@ -231,6 +231,299 @@ const normalizeSubmission = (submission = {}) => {
 const normalizeSubmissionList = (payload) =>
     extractListData(payload).map(normalizeSubmission).filter((item) => item.id !== undefined && item.id !== null);
 
+const normalizeAdminTipe = (value) => {
+    const normalized = String(value ?? "").trim().toLowerCase().replace(/[_\s-]+/g, "");
+
+    return normalized === "nonrutin" ? "nonrutin" : "rutin";
+};
+
+const normalizeAdminStatusValue = (value) => {
+    if (value === true) {
+        return 1;
+    }
+
+    if (value === false) {
+        return 2;
+    }
+
+    const numericValue = Number(value);
+    if ([0, 1, 2].includes(numericValue)) {
+        return numericValue;
+    }
+
+    return 0;
+};
+
+const normalizeAdminUser = (user, submission = {}) => {
+    if (user && typeof user === "object") {
+        return {
+            nama: String(pickValue(user.nama, user.name, user.user, "-")).trim(),
+            jabatan: String(pickValue(user.jabatan, user.jabatan_nama, user.position?.nama, "")).trim(),
+            unit: String(pickValue(user.unit, user.unit_nama, user.bagian, user.divisi, user.unit?.nama, "")).trim(),
+            nip: String(
+                pickValue(
+                    user.nip,
+                    user.no_induk,
+                    user.nomor_induk,
+                    user.nomorInduk,
+                    user.profile?.nip,
+                    user.detail?.nip,
+                    user.pegawai?.nip,
+                    submission.nip,
+                    submission.user_nip,
+                    submission.nip_pengaju,
+                    "",
+                ),
+            ).trim(),
+        };
+    }
+
+    return {
+        nama: String(user ?? "-").trim(),
+        jabatan: "",
+        unit: "",
+        nip: String(
+            pickValue(
+                submission.nip,
+                submission.user_nip,
+                submission.nip_pengaju,
+                "",
+            ),
+        ).trim(),
+    };
+};
+
+const normalizeBarangMaster = (item = {}) => ({
+    id: pickValue(item.id, item.barang_id),
+    kategori: normalizeKategori(pickValue(item.kategori, item.jenis, item.tipe, item.category, "")),
+    satuan: String(pickValue(item.satuan, item.unit, "-")).trim(),
+});
+
+const extractBarangMasterMap = (payload) => {
+    const map = new Map();
+
+    extractListData(payload).map(normalizeBarangMaster).forEach((item) => {
+        if (item.id !== undefined && item.id !== null) {
+            map.set(String(item.id), item);
+        }
+    });
+
+    return map;
+};
+
+const getAdminAktivasiKey = (submission = {}, tipe = "rutin") => {
+    const aktivasi = submission.aktivasi || {};
+
+    return String(
+        pickValue(
+            aktivasi.id,
+            submission.aktivasi_pengajuan_id,
+            submission.aktivasiPengajuanId,
+            submission.id_aktivasi_pengajuan,
+            submission.idAktivasiPengajuan,
+            submission.aktivasi_pengajuan,
+            submission.aktivasiPengajuan,
+            tipe,
+        ),
+    ).trim();
+};
+
+const inferAcademicYearFromDate = (dateValue) => {
+    if (!dateValue) {
+        return "";
+    }
+
+    const date = new Date(dateValue);
+    if (Number.isNaN(date.getTime())) {
+        return "";
+    }
+
+    const year = date.getFullYear();
+    return `${year}/${year + 1}`;
+};
+
+const inferYearFromDate = (dateValue) => {
+    if (!dateValue) {
+        return "";
+    }
+
+    const date = new Date(dateValue);
+    if (Number.isNaN(date.getTime())) {
+        return "";
+    }
+
+    return String(date.getFullYear());
+};
+
+const extractAnnualYearLabel = (value) => {
+    const text = String(value ?? "").trim();
+    return text.match(/\b(?:19|20)\d{2}\b/)?.[0] ?? "";
+};
+
+const extractYearLabel = (value) => {
+    const text = String(value ?? "").trim();
+
+    if (!text) {
+        return "";
+    }
+
+    const academicYearMatch = text.match(/\b((?:19|20)\d{2})\s*[/-]\s*((?:19|20)\d{2})\b/);
+    if (academicYearMatch) {
+        return `${academicYearMatch[1]}/${academicYearMatch[2]}`;
+    }
+
+    return text.match(/\b(?:19|20)\d{2}\b/)?.[0] ?? "";
+};
+
+const getAdminAktivasiLabel = (submission = {}, tipe = "rutin", kategori = "") => {
+    const aktivasi = submission.aktivasi || {};
+    const isTahunan = kategori === "tahunan";
+    const namaPeriode = String(
+        pickValue(
+            aktivasi.nama_periode,
+            aktivasi.namaPeriode,
+            aktivasi.nama,
+            aktivasi.title,
+            submission.nama_periode,
+            submission.namaPeriode,
+            "",
+        ),
+    ).trim();
+    const tahunAkademik = String(
+        pickValue(
+            aktivasi.tahun_akademik,
+            aktivasi.tahunAkademik,
+            aktivasi.tahun_ajaran,
+            aktivasi.tahunAjaran,
+            aktivasi.tahun_periode,
+            aktivasi.tahunPeriode,
+            aktivasi.tahun,
+            submission.tahun_akademik,
+            submission.tahunAkademik,
+            submission.tahun_ajaran,
+            submission.tahunAjaran,
+            submission.tahun_periode,
+            submission.tahunPeriode,
+            submission.tahun,
+            "",
+        ),
+    ).trim();
+    const dateSource = pickValue(
+        aktivasi.tanggal_mulai,
+        aktivasi.tanggalMulai,
+        aktivasi.aktif_mulai,
+        aktivasi.aktifMulai,
+        aktivasi.start_date,
+        aktivasi.startDate,
+        submission.tanggal_mulai,
+        submission.tanggalMulai,
+        submission.aktif_mulai,
+        submission.aktifMulai,
+        submission.date,
+        submission.tanggal,
+        submission.created_at,
+        submission.createdAt,
+        null,
+    );
+    const inferredYear = isTahunan
+        ? extractAnnualYearLabel(tahunAkademik) ||
+            extractAnnualYearLabel(namaPeriode) ||
+            inferYearFromDate(dateSource)
+        : tahunAkademik ||
+            extractYearLabel(namaPeriode) ||
+            inferAcademicYearFromDate(dateSource);
+    const tipeLabel = tipe === "nonrutin" ? "Non Rutin" : "Rutin";
+
+    return inferredYear ? `${inferredYear} - ${tipeLabel}` : tipeLabel;
+};
+
+const normalizeAdminSubmission = (submission = {}, barangMasterById = new Map()) => {
+    const user = normalizeAdminUser(submission.user, submission);
+    const tipe = normalizeAdminTipe(
+        pickValue(
+            submission.aktivasi_pengajuan,
+            submission.aktivasiPengajuan,
+            submission.tipe,
+            submission.tipe_pengajuan,
+            submission.aktivasi?.tipe,
+        ),
+    );
+    const aktivasi = submission.aktivasi || {};
+    const kategori = normalizeKategori(
+        pickValue(
+            submission.kategori,
+            submission.jenis_pengajuan,
+            submission.tipe_pengajuan,
+            aktivasi.jenis_pengajuan,
+            aktivasi.kategori,
+            "",
+        ),
+        submission.semester ?? aktivasi.semester,
+        submission.ujian ?? aktivasi.ujian,
+    );
+    const aktivasiKey = getAdminAktivasiKey(submission, tipe);
+    const aktivasiLabel = getAdminAktivasiLabel(submission, tipe, kategori);
+
+    const barang = (Array.isArray(submission.barang) ? submission.barang : []).map((item, index) => {
+        const master = barangMasterById.get(String(item.id_barang ?? item.idBarang ?? item.barang_id ?? ""));
+
+        return {
+            id: `barang-${submission.id}-${item.id ?? index}`,
+            submissionId: submission.id,
+            itemId: item.id,
+            endpointType: "barang",
+            user: user.nama,
+            userUnit: user.unit,
+            userJabatan: user.jabatan,
+            userNip: user.nip,
+            suratPengajuan: submission.surat_pengajuan,
+            tanggal: pickValue(submission.date, submission.tanggal, submission.created_at, ""),
+            aktivasiKey,
+            aktivasiLabel,
+            tipe,
+            kategori: normalizeKategori(
+                pickValue(item.kategori, master?.kategori, submission.kategori, kategori),
+                submission.semester,
+                submission.ujian,
+            ),
+            namaBarang: String(pickValue(item.nama_barang, item.namaBarang, item.nama, "-")).trim(),
+            satuan: String(pickValue(item.satuan, item.unit, item.barang?.satuan, master?.satuan, "-")).trim(),
+            jumlah: toNumberOrNull(pickValue(item.jumlah_diajukan, item.jumlah, item.qty, 0)) ?? 0,
+            jumlahDisetujui: toNumberOrNull(pickValue(item.jumlah_disetujui, item.jumlahDisetujui, 0)) ?? 0,
+            status: normalizeAdminStatusValue(item.status),
+            isLainnya: false,
+        };
+    });
+
+    const barangLainnya = (Array.isArray(submission.barang_lainnya) ? submission.barang_lainnya : []).map((item, index) => ({
+        id: `lainnya-${submission.id}-${item.id ?? index}`,
+        submissionId: submission.id,
+        itemId: item.id,
+        endpointType: "lainnya",
+        user: user.nama,
+        userUnit: user.unit,
+        userJabatan: user.jabatan,
+        userNip: user.nip,
+        suratPengajuan: submission.surat_pengajuan,
+        tanggal: pickValue(submission.date, submission.tanggal, submission.created_at, ""),
+        aktivasiKey,
+        aktivasiLabel,
+        tipe,
+        kategori: normalizeKategori(pickValue(item.kategori, submission.kategori, kategori), submission.semester, submission.ujian),
+        namaBarang: String(pickValue(item.nama_barang, item.namaBarang, item.nama, "-")).trim(),
+        satuan: String(pickValue(item.satuan, item.unit, "-")).trim(),
+        jumlah: toNumberOrNull(pickValue(item.jumlah_diajukan, item.jumlah, item.qty, 0)) ?? 0,
+        jumlahDisetujui: toNumberOrNull(pickValue(item.jumlah_disetujui, item.jumlahDisetujui, 0)) ?? 0,
+        status: normalizeAdminStatusValue(item.status),
+        isLainnya: true,
+    }));
+
+    return [...barang, ...barangLainnya];
+};
+
+const normalizeAdminSubmissionRows = (payload, barangMasterById = new Map()) =>
+    extractListData(payload).flatMap((submission) => normalizeAdminSubmission(submission, barangMasterById));
+
 export const listPengajuanSaya = async () => {
     try {
         const response = await apiClient.get("/my-pengajuan");
@@ -248,6 +541,50 @@ export const listPengajuanSaya = async () => {
 export const listPengajuan = async () => {
     const response = await apiClient.get("/pengajuan");
     return normalizeSubmissionList(response.data);
+};
+
+export const listDaftarPengajuanAdmin = async (params = {}) => {
+    const cleanParams = Object.fromEntries(
+        Object.entries(params).filter(([, value]) => value !== "" && value !== null && value !== undefined),
+    );
+    const [response, barangResponse] = await Promise.all([
+        apiClient.get("/admin/daftar-pengajuan", {
+            params: Object.keys(cleanParams).length > 0 ? cleanParams : undefined,
+        }),
+        apiClient.get("/barang").catch(() => null),
+    ]);
+    const barangMasterById = barangResponse
+        ? extractBarangMasterMap(barangResponse.data)
+        : new Map();
+
+    return normalizeAdminSubmissionRows(response.data, barangMasterById);
+};
+
+export const approveBarangPengajuanAdmin = async ({
+    id,
+    isLainnya = false,
+    jumlahDisetujui = 0,
+    status = 0,
+} = {}) => {
+    const endpoint = isLainnya
+        ? `/admin/barang-pengajuan-lainnya/${id}/approve`
+        : `/admin/barang-pengajuan/${id}/approve`;
+    const payload = {
+        jumlah_disetujui: Number(jumlahDisetujui) || 0,
+        status: Number(status) || 0,
+    };
+
+    try {
+        const response = await apiClient.patch(endpoint, payload);
+        return response.data?.data ?? response.data;
+    } catch (error) {
+        if (![404, 405].includes(error?.response?.status)) {
+            throw error;
+        }
+
+        const response = await apiClient.post(endpoint, payload);
+        return response.data?.data ?? response.data;
+    }
 };
 
 export const listHistoriPengajuan = async () => {

@@ -15,9 +15,30 @@ const toDateKey = (dateValue) => {
   return date.toISOString().slice(0, 10);
 };
 
+const formatTipeLabel = (value) => {
+  const normalized = String(value ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/[_\s-]+/g, "");
+
+  return normalized === "nonrutin" ? "Non Rutin" : "Rutin";
+};
+
+const getTipeBadgeClass = (value) => {
+  const normalized = String(value ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/[_\s-]+/g, "");
+
+  return normalized === "nonrutin"
+    ? "bg-purple-100 text-purple-700"
+    : "bg-blue-100 text-blue-700";
+};
+
 const AktivasiCard = ({
   title,
   periodName,
+  tipe,
   startDate,
   endDate,
   isActive,
@@ -100,6 +121,8 @@ const AktivasiCard = ({
       : "Berakhir pada";
 
   const activateButtonLabel = isActivating ? "Mengaktifkan..." : "Aktivasi";
+  const tipeLabel = formatTipeLabel(tipe);
+  const tipeBadgeClass = getTipeBadgeClass(tipe);
 
   return (
     <div className="bg-white shadow-sm rounded-sm border-slate-200 w-full p-6">
@@ -174,6 +197,13 @@ const AktivasiCard = ({
       <div className="text-xs text-gray-500 mb-3">
         Periode: <span className="font-medium">{formattedStartDate}</span> s.d.{" "}
         <span className="font-medium">{formattedDate}</span>
+      </div>
+      <div className="mb-3">
+        <span
+          className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${tipeBadgeClass}`}
+        >
+          {tipeLabel}
+        </span>
       </div>
       <div className={`${statusClassName} text-sm p-2 rounded-xl w-fit`}>
         {statusLabel} <span>{formattedDate}</span>

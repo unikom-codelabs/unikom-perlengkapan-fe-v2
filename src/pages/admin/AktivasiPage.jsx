@@ -209,6 +209,8 @@ const getCurrentAcademicYear = () => {
   return `${currentYear}/${currentYear + 1}`;
 };
 
+const getCurrentYear = () => String(new Date().getFullYear());
+
 const inferAcademicYear = (dateValue) => {
   if (!dateValue) {
     return getCurrentAcademicYear();
@@ -221,6 +223,50 @@ const inferAcademicYear = (dateValue) => {
 
   const year = date.getFullYear();
   return `${year}/${year + 1}`;
+};
+
+const inferYear = (dateValue) => {
+  if (!dateValue) {
+    return getCurrentYear();
+  }
+
+  const date = new Date(dateValue);
+  if (Number.isNaN(date.getTime())) {
+    return getCurrentYear();
+  }
+
+  return String(date.getFullYear());
+};
+
+const normalizeAnnualYear = (value) => {
+  const trimmed = String(value ?? "").trim();
+
+  if (!trimmed) {
+    return "";
+  }
+
+  const match = trimmed.match(/^(\d{4})(?:\s*\/\s*\d{4})?$/);
+  return match ? match[1] : trimmed;
+};
+
+const TODAY_DATE_KEY = new Date().toISOString().slice(0, 10);
+
+const toDateKey = (dateValue) => {
+  if (!dateValue) {
+    return "";
+  }
+
+  const date = new Date(dateValue);
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+
+  return date.toISOString().slice(0, 10);
+};
+
+const isPeriodeEnded = (endDate) => {
+  const endDateKey = toDateKey(endDate);
+  return Boolean(endDateKey) && endDateKey < TODAY_DATE_KEY;
 };
 
 const AktivasiPage = () => {
@@ -420,6 +466,7 @@ const AktivasiPage = () => {
       selectedCard.kategori,
     );
     const isUjianRequired = UJIAN_REQUIRED_KATEGORI.has(selectedCard.kategori);
+    const useYearOnly = selectedCard.kategori === "tahunan";
     const payloadSemester = isSemesterRequired
       ? String(payload.semester ?? "")
           .trim()
@@ -489,11 +536,17 @@ const AktivasiPage = () => {
             selectedCard.pendingUjian ||
             undefined
           : undefined,
-        tahun_akademik:
-          payload.tahun_akademik ||
-          selectedPengajuan?.tahunAkademik ||
-          selectedCard.tahunAkademik ||
-          selectedCard.pendingTahunAkademik,
+        tahun_akademik: useYearOnly
+          ? normalizeAnnualYear(
+              payload.tahun_akademik ||
+                selectedPengajuan?.tahunAkademik ||
+                selectedCard.tahunAkademik ||
+                selectedCard.pendingTahunAkademik,
+            )
+          : payload.tahun_akademik ||
+            selectedPengajuan?.tahunAkademik ||
+            selectedCard.tahunAkademik ||
+            selectedCard.pendingTahunAkademik,
         nama_periode: selectedCard.namaPeriode || selectedCard.title,
       };
 
@@ -547,6 +600,7 @@ const AktivasiPage = () => {
       return null;
     }
 
+    const useYearOnly = selectedCard.kategori === "tahunan";
     const isSemesterRequired = SEMESTER_REQUIRED_KATEGORI.has(
       selectedCard.kategori,
     );
@@ -576,6 +630,17 @@ const AktivasiPage = () => {
     const activeEndDate =
       selectedCard.aktifSelesai || selectedCard.tanggalSelesai;
 
+    const defaultYearValue = useYearOnly
+      ? normalizeAnnualYear(
+          defaultPengajuan?.tahunAkademik ||
+            selectedCard.tahunAkademik ||
+            selectedCard.pendingTahunAkademik,
+        ) || inferYear(activeStartDate || activeEndDate)
+      : defaultPengajuan?.tahunAkademik ||
+        selectedCard.tahunAkademik ||
+        selectedCard.pendingTahunAkademik ||
+        inferAcademicYear(activeStartDate || activeEndDate);
+
     return {
       id_pengajuan:
         defaultPengajuan?.id ??
@@ -593,11 +658,7 @@ const AktivasiPage = () => {
         "rutin",
       semester: defaultSemester,
       ujian: defaultUjian,
-      tahun_akademik:
-        defaultPengajuan?.tahunAkademik ||
-        selectedCard.tahunAkademik ||
-        selectedCard.pendingTahunAkademik ||
-        inferAcademicYear(activeStartDate || activeEndDate),
+      tahun_akademik: defaultYearValue,
     };
   }, [selectedCard]);
 
@@ -660,12 +721,16 @@ const AktivasiPage = () => {
             key={card.kategori}
             title={card.title}
             periodName={card.namaPeriode}
+            tipe={card.tipe}
             startDate={card.tanggalMulai}
             endDate={card.tanggalSelesai}
             isActive={card.statusAktif}
             isActivating={activatingKategori === card.kategori}
             isDeleting={isDeleting && deleteTarget?.kategori === card.kategori}
-            showManageActions={Boolean(card.id)}
+            showManageActions={
+              Boolean(card.id) &&
+              !isPeriodeEnded(card.tanggalSelesai || card.aktifSelesai)
+            }
             onActivate={() => handleOpenAktivasiModal(card.kategori)}
             onEdit={() => handleOpenEditAktivasiModal(card.kategori)}
             onDelete={() => handleOpenDeleteModal(card.kategori)}
@@ -684,12 +749,14 @@ const AktivasiPage = () => {
           onClose={handleCloseAktivasiModal}
           onSubmit={handleSubmitAktivasi}
           isSubmitting={isSubmittingActivation}
+          mode={modalMode}
           defaultValues={activationFormDefaults}
           errorMessage={modalError}
           showSemester={showSemesterInModal}
           semesterOptions={modalSemesterOptions}
           showUjianType={showUjianInModal}
           ujianOptions={modalUjianOptions}
+          useYearOnly={selectedCard?.kategori === "tahunan"}
           kategoriTitle={`${
             modalMode === "edit" ? "Edit Aktivasi" : "Aktivasi Baru"
           } - ${selectedCard?.title ?? "Periode Pengajuan"}`}

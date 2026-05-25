@@ -370,6 +370,28 @@ const normalizeAktivasiPengajuan = (item = {}, fallbackKategori = "") => {
         tahunAkademik: String(
             pickValue(item.tahun_akademik, item.tahunAkademik, item.tahun, ""),
         ).trim(),
+        semester: normalizeSemester(
+            pickValue(
+                item.semester,
+                item.semester_pengajuan,
+                item.semesterPengajuan,
+                pengajuanItem.semester,
+                pengajuanItem.semester_pengajuan,
+                pengajuanItem.semesterPengajuan,
+                "",
+            ),
+        ),
+        ujian: normalizeUjian(
+            pickValue(
+                item.ujian,
+                item.jenis_ujian,
+                item.jenisUjian,
+                pengajuanItem.ujian,
+                pengajuanItem.jenis_ujian,
+                pengajuanItem.jenisUjian,
+                "",
+            ),
+        ),
         statusAktif: normalizeBoolean(
             pickValue(item.status_aktif, item.statusAktif, item.aktif, item.is_active, item.isActive, item.status),
         ),
@@ -391,6 +413,43 @@ const normalizeAktivasiList = (payload, fallbackKategori = "") => {
     }
 
     return [];
+};
+
+const normalizeSummaryBarang = (items = []) =>
+    (Array.isArray(items) ? items : []).map((item, index) => ({
+        id: pickValue(item.id, item.barang_id, item.id_barang, `barang-${index + 1}`),
+        namaBarang: String(pickValue(item.nama_barang, item.namaBarang, item.nama, "-")).trim(),
+        qty: toNullableNumber(pickValue(item.qty, item.jumlah, item.jumlah_diajukan, 0)) ?? 0,
+        jumlahDisetujui: toNullableNumber(pickValue(item.jumlah_disetujui, item.jumlahDisetujui, 0)) ?? 0,
+        status: pickValue(item.status, 0),
+        vendor: String(pickValue(item.vendor, item.nama_vendor, item.vendor_nama, "-")).trim(),
+    }));
+
+const normalizeAktivasiSummary = (payload = {}) => {
+    const data = extractItemData(payload);
+    const aktivasi = data?.aktivasi ?? {};
+    const statistik = data?.statistik ?? {};
+    const detailPengajuan = Array.isArray(data?.detail_pengajuan)
+        ? data.detail_pengajuan
+        : [];
+
+    return {
+        aktivasi: normalizeAktivasiPengajuan(aktivasi),
+        statistik: {
+            jumlahPengajuanMasuk:
+                toNullableNumber(statistik.jumlah_pengajuan_masuk) ?? 0,
+            totalPengaju: toNullableNumber(statistik.total_pengaju) ?? 0,
+        },
+        detailPengajuan: detailPengajuan.map((item, index) => ({
+            id: pickValue(item.id, item.user_id, item.nip, `${item.nama ?? "pengaju"}-${index + 1}`),
+            nama: String(pickValue(item.nama, item.name, "-")).trim(),
+            unit: String(pickValue(item.unit, item.unit_nama, item.bagian, "-")).trim(),
+            jabatan: String(pickValue(item.jabatan, item.jabatan_nama, "-")).trim(),
+            status: String(pickValue(item.status, "Belum Pengajuan")).trim(),
+            barang: normalizeSummaryBarang(item.barang),
+            barangLainnya: normalizeSummaryBarang(item.barang_lainnya),
+        })),
+    };
 };
 
 const fetchAktivasiByKategori = async (kategori) => {
@@ -456,7 +515,7 @@ const enrichAktivasiKategoriFromPengajuan = async (aktivasiList = []) => {
                 kategori: pengajuanById.get(item.idPengajuan) || item.kategori,
             };
         });
-    } catch (error) {
+    } catch {
         return aktivasiList;
     }
 };
@@ -484,6 +543,9 @@ const buildActivatePayload = (payload = {}) => {
     const semester = normalizeSemester(
         pickValue(payload.semester, payload.semester_pengajuan, payload.semesterPengajuan, ""),
     );
+    const ujian = normalizeUjian(
+        pickValue(payload.ujian, payload.jenis_ujian, payload.jenisUjian, ""),
+    );
     const isValidSemester = ["ganjil", "genap"].includes(semester);
 
     const body = {
@@ -508,6 +570,10 @@ const buildActivatePayload = (payload = {}) => {
 
     if (isValidSemester) {
         body.semester = semester;
+    }
+
+    if (ujian) {
+        body.ujian = ujian;
     }
 
     return body;
@@ -628,6 +694,11 @@ export const listAktivasiPengajuan = async () => {
 
     const response = await apiClient.get("/aktivasi-pengajuan");
     return enrichAktivasiKategoriFromPengajuan(normalizeAktivasiList(response.data));
+};
+
+export const getAktivasiPengajuanSummary = async (id) => {
+    const response = await apiClient.get(`/aktivasi-pengajuan/${id}/summary`);
+    return normalizeAktivasiSummary(response.data);
 };
 
 export const createAktivasiPengajuan = async (payload = {}) => {

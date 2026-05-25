@@ -7,6 +7,9 @@ import {
   ChevronRightIcon,
   PlusIcon,
 } from "@heroicons/react/24/outline";
+import ActionIconButton from "../../components/Element/ActionIconButton";
+import Dropdown from "../../components/Element/Dropdown";
+import Table from "../../components/Element/Table";
 import ModalTambahBarang from "../../components/Element/ModalTambahBarang";
 import ModalKonfirmasiHapus from "../../components/Element/ModalKonfirmasiHapus";
 import {
@@ -40,6 +43,7 @@ const getApiErrorMessage = (error, fallbackMessage) => {
 const BarangPengajuanPage = () => {
   const [activeTab, setActiveTab] = useState("tahunan");
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedVendor, setSelectedVendor] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [barangList, setBarangList] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -51,6 +55,18 @@ const BarangPengajuanPage = () => {
   const [isModalHapusOpen, setIsModalHapusOpen] = useState(false);
   const [selectedBarang, setSelectedBarang] = useState(null);
   const itemsPerPage = 10;
+
+  const getVendorLabel = (vendor) => {
+    if (!vendor) {
+      return "-";
+    }
+
+    if (typeof vendor === "object") {
+      return String(vendor.nama ?? vendor.name ?? "-").trim() || "-";
+    }
+
+    return String(vendor).trim() || "-";
+  };
 
   const fetchBarang = async () => {
     setIsLoading(true);
@@ -77,19 +93,35 @@ const BarangPengajuanPage = () => {
     [activeTab, barangList],
   );
 
-  const filteredData = useMemo(
-    () =>
-      currentTabData.filter((item) =>
-        item.nama.toLowerCase().includes(searchQuery.toLowerCase()),
-      ),
-    [currentTabData, searchQuery],
-  );
+  const vendorOptions = useMemo(() => {
+    const uniqueVendors = new Set(
+      currentTabData
+        .map((item) => getVendorLabel(item.vendor))
+        .filter((vendor) => vendor && vendor !== "-"),
+    );
+    return Array.from(uniqueVendors).sort((a, b) => a.localeCompare(b));
+  }, [currentTabData]);
+
+  const filteredData = useMemo(() => {
+    const normalizedQuery = searchQuery.toLowerCase();
+    return currentTabData.filter((item) => {
+      const matchesSearch = item.nama.toLowerCase().includes(normalizedQuery);
+      const matchesVendor = selectedVendor
+        ? getVendorLabel(item.vendor) === selectedVendor
+        : true;
+      return matchesSearch && matchesVendor;
+    });
+  }, [currentTabData, searchQuery, selectedVendor]);
 
   const totalPages = Math.ceil(filteredData.length / itemsPerPage);
   const currentData = filteredData.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage,
   );
+  const tableRows = isLoading ? [] : currentData;
+  const emptyMessage = isLoading
+    ? "Memuat data barang..."
+    : `Tidak ada barang yang cocok dengan pencarian "${searchQuery}"`;
 
   useEffect(() => {
     if (totalPages === 0 && currentPage !== 1) {
@@ -111,6 +143,12 @@ const BarangPengajuanPage = () => {
     setActiveTab(tab);
     setCurrentPage(1);
     setSearchQuery("");
+    setSelectedVendor("");
+  };
+
+  const handleVendorChange = (event) => {
+    setSelectedVendor(event.target.value);
+    setCurrentPage(1);
   };
 
   const handleOpenTambahBarang = () => {
@@ -249,7 +287,21 @@ const BarangPengajuanPage = () => {
               </button>
             </div>
 
-            <div className="flex items-center space-x-4">
+            <div className="flex flex-wrap items-center gap-4">
+              <div className="min-w-50">
+                <Dropdown
+                  value={selectedVendor}
+                  onChange={handleVendorChange}
+                  disabled={vendorOptions.length === 0}
+                >
+                  <option value="">Semua Vendor</option>
+                  {vendorOptions.map((vendor) => (
+                    <option key={vendor} value={vendor}>
+                      {vendor}
+                    </option>
+                  ))}
+                </Dropdown>
+              </div>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
@@ -278,68 +330,46 @@ const BarangPengajuanPage = () => {
             </p>
           ) : null}
 
-          <div className="overflow-x-auto border border-gray-200">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-[#f4f6fa] text-gray-700">
-                  <th className="py-4 px-6 font-semibold border-b border-r border-gray-200 w-16 text-center">
-                    No
-                  </th>
-                  <th className="py-4 px-6 font-semibold border-b border-r border-gray-200">
-                    Nama Barang
-                  </th>
-                  <th className="py-4 px-6 font-semibold border-b border-r border-gray-200 text-center w-40">
-                    Satuan
-                  </th>
-                  <th className="py-4 px-6 font-semibold border-b border-gray-200 text-center w-40">
-                    Aksi
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {isLoading ? (
-                  <tr>
-                    <td colSpan="4" className="py-8 text-center text-gray-500">
-                      Memuat data barang...
-                    </td>
-                  </tr>
-                ) : currentData.length > 0 ? (
-                  currentData.map((item, index) => (
-                    <tr key={item.id} className="hover:bg-gray-50 bg-white">
-                      <td className="py-4 px-6 border-r border-gray-200 text-gray-500 text-center">
-                        {(currentPage - 1) * itemsPerPage + index + 1}
-                      </td>
-                      <td className="py-4 px-6 border-r border-gray-200 text-gray-600">
-                        {item.nama}
-                      </td>
-                      <td className="py-4 px-6 border-r border-gray-200 text-gray-500 text-center">
-                        {item.satuan}
-                      </td>
-                      <td className="py-4 px-6 text-center">
-                        <div className="flex items-center justify-center space-x-3 text-sm">
-                          <button
-                            onClick={() => handleOpenDeleteModal(item)}
-                            className="text-red-500 hover:text-red-600 flex items-center space-x-1.5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                            disabled={isDeleting}
-                          >
-                            <span>Hapus</span>
-                            <TrashIcon className="h-4 w-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan="4" className="py-8 text-center text-gray-500">
-                      Tidak ada barang yang cocok dengan pencarian "
-                      {searchQuery}"
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+          <Table
+            title={null}
+            columns={[
+              { key: "no", label: "No" },
+              { key: "nama", label: "Nama Barang" },
+              { key: "vendor", label: "Vendor" },
+              { key: "satuan", label: "Satuan" },
+              { key: "aksi", label: "Aksi" },
+            ]}
+            rows={tableRows}
+            emptyMessage={emptyMessage}
+            wrapperClass="overflow-x-auto border border-gray-200"
+            renderRow={(item, index) => (
+              <tr key={item.id} className="border-t border-gray-100">
+                <td className="px-6 py-4 text-gray-600 text-center">
+                  {(currentPage - 1) * itemsPerPage + index + 1}
+                </td>
+                <td className="px-6 py-4 text-gray-800 text-center">
+                  {item.nama}
+                </td>
+                <td className="px-6 py-4 text-gray-600 text-center">
+                  {getVendorLabel(item.vendor)}
+                </td>
+                <td className="px-6 py-4 text-gray-600 text-center">
+                  {item.satuan}
+                </td>
+                <td className="px-6 py-4 text-center">
+                  <div className="flex items-center justify-center gap-2">
+                    <ActionIconButton
+                      label="Hapus"
+                      icon={TrashIcon}
+                      onClick={() => handleOpenDeleteModal(item)}
+                      disabled={isDeleting}
+                      variant="danger"
+                    />
+                  </div>
+                </td>
+              </tr>
+            )}
+          />
 
           <div className="flex justify-end items-center mt-6">
             <nav className="flex items-center space-x-1">

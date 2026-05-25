@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Logo from "/src/assets/img/logo-unikom.png";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/useAuth";
 import ModalKonfirmasiHapus from "../Element/ModalKonfirmasiHapus";
+import { listAktivasiPengajuan } from "../../api/aktivasiPengajuanService";
 import {
   HomeIcon as HomeOutline,
   ArchiveBoxIcon as ArchiveOutline,
@@ -48,6 +49,67 @@ const normalizeUserRole = (user = {}) => {
     .toLowerCase();
 };
 
+const normalizeJabatanName = (user = {}) => {
+  const candidates = [user?.jabatan_nama, user?.jabatan?.nama, user?.jabatan];
+
+  const firstJabatan = candidates.find(
+    (value) => typeof value === "string" && value.trim().length > 0,
+  );
+
+  return String(firstJabatan ?? "")
+    .trim()
+    .toLowerCase();
+};
+
+const toTimestamp = (value) => {
+  if (!value) {
+    return 0;
+  }
+
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? 0 : date.getTime();
+};
+
+const normalizeAktivasiTipe = (value) => {
+  const normalized = String(value ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/[_\s-]+/g, "");
+
+  return normalized === "nonrutin" ? "nonrutin" : "rutin";
+};
+
+const getAktivasiTipeLabel = (tipe) =>
+  normalizeAktivasiTipe(tipe) === "nonrutin" ? "Non Rutin" : "Rutin";
+
+const isAktivasiCurrent = (aktivasi = {}) => {
+  if (aktivasi.statusAktif) {
+    return true;
+  }
+
+  const now = Date.now();
+  const startTime = toTimestamp(
+    aktivasi.tanggalMulai || aktivasi.aktifMulai || aktivasi.mulai,
+  );
+  const endTime = toTimestamp(
+    aktivasi.tanggalSelesai || aktivasi.aktifSelesai || aktivasi.selesai,
+  );
+
+  if (startTime && endTime) {
+    return now >= startTime && now <= endTime;
+  }
+
+  if (startTime && !endTime) {
+    return now >= startTime;
+  }
+
+  if (!startTime && endTime) {
+    return now <= endTime;
+  }
+
+  return false;
+};
+
 const Sidebar = () => {
   const [isManajemenOpen, setIsManajemenOpen] = useState(true);
   const [isDaftarPengajuanOpen, setIsDaftarPengajuanOpen] = useState(true);
@@ -55,12 +117,19 @@ const Sidebar = () => {
   const [isUserPengajuanOpen, setIsUserPengajuanOpen] = useState(true);
   const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [aktivasiList, setAktivasiList] = useState([]);
   const location = useLocation();
   const navigate = useNavigate();
   const { logoutUser, currentUser } = useAuth();
 
   const normalizedRole = normalizeUserRole(currentUser);
+  const normalizedJabatan = normalizeJabatanName(currentUser);
   const isUserRole = normalizedRole === "user";
+  const isDekan =
+    normalizedJabatan.includes("dekan") ||
+    normalizedJabatan.includes("kaprodi");
+  const allowedPengajuanKategori =
+    isUserRole && !isDekan ? ["tahunan"] : ["tahunan", "ujian", "kelas"];
 
   const isDaftarPengajuanActive =
     location.pathname.startsWith("/daftar-pengajuan");
@@ -70,6 +139,78 @@ const Sidebar = () => {
     location.pathname.startsWith("/manajemen/");
   const isUserPengajuanActive =
     location.pathname.startsWith("/pengajuan-rutin");
+
+  const historyPath =
+    normalizedRole === "admin"
+      ? "/histori-pengajuan-admin"
+      : "/histori-pengajuan";
+
+  useEffect(() => {
+    if (!isUserRole) {
+      setAktivasiList([]);
+      return;
+    }
+
+    let isMounted = true;
+
+    const fetchAktivasi = async () => {
+      try {
+        const data = await listAktivasiPengajuan();
+
+        if (isMounted) {
+          setAktivasiList(Array.isArray(data) ? data : []);
+        }
+      } catch {
+        if (isMounted) {
+          setAktivasiList([]);
+        }
+      }
+    };
+
+    fetchAktivasi();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isUserRole]);
+
+  const activeAktivasiByKategori = useMemo(() => {
+    const byKategori = new Map();
+    const sortedAktivasi = [...aktivasiList].sort((a, b) => {
+      const aIsCurrent = isAktivasiCurrent(a);
+      const bIsCurrent = isAktivasiCurrent(b);
+
+      if (aIsCurrent !== bIsCurrent) {
+        return aIsCurrent ? -1 : 1;
+      }
+
+      return (
+        toTimestamp(b.tanggalSelesai || b.aktifSelesai || b.tanggalMulai) -
+        toTimestamp(a.tanggalSelesai || a.aktifSelesai || a.tanggalMulai)
+      );
+    });
+
+    sortedAktivasi.forEach((item) => {
+      const kategori = String(item?.kategori ?? "").toLowerCase();
+
+      if (
+        !allowedPengajuanKategori.includes(kategori) ||
+        byKategori.has(kategori)
+      ) {
+        return;
+      }
+
+      byKategori.set(kategori, item);
+    });
+
+    return byKategori;
+  }, [aktivasiList, allowedPengajuanKategori]);
+
+  const getUserPengajuanSubmenuLabel = (kategori, label) => {
+    const aktivasi = activeAktivasiByKategori.get(kategori);
+
+    return aktivasi ? `${label} - ${getAktivasiTipeLabel(aktivasi.tipe)}` : label;
+  };
 
   const handleOpenLogoutConfirm = () => {
     setIsLogoutConfirmOpen(true);
@@ -150,7 +291,7 @@ const Sidebar = () => {
                         isUserPengajuanActive ? "text-primary" : "text-gray-700"
                       }
                     >
-                      Pengajuan Rutin
+                      Pengajuan
                     </span>
                   </div>
                   <ChevronDownIcon
@@ -179,9 +320,50 @@ const Sidebar = () => {
                             }`
                           }
                         >
-                          ATK Tahunan
+                          {getUserPengajuanSubmenuLabel(
+                            "tahunan",
+                            "ATK Tahunan",
+                          )}
                         </NavLink>
                       </li>
+                      {isDekan ? (
+                        <>
+                          <li>
+                            <NavLink
+                              to="/pengajuan-rutin/ujian"
+                              className={({ isActive }) =>
+                                `block transition-colors ${
+                                  isActive
+                                    ? "text-primary"
+                                    : "text-gray-500 hover:text-primary"
+                                }`
+                              }
+                            >
+                              {getUserPengajuanSubmenuLabel(
+                                "ujian",
+                                "ATK Ujian",
+                              )}
+                            </NavLink>
+                          </li>
+                          <li>
+                            <NavLink
+                              to="/pengajuan-rutin/kelas"
+                              className={({ isActive }) =>
+                                `block transition-colors ${
+                                  isActive
+                                    ? "text-primary"
+                                    : "text-gray-500 hover:text-primary"
+                                }`
+                              }
+                            >
+                              {getUserPengajuanSubmenuLabel(
+                                "kelas",
+                                "ATK Kelas",
+                              )}
+                            </NavLink>
+                          </li>
+                        </>
+                      ) : null}
                     </ul>
                   </div>
                 </div>
@@ -213,7 +395,7 @@ const Sidebar = () => {
 
               <li className="mb-4">
                 <NavLink
-                  to="/histori-pengajuan"
+                  to={historyPath}
                   className={({ isActive }) =>
                     `flex gap-2 items-center ${
                       isActive
@@ -573,7 +755,7 @@ const Sidebar = () => {
               </li>
               <li className="mb-4">
                 <NavLink
-                  to="/histori-pengajuan"
+                  to={historyPath}
                   className={({ isActive }) =>
                     `flex gap-2 items-center ${
                       isActive

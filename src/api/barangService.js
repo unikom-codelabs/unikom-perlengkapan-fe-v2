@@ -38,6 +38,13 @@ const normalizeBarang = (item = {}) => ({
     id: pickValue(item.id, item.barang_id),
     nama: pickValue(item.nama, item.nama_barang, item.name, ""),
     satuan: pickValue(item.satuan, item.unit, "-"),
+    vendor: pickValue(
+        item.vendor,
+        item.nama_vendor,
+        item.vendor_nama,
+        item.vendor?.nama,
+        "-",
+    ),
     kategori: normalizeKategori(pickValue(item.kategori, item.jenis, item.tipe, item.category, "tahunan")),
 });
 

@@ -2,7 +2,12 @@ import { ArrowUpRightIcon } from "@heroicons/react/24/solid";
 import { useState } from "react";
 import DashboardDetailModal from "../DashboardDetailModal";
 
-const DashboardCard = ({ title, value }) => {
+const DashboardCard = ({
+  title,
+  value,
+  periodLabel = "2025/2026",
+  summaryId,
+}) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   return (
@@ -23,7 +28,7 @@ const DashboardCard = ({ title, value }) => {
           <p className="text-gray-500">Pengajuan</p>
         </div>
         <div>
-          <p className="text-gray-500">2025/2026</p>
+          <p className="text-gray-500">{periodLabel}</p>
         </div>
       </div>
 
@@ -32,6 +37,7 @@ const DashboardCard = ({ title, value }) => {
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
           title={title}
+          summaryId={summaryId}
         />
       )}
     </div>

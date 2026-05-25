@@ -6,6 +6,7 @@ import {
   PencilSquareIcon,
   TrashIcon,
 } from "@heroicons/react/24/outline";
+import ActionIconButton from "../../components/Element/ActionIconButton";
 import ModalBuatPengumuman from "../../components/Element/ModalBuatPengumuman";
 import ModalKonfirmasiHapus from "../../components/Element/ModalKonfirmasiHapus";
 import ModalDetailPengumuman from "../../components/Element/ModalDetailPengumuman";
@@ -364,21 +365,23 @@ const PengumumanPage = () => {
                       <h2 className="font-semibold tracking-wide">
                         {item.judul}
                       </h2>
-                      <div className="flex items-center gap-3">
-                        <button
+                      <div className="flex items-center gap-2">
+                        <ActionIconButton
+                          label="Edit"
+                          icon={PencilSquareIcon}
                           onClick={() => handleOpenEdit(item)}
-                          className="p-2 bg-white text-[#4773da] rounded-full hover:bg-gray-100 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
                           disabled={isSubmitting || isDeleting}
-                        >
-                          <PencilSquareIcon className="h-4 w-4" />
-                        </button>
-                        <button
+                          variant="neutral"
+                          className="bg-white text-[#4773da] hover:text-[#2f57b9] hover:bg-[#f0f5ff] shadow-sm"
+                        />
+                        <ActionIconButton
+                          label="Hapus"
+                          icon={TrashIcon}
                           onClick={() => handleOpenDelete(item)}
-                          className="p-2 bg-[#d84841] text-white rounded-full hover:bg-red-700 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
                           disabled={isSubmitting || isDeleting}
-                        >
-                          <TrashIcon className="h-4 w-4" />
-                        </button>
+                          variant="neutral"
+                          className="bg-red-50 text-red-600 hover:text-red-700 hover:bg-red-100"
+                        />
                       </div>
                     </div>
                     <div className="p-6 flex flex-col md:flex-row gap-6 border-x border-b border-gray-200">

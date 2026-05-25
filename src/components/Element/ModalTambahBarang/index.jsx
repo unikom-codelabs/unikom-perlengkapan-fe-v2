@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { listVendor } from "../../../api/vendorService";
+import Dropdown from "../Dropdown";
 
 const ModalTambahBarang = ({
   isOpen,
@@ -8,6 +9,18 @@ const ModalTambahBarang = ({
   isSubmitting = false,
   errorMessage = "",
 }) => {
+  const satuanOptions = [
+    "pcs",
+    "unit",
+    "set",
+    "box",
+    "pack",
+    "rim",
+    "lusin",
+    "lembar",
+    "roll",
+    "meter",
+  ];
   const [shouldRender, setRender] = useState(isOpen);
   const [show, setShow] = useState(false);
   const [namaBarang, setNamaBarang] = useState("");
@@ -113,7 +126,7 @@ const ModalTambahBarang = ({
       onClick={handleClose}
     >
       <div
-        className={`bg-white rounded-lg shadow-lg w-full max-w-2xl overflow-hidden flex flex-col transition-all duration-150 transform ${
+        className={`bg-white rounded-lg shadow-lg w-full max-w-2xl overflow-visible flex flex-col transition-all duration-150 transform ${
           show ? "scale-100 opacity-100" : "scale-95 opacity-0"
         }`}
         onClick={(e) => e.stopPropagation()}
@@ -142,14 +155,18 @@ const ModalTambahBarang = ({
 
           <div className="flex flex-col gap-1.5">
             <label className="text-gray-600 font-medium text-sm">Satuan</label>
-            <input
-              type="text"
-              placeholder="Contoh: pcs"
+            <Dropdown
               value={satuan}
               onChange={(e) => setSatuan(e.target.value)}
-              className="w-full px-4 py-2 bg-white border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-[#4279df] focus:border-transparent text-gray-700 text-sm placeholder-gray-400"
               required
-            />
+            >
+              <option value="">Pilih satuan</option>
+              {satuanOptions.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </Dropdown>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -157,51 +174,22 @@ const ModalTambahBarang = ({
               <label className="text-gray-600 font-medium text-sm">
                 Kategori
               </label>
-              <div className="relative">
-                <select
-                  value={kategori}
-                  onChange={(e) => setKategori(e.target.value)}
-                  className="w-full px-4 pr-10 py-2 bg-white border border-gray-300 rounded-full appearance-none focus:outline-none focus:ring-2 focus:ring-[#4279df] focus:border-transparent text-gray-700 text-sm"
-                >
-                  <option value="atk_tahunan">ATK Tahunan</option>
-                  <option value="atk_ujian">ATK Ujian</option>
-                  <option value="atk_kelas">ATK Kelas</option>
-                </select>
-                <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-gray-500">
-                  <svg
-                    className="h-4 w-4"
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                  >
-                    <path d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.168l3.71-3.938a.75.75 0 1 1 1.08 1.04l-4.25 4.51a.75.75 0 0 1-1.08 0L5.21 8.27a.75.75 0 0 1 .02-1.06Z" />
-                  </svg>
-                </div>
-              </div>
+              <Dropdown
+                value={kategori}
+                onChange={(e) => setKategori(e.target.value)}
+              >
+                <option value="atk_tahunan">ATK Tahunan</option>
+                <option value="atk_ujian">ATK Ujian</option>
+                <option value="atk_kelas">ATK Kelas</option>
+              </Dropdown>
             </div>
 
             <div className="flex flex-col gap-1.5">
               <label className="text-gray-600 font-medium text-sm">Tipe</label>
-              <div className="relative">
-                <select
-                  value={tipe}
-                  onChange={(e) => setTipe(e.target.value)}
-                  className="w-full px-4 pr-10 py-2 bg-white border border-gray-300 rounded-full appearance-none focus:outline-none focus:ring-2 focus:ring-[#4279df] focus:border-transparent text-gray-700 text-sm"
-                >
-                  <option value="habis_pakai">Habis Pakai</option>
-                  <option value="tidak_habis_pakai">Tidak Habis Pakai</option>
-                </select>
-                <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-gray-500">
-                  <svg
-                    className="h-4 w-4"
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                  >
-                    <path d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.168l3.71-3.938a.75.75 0 1 1 1.08 1.04l-4.25 4.51a.75.75 0 0 1-1.08 0L5.21 8.27a.75.75 0 0 1 .02-1.06Z" />
-                  </svg>
-                </div>
-              </div>
+              <Dropdown value={tipe} onChange={(e) => setTipe(e.target.value)}>
+                <option value="habis_pakai">Habis Pakai</option>
+                <option value="tidak_habis_pakai">Tidak Habis Pakai</option>
+              </Dropdown>
             </div>
           </div>
 
@@ -223,34 +211,21 @@ const ModalTambahBarang = ({
               <label className="text-gray-600 font-medium text-sm">
                 Vendor
               </label>
-              <div className="relative">
-                <select
-                  value={vendorId}
-                  onChange={(e) => setVendorId(e.target.value)}
-                  disabled={isLoadingVendors || vendors.length === 0}
-                  className="w-full px-4 pr-10 py-2 bg-white border border-gray-300 rounded-full appearance-none focus:outline-none focus:ring-2 focus:ring-[#4279df] focus:border-transparent text-gray-700 text-sm disabled:bg-gray-100 disabled:text-gray-500"
-                  required
-                >
-                  <option value="">
-                    {isLoadingVendors ? "Memuat vendor..." : "Pilih Vendor"}
+              <Dropdown
+                value={vendorId}
+                onChange={(e) => setVendorId(e.target.value)}
+                disabled={isLoadingVendors || vendors.length === 0}
+                required
+              >
+                <option value="">
+                  {isLoadingVendors ? "Memuat vendor..." : "Pilih Vendor"}
+                </option>
+                {vendors.map((vendor) => (
+                  <option key={vendor.id} value={vendor.id}>
+                    {vendor.nama}
                   </option>
-                  {vendors.map((vendor) => (
-                    <option key={vendor.id} value={vendor.id}>
-                      {vendor.nama}
-                    </option>
-                  ))}
-                </select>
-                <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-gray-500">
-                  <svg
-                    className="h-4 w-4"
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                  >
-                    <path d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.168l3.71-3.938a.75.75 0 1 1 1.08 1.04l-4.25 4.51a.75.75 0 0 1-1.08 0L5.21 8.27a.75.75 0 0 1 .02-1.06Z" />
-                  </svg>
-                </div>
-              </div>
+                ))}
+              </Dropdown>
             </div>
           </div>
 

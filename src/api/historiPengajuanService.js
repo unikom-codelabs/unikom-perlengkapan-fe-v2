@@ -1,7 +1,7 @@
 import apiClient from "../api/ApiClient"; // sesuaikan path import
 
 /**
- * Mengambil histori pengajuan dari API.
+ * Mengambil histori pengajuan pengguna dari API.
  * @param {Object} params - Query parameter opsional
  * @param {string|number} [params.tahun] - Filter berdasarkan tahun (contoh: "2025")
  * @returns {Promise<Array>} Array data histori pengajuan
@@ -11,6 +11,20 @@ export const getHistoriPengajuan = async (params = {}) => {
     Object.entries(params).filter(([, v]) => v !== "" && v !== null && v !== undefined)
   );
 
-  const response = await apiClient.get("/histori-pengajuan", { params: cleanParams });
+  const response = await apiClient.get("/histori-pengajuan/my", { params: cleanParams });
+  return response.data?.data ?? [];
+};
+
+/**
+ * Mengambil histori pengajuan untuk admin dari API.
+ * @param {Object} params - Query parameter opsional
+ * @returns {Promise<Array>} Array data histori pengajuan
+ */
+export const getHistoriPengajuanAdmin = async (params = {}) => {
+  const cleanParams = Object.fromEntries(
+    Object.entries(params).filter(([, v]) => v !== "" && v !== null && v !== undefined)
+  );
+
+  const response = await apiClient.get("/histori", { params: cleanParams });
   return response.data?.data ?? [];
 };

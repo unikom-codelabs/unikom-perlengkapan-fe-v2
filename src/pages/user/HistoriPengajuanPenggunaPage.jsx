@@ -1,7 +1,9 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { Helmet } from "react-helmet-async";
 import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/outline";
+import Table from "../../components/Element/Table";
 import { useAuth } from "../../context/useAuth";
+import Dropdown from "../../components/Element/Dropdown";
 import { getHistoriPengajuan } from "../../api/historiPengajuanService";
 
 const BASE_STORAGE_URL = "http://perlengkapan.codelabspace.or.id/storage/";
@@ -34,134 +36,433 @@ const PaginatedTable = ({ title, rows }) => {
   }, [rows]);
 
   return (
-    <div className="mb-10">
-      <h3 className="text-[17px] font-bold text-gray-700 mb-4">{title}</h3>
-      <div className="overflow-x-auto rounded-t-lg">
-        <table className="w-full text-sm text-left">
-          <thead className="bg-[#f0f4fc] text-gray-600 font-semibold">
-            <tr>
-              <th className="px-6 py-4">No</th>
-              <th className="px-6 py-4">Nama Barang</th>
-              <th className="px-6 py-4">Satuan</th>
-              <th className="px-6 py-4">Kategori</th>
-              <th className="px-6 py-4">Jumlah</th>
-              <th className="px-6 py-4">Jumlah Disetujui</th>
-              <th className="px-6 py-4">Status</th>
-            </tr>
-          </thead>
-          <tbody className="bg-[#f8f9fc]">
-            {sliced.length === 0 ? (
-              <tr>
-                <td colSpan="7" className="px-6 py-4 text-gray-500">
-                  Data tidak ditemukan
-                </td>
-              </tr>
-            ) : (
-              sliced.map((item, idx) => (
-                <tr key={item._uid ?? idx} className="border-t border-gray-100">
-                  <td className="px-6 py-4 text-gray-600">
-                    {(page - 1) * ITEMS_PER_PAGE + idx + 1}
-                  </td>
-                  <td className="px-6 py-4 text-gray-800">{item.nama}</td>
-                  <td className="px-6 py-4 text-gray-600">
-                    {item.satuan ?? "–"}
-                  </td>
-                  <td className="px-6 py-4 text-gray-600">
-                    {formatKategori(item.kategori)}
-                  </td>
-                  <td className="px-6 py-4 text-gray-600">
-                    {item.jumlah_diajukan}
-                  </td>
-                  <td className="px-6 py-4 text-gray-600">
-                    {item.jumlah_disetujui}
-                  </td>
-                  <td className="px-6 py-4">
-                    <StatusBadge status={item.status} />
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      <div className="flex justify-end mt-4">
-        <div className="flex items-center space-x-1">
-          <button
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-            disabled={page === 1}
-            className="p-1.5 border border-gray-300 rounded text-gray-500 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            <ChevronLeftIcon className="h-4 w-4" />
-          </button>
-
-          {Array.from({ length: totalPages }, (_, i) => i + 1).map((n) => (
+    <Table
+      title={title}
+      columns={[
+        { key: "no", label: "No" },
+        { key: "nama", label: "Nama Barang" },
+        { key: "satuan", label: "Satuan" },
+        { key: "kategori", label: "Kategori" },
+        { key: "jumlah", label: "Jumlah" },
+        { key: "jumlah_disetujui", label: "Jumlah Disetujui" },
+        { key: "status", label: "Status" },
+      ]}
+      rows={sliced}
+      renderRow={(item, idx) => (
+        <tr key={item._uid ?? idx} className="border-t border-gray-100">
+          <td className="px-6 py-4 text-gray-600">
+            {(page - 1) * ITEMS_PER_PAGE + idx + 1}
+          </td>
+          <td className="px-6 py-4 text-gray-800">{item.nama}</td>
+          <td className="px-6 py-4 text-gray-600">
+            {item.unit ?? item.satuan ?? "–"}
+          </td>
+          <td className="px-6 py-4 text-gray-600">
+            {formatKategori(item.kategori)}
+          </td>
+          <td className="px-6 py-4 text-gray-600">{item.jumlah_diajukan}</td>
+          <td className="px-6 py-4 text-gray-600">{item.jumlah_disetujui}</td>
+          <td className="px-6 py-4">
+            <StatusBadge status={item.status} />
+          </td>
+        </tr>
+      )}
+      footer={
+        <div className="flex justify-end mt-4">
+          <div className="flex items-center space-x-1">
             <button
-              key={n}
-              onClick={() => setPage(n)}
-              className={`px-3 py-1.5 border rounded text-sm font-medium ${
-                n === page
-                  ? "border-[#4773da] bg-[#4773da] text-white"
-                  : "border-gray-300 bg-white text-gray-600 hover:bg-gray-50"
-              }`}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page === 1}
+              className="p-1.5 border border-gray-300 rounded text-gray-500 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              {n}
+              <ChevronLeftIcon className="h-4 w-4" />
             </button>
-          ))}
 
-          <button
-            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-            disabled={page === totalPages}
-            className="p-1.5 border border-gray-300 rounded text-gray-500 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            <ChevronRightIcon className="h-4 w-4" />
-          </button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((n) => (
+              <button
+                key={n}
+                onClick={() => setPage(n)}
+                className={`px-3 py-1.5 border rounded text-sm font-medium ${
+                  n === page
+                    ? "border-[#4773da] bg-[#4773da] text-white"
+                    : "border-gray-300 bg-white text-gray-600 hover:bg-gray-50"
+                }`}
+              >
+                {n}
+              </button>
+            ))}
+
+            <button
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page === totalPages}
+              className="p-1.5 border border-gray-300 rounded text-gray-500 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              <ChevronRightIcon className="h-4 w-4" />
+            </button>
+          </div>
         </div>
-      </div>
-    </div>
+      }
+    />
   );
 };
 
 const formatKategori = (k) => {
   const map = {
     atk_tahunan: "ATK Tahunan",
+    atk_ujian: "ATK Ujian",
+    atk_kelas: "ATK Kelas",
     habis_pakai: "Habis Pakai",
     tidak_habis_pakai: "Tidak Habis Pakai",
   };
   return map[k] ?? k ?? "–";
 };
 
-const filterByTab = (data, tab) => {
-  if (!data?.length) return [];
-  const jenisMap = {
-    "ATK Tahunan": "rutin",
+const getJenisFromTab = (tab) =>
+  ({
+    "ATK Tahunan": "tahunan",
     "ATK Ujian": "ujian",
     "ATK Kelas": "kelas",
-  };
-  const jenis = jenisMap[tab];
-  if (!jenis) return data;
-  return data.filter(
-    (d) => d.aktivasi?.jenis_pengajuan === jenis || d.aktivasi?.tipe === jenis,
-  );
+  })[tab] ?? null;
+
+const normalizeBarangKategori = (value) => {
+  const kategori = String(value ?? "")
+    .trim()
+    .toLowerCase();
+
+  if (!kategori) {
+    return "";
+  }
+
+  if (kategori.includes("ujian") || kategori.includes("atk_ujian")) {
+    return "ujian";
+  }
+
+  if (kategori.includes("kelas") || kategori.includes("atk_kelas")) {
+    return "kelas";
+  }
+
+  if (kategori.includes("tahunan") || kategori.includes("atk_tahunan")) {
+    return "tahunan";
+  }
+
+  return "";
 };
 
-const extractYears = (data) => {
-  const years = new Set();
-  (data ?? []).forEach((d) => {
-    const y = d.tanggal?.split("-")[0];
-    if (y) years.add(y);
-  });
-  return Array.from(years).sort((a, b) => b - a);
+const normalizeHistoriKategori = (item = {}) => {
+  const aktivasi = item?.aktivasi || {};
+  const aktivasiJenis = String(aktivasi.jenis_pengajuan ?? "")
+    .trim()
+    .toLowerCase();
+  if (["tahunan", "ujian", "kelas"].includes(aktivasiJenis)) {
+    return aktivasiJenis;
+  }
+
+  const aktivasiKategori = String(aktivasi.kategori ?? "")
+    .trim()
+    .toLowerCase();
+  if (aktivasiKategori) {
+    if (
+      aktivasiKategori.includes("ujian") ||
+      aktivasiKategori.includes("atk_ujian")
+    ) {
+      return "ujian";
+    }
+
+    if (
+      aktivasiKategori.includes("kelas") ||
+      aktivasiKategori.includes("atk_kelas")
+    ) {
+      return "kelas";
+    }
+
+    if (
+      aktivasiKategori.includes("tahunan") ||
+      aktivasiKategori.includes("atk_tahunan")
+    ) {
+      return "tahunan";
+    }
+  }
+
+  const rawKategoriCandidates = [
+    item.kategori,
+    item.jenis_pengajuan,
+    item.tipe_pengajuan,
+    item.jenis,
+    item.tipe,
+  ];
+
+  const rawKategori = rawKategoriCandidates
+    .filter((value) => typeof value === "string" && value.trim().length > 0)
+    .map((value) => value.trim().toLowerCase())
+    .find(Boolean);
+
+  if (rawKategori) {
+    if (rawKategori.includes("ujian") || rawKategori.includes("atk_ujian")) {
+      return "ujian";
+    }
+
+    if (rawKategori.includes("kelas") || rawKategori.includes("atk_kelas")) {
+      return "kelas";
+    }
+
+    if (
+      rawKategori.includes("tahunan") ||
+      rawKategori.includes("atk_tahunan")
+    ) {
+      return "tahunan";
+    }
+  }
+
+  const itemKategoriCandidates = [
+    ...(Array.isArray(item.barang) ? item.barang : []),
+    ...(Array.isArray(item.barang_lainnya) ? item.barang_lainnya : []),
+  ]
+    .map((row) =>
+      String(row?.kategori ?? "")
+        .trim()
+        .toLowerCase(),
+    )
+    .filter(Boolean);
+
+  if (itemKategoriCandidates.some((value) => value.includes("atk_tahunan"))) {
+    return "tahunan";
+  }
+
+  if (itemKategoriCandidates.some((value) => value.includes("atk_ujian"))) {
+    return "ujian";
+  }
+
+  if (itemKategoriCandidates.some((value) => value.includes("atk_kelas"))) {
+    return "kelas";
+  }
+
+  const jenisValue = String(aktivasi.tipe ?? item.jenis_pengajuan ?? item.tipe)
+    .trim()
+    .toLowerCase();
+
+  if (jenisValue === "rutin") {
+    return "tahunan";
+  }
+
+  const semesterValue = String(item.semester ?? aktivasi.semester ?? "")
+    .trim()
+    .toLowerCase();
+  const ujianValue = String(item.ujian ?? aktivasi.ujian ?? "")
+    .trim()
+    .toLowerCase();
+
+  if (ujianValue) {
+    return "ujian";
+  }
+
+  if (["ganjil", "genap"].includes(semesterValue)) {
+    return "kelas";
+  }
+
+  return "tahunan";
+};
+
+const filterByTab = (data, tab) => {
+  if (!data?.length) return [];
+  const jenis = getJenisFromTab(tab);
+  if (!jenis) return data;
+  return data.filter((d) => normalizeHistoriKategori(d) === jenis);
+};
+
+const formatDateLabel = (value) => {
+  if (!value) {
+    return "";
+  }
+
+  return String(value).slice(0, 10);
+};
+
+const formatAktivasiTipe = (value) => {
+  const normalized = String(value ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/[_-]+/g, " ");
+
+  if (!normalized) {
+    return "";
+  }
+
+  if (normalized === "rutin") {
+    return "Rutin";
+  }
+
+  if (normalized === "non rutin" || normalized === "nonrutin") {
+    return "Non Rutin";
+  }
+
+  return normalized
+    .split(" ")
+    .filter(Boolean)
+    .map((word) => word[0]?.toUpperCase() + word.slice(1))
+    .join(" ");
+};
+
+const appendAktivasiTipe = (label, tipeLabel) => {
+  if (!label || !tipeLabel) {
+    return label;
+  }
+
+  if (label.toLowerCase().includes(tipeLabel.toLowerCase())) {
+    return label;
+  }
+
+  return `${label} - ${tipeLabel}`;
+};
+
+const getHistoriAktivasiKey = (histori = {}) => {
+  const aktivasi = histori?.aktivasi ?? {};
+  const candidates = [
+    aktivasi.id,
+    aktivasi.aktivasi_pengajuan_id,
+    aktivasi.aktivasiPengajuanId,
+    histori.aktivasi_pengajuan_id,
+    histori.aktivasiPengajuanId,
+    histori.id_aktivasi_pengajuan,
+    histori.idAktivasiPengajuan,
+    histori.id_aktivasi,
+    histori.idAktivasi,
+  ];
+
+  const key = candidates.find(
+    (value) => value !== undefined && value !== null && String(value).trim(),
+  );
+
+  return key !== undefined && key !== null ? String(key).trim() : "";
+};
+
+const getHistoriAktivasiLabel = (histori = {}) => {
+  const aktivasi = histori?.aktivasi ?? {};
+  const namaPeriode = String(
+    aktivasi.nama_periode ??
+      aktivasi.namaPeriode ??
+      aktivasi.nama ??
+      aktivasi.title ??
+      histori.nama_periode ??
+      histori.namaPeriode ??
+      "",
+  ).trim();
+  const tahunAkademik = String(
+    aktivasi.tahun_akademik ??
+      aktivasi.tahunAkademik ??
+      histori.tahun_akademik ??
+      histori.tahunAkademik ??
+      "",
+  ).trim();
+  const tipeLabel = formatAktivasiTipe(
+    aktivasi.tipe ??
+      aktivasi.tipe_pengajuan ??
+      aktivasi.tipePengajuan ??
+      histori.tipe ??
+      histori.tipe_pengajuan,
+  );
+
+  if (namaPeriode && tahunAkademik && !namaPeriode.includes(tahunAkademik)) {
+    return appendAktivasiTipe(`${namaPeriode} - ${tahunAkademik}`, tipeLabel);
+  }
+
+  if (namaPeriode) {
+    return appendAktivasiTipe(namaPeriode, tipeLabel);
+  }
+
+  if (tahunAkademik) {
+    return appendAktivasiTipe(tahunAkademik, tipeLabel);
+  }
+
+  const tanggalMulai = formatDateLabel(
+    aktivasi.tanggal_mulai ??
+      aktivasi.tanggalMulai ??
+      aktivasi.aktif_mulai ??
+      aktivasi.mulai,
+  );
+  const tanggalSelesai = formatDateLabel(
+    aktivasi.tanggal_selesai ??
+      aktivasi.tanggalSelesai ??
+      aktivasi.aktif_selesai ??
+      aktivasi.selesai,
+  );
+
+  if (tanggalMulai || tanggalSelesai) {
+    return appendAktivasiTipe(
+      [tanggalMulai, tanggalSelesai].filter(Boolean).join(" - "),
+      tipeLabel,
+    );
+  }
+
+  return getHistoriAktivasiKey(histori)
+    ? `Aktivasi #${getHistoriAktivasiKey(histori)}`
+    : "";
+};
+
+const getHistoriAktivasiSortValue = (histori = {}) => {
+  const aktivasi = histori?.aktivasi ?? {};
+  const dateValue =
+    aktivasi.tanggal_selesai ??
+    aktivasi.tanggalSelesai ??
+    aktivasi.aktif_selesai ??
+    aktivasi.selesai ??
+    aktivasi.tanggal_mulai ??
+    aktivasi.tanggalMulai ??
+    aktivasi.aktif_mulai ??
+    aktivasi.mulai ??
+    histori.tanggal ??
+    "";
+  const timestamp = new Date(dateValue).getTime();
+
+  return Number.isNaN(timestamp) ? 0 : timestamp;
+};
+
+const buildAktivasiOptions = (data = []) => {
+  return Array.from(
+    data
+      .reduce((map, item) => {
+        const label = getHistoriAktivasiLabel(item);
+        const value = getHistoriAktivasiKey(item) || label;
+
+        if (!value || map.has(value)) {
+          return map;
+        }
+
+        map.set(value, {
+          value,
+          label,
+          sortValue: getHistoriAktivasiSortValue(item),
+        });
+
+        return map;
+      }, new Map())
+      .values(),
+  ).sort((a, b) => b.sortValue - a.sortValue || a.label.localeCompare(b.label));
+};
+
+const normalizeJabatanName = (user = {}) => {
+  const candidates = [user?.jabatan_nama, user?.jabatan?.nama, user?.jabatan];
+
+  const firstJabatan = candidates.find(
+    (value) => typeof value === "string" && value.trim().length > 0,
+  );
+
+  return String(firstJabatan ?? "")
+    .trim()
+    .toLowerCase();
 };
 
 const HistoriPengajuanPenggunaPage = () => {
   const [activeTab, setActiveTab] = useState("ATK Tahunan");
-  const [selectedYear, setSelectedYear] = useState("");
+  const [selectedAktivasi, setSelectedAktivasi] = useState("");
   const [histori, setHistori] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
   const { currentUser, authLoading } = useAuth();
+  const normalizedJabatan = normalizeJabatanName(currentUser);
+  const isDekan =
+    normalizedJabatan.includes("dekan") ||
+    normalizedJabatan.includes("kaprodi");
 
   const hasJabatanField = Boolean(
     currentUser &&
@@ -179,7 +480,7 @@ const HistoriPengajuanPenggunaPage = () => {
         (currentUser.roles.includes("jabatan") ||
           currentUser.roles.includes("role"))));
   const isJabatanOrRestrictedRole = Boolean(
-    hasJabatanField || roleIncludesRestricted,
+    (hasJabatanField || roleIncludesRestricted) && !isDekan,
   );
 
   const tabs = authLoading
@@ -212,41 +513,84 @@ const HistoriPengajuanPenggunaPage = () => {
     fetchHistori();
   }, [fetchHistori]);
 
-  const years = extractYears(histori);
+  const tabHistori = useMemo(
+    () => filterByTab(histori, activeTab),
+    [activeTab, histori],
+  );
+  const aktivasiOptions = useMemo(
+    () => buildAktivasiOptions(tabHistori),
+    [tabHistori],
+  );
 
   useEffect(() => {
-    if (years.length > 0 && selectedYear === "") {
-      setSelectedYear(years[0]);
+    if (aktivasiOptions.length === 0) {
+      setSelectedAktivasi("");
+      return;
     }
-  }, [years]);
 
-  const filteredData = filterByTab(histori, activeTab).filter((d) => {
-    if (!selectedYear) return true;
-    return d.tanggal?.startsWith(selectedYear);
+    const hasSelectedAktivasi = aktivasiOptions.some(
+      (option) => option.value === selectedAktivasi,
+    );
+
+    if (!hasSelectedAktivasi) {
+      setSelectedAktivasi(aktivasiOptions[0].value);
+    }
+  }, [aktivasiOptions, selectedAktivasi]);
+
+  const filteredData = tabHistori.filter((d) => {
+    if (!selectedAktivasi) return true;
+    return (
+      (getHistoriAktivasiKey(d) || getHistoriAktivasiLabel(d)) ===
+      selectedAktivasi
+    );
   });
 
+  const activeJenis = getJenisFromTab(activeTab);
+
   const barangRows = filteredData.flatMap((d) =>
-    (d.barang ?? []).map((b, i) => ({
-      _uid: `atk-${d.id}-${i}`,
-      nama: b.nama_barang,
-      satuan: b.satuan ?? "–",
-      kategori: b.kategori,
-      jumlah_diajukan: b.jumlah_diajukan,
-      jumlah_disetujui: b.jumlah_disetujui,
-      status: b.status,
-    })),
+    (d.barang ?? []).flatMap((b, i) => {
+      const jenisFromBarang = normalizeBarangKategori(b.kategori);
+      const jenisFromParent = normalizeHistoriKategori(d);
+      const jenis = jenisFromBarang || jenisFromParent;
+
+      if (activeJenis && jenis && jenis !== activeJenis) {
+        return [];
+      }
+
+      return [
+        {
+          _uid: `atk-${d.id}-${i}`,
+          nama: b.nama_barang,
+          unit: b.unit ?? "–",
+          kategori: b.kategori,
+          jumlah_diajukan: b.jumlah_diajukan,
+          jumlah_disetujui: b.jumlah_disetujui,
+          status: b.status,
+        },
+      ];
+    }),
   );
 
   const lainnyaRows = filteredData.flatMap((d) =>
-    (d.barang_lainnya ?? []).map((b, i) => ({
-      _uid: `lain-${d.id}-${i}`,
-      nama: b.nama,
-      satuan: b.satuan ?? "–",
-      kategori: b.kategori,
-      jumlah_diajukan: b.jumlah_diajukan,
-      jumlah_disetujui: b.jumlah_disetujui,
-      status: b.status,
-    })),
+    (d.barang_lainnya ?? []).flatMap((b, i) => {
+      const jenisFromParent = normalizeHistoriKategori(d);
+
+      if (activeJenis && jenisFromParent && jenisFromParent !== activeJenis) {
+        return [];
+      }
+
+      return [
+        {
+          _uid: `lain-${d.id}-${i}`,
+          nama: b.nama,
+          satuan: b.satuan ?? "–",
+          kategori: b.kategori,
+          jumlah_diajukan: b.jumlah_diajukan,
+          jumlah_disetujui: b.jumlah_disetujui,
+          status: b.status,
+        },
+      ];
+    }),
   );
 
   const suratPengajuan = filteredData.find(
@@ -256,7 +600,9 @@ const HistoriPengajuanPenggunaPage = () => {
     ? `${BASE_STORAGE_URL}${suratPengajuan}`
     : null;
 
-  const tahunLabel = selectedYear || "-";
+  const selectedAktivasiLabel =
+    aktivasiOptions.find((option) => option.value === selectedAktivasi)
+      ?.label ?? "-";
 
   return (
     <>
@@ -291,23 +637,23 @@ const HistoriPengajuanPenggunaPage = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
             <div>
-              <label className="block text-sm text-gray-500 mb-2">Tahun</label>
-              <div className="relative">
-                <select
-                  value={selectedYear}
-                  onChange={(e) => setSelectedYear(e.target.value)}
-                  className="w-full border border-gray-300 rounded-full px-4 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 appearance-none bg-white text-gray-600"
-                >
-                  {years.map((y) => (
-                    <option key={y} value={y}>
-                      {y}
-                    </option>
-                  ))}
-                </select>
-                <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-gray-400">
-                  ▾
-                </span>
-              </div>
+              <label className="block text-sm text-gray-500 mb-2">
+                Aktivasi
+              </label>
+              <Dropdown
+                value={selectedAktivasi}
+                onChange={(e) => setSelectedAktivasi(e.target.value)}
+                disabled={loading || aktivasiOptions.length === 0}
+              >
+                {aktivasiOptions.length === 0 ? (
+                  <option value="">Tidak ada aktivasi</option>
+                ) : null}
+                {aktivasiOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </Dropdown>
             </div>
 
             <div className="md:col-start-3 flex items-end justify-end">
@@ -340,7 +686,7 @@ const HistoriPengajuanPenggunaPage = () => {
           {!loading && !error && (
             <>
               <PaginatedTable
-                title={`Tahun : ${tahunLabel}`}
+                title={`Aktivasi : ${selectedAktivasiLabel}`}
                 rows={barangRows}
               />
               <PaginatedTable title="Pengajuan Lainnya" rows={lainnyaRows} />

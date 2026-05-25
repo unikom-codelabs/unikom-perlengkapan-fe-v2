@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Helmet } from "react-helmet-async";
 import { listPengajuanSaya } from "../../api/pengajuanService";
 import { useAuth } from "../../context/useAuth";
+import Table from "../../components/Element/Table";
 
 const TAB_OPTIONS = [
   { label: "ATK Tahunan", value: "tahunan" },
@@ -95,13 +96,17 @@ const DaftarPengajuanUserPage = () => {
   const normalizedRole = normalizeUserRole(currentUser);
   const normalizedJabatan = normalizeJabatanName(currentUser);
 
+  const isDekan =
+    normalizedJabatan.includes("dekan") ||
+    normalizedJabatan.includes("kaprodi");
+
   const allowedKategori = useMemo(() => {
-    if (normalizedRole === "user") {
+    if (normalizedRole === "user" && !isDekan) {
       return ["tahunan"];
     }
 
     return TAB_OPTIONS.map((tab) => tab.value);
-  }, [normalizedRole, normalizedJabatan]);
+  }, [isDekan, normalizedRole, normalizedJabatan]);
 
   const availableTabs = useMemo(
     () => TAB_OPTIONS.filter((tab) => allowedKategori.includes(tab.value)),
@@ -166,114 +171,6 @@ const DaftarPengajuanUserPage = () => {
     [rowsByTab],
   );
 
-  const renderTable = (rows = [], options = {}) => {
-    const { bordered = false } = options;
-
-    return (
-      <div className="overflow-x-auto">
-        <table
-          className={`w-full text-sm text-left ${bordered ? "border-collapse" : ""}`}
-        >
-          <thead className="bg-[#f0f4fc] text-gray-600 font-semibold">
-            <tr>
-              <th
-                className={`px-6 py-4 ${bordered ? "border border-gray-200" : ""}`}
-              >
-                No
-              </th>
-              <th
-                className={`px-6 py-4 ${bordered ? "border border-gray-200" : ""}`}
-              >
-                Nama Barang
-              </th>
-              <th
-                className={`px-6 py-4 ${bordered ? "border border-gray-200" : ""}`}
-              >
-                Satuan
-              </th>
-              <th
-                className={`px-6 py-4 ${bordered ? "border border-gray-200" : ""}`}
-              >
-                Kategori
-              </th>
-              <th
-                className={`px-6 py-4 ${bordered ? "border border-gray-200" : ""}`}
-              >
-                Jumlah
-              </th>
-              <th
-                className={`px-6 py-4 ${bordered ? "border border-gray-200" : ""}`}
-              >
-                Jumlah Disetujui
-              </th>
-              <th
-                className={`px-6 py-4 ${bordered ? "border border-gray-200" : ""}`}
-              >
-                Status
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.length > 0 ? (
-              rows.map((item, index) => (
-                <tr key={item.id}>
-                  <td
-                    className={`px-6 py-4 text-gray-500 ${bordered ? "border border-gray-200" : ""}`}
-                  >
-                    {index + 1}
-                  </td>
-                  <td
-                    className={`px-6 py-4 text-gray-600 ${bordered ? "border border-gray-200" : ""}`}
-                  >
-                    {item.namaBarang}
-                  </td>
-                  <td
-                    className={`px-6 py-4 text-gray-500 ${bordered ? "border border-gray-200" : ""}`}
-                  >
-                    {item.satuan}
-                  </td>
-                  <td
-                    className={`px-6 py-4 text-gray-500 capitalize ${bordered ? "border border-gray-200" : ""}`}
-                  >
-                    {item.kategori}
-                  </td>
-                  <td
-                    className={`px-6 py-4 text-gray-500 ${bordered ? "border border-gray-200" : ""}`}
-                  >
-                    {item.jumlah}
-                  </td>
-                  <td
-                    className={`px-6 py-4 text-gray-500 ${bordered ? "border border-gray-200" : ""}`}
-                  >
-                    {item.jumlahDisetujui ?? "-"}
-                  </td>
-                  <td
-                    className={`px-6 py-4 text-gray-500 ${bordered ? "border border-gray-200" : ""}`}
-                  >
-                    <span
-                      className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${getStatusBadgeClass(item.status)}`}
-                    >
-                      {item.status}
-                    </span>
-                  </td>
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td
-                  colSpan={7}
-                  className={`px-6 py-6 text-gray-500 ${bordered ? "border border-gray-200" : ""}`}
-                >
-                  Data tidak ditemukan
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-    );
-  };
-
   return (
     <>
       <Helmet>
@@ -317,13 +214,83 @@ const DaftarPengajuanUserPage = () => {
             </div>
           ) : (
             <>
-              <div className="mb-8">{renderTable(mainRows)}</div>
+              <Table
+                title={null}
+                columns={[
+                  { key: "no", label: "No" },
+                  { key: "namaBarang", label: "Nama Barang" },
+                  { key: "satuan", label: "Satuan" },
+                  { key: "kategori", label: "Kategori" },
+                  { key: "jumlah", label: "Jumlah" },
+                  { key: "jumlahDisetujui", label: "Jumlah Disetujui" },
+                  { key: "status", label: "Status" },
+                ]}
+                rows={mainRows}
+                renderRow={(item, index) => (
+                  <tr key={item.id}>
+                    <td className="px-6 py-4 text-gray-500">{index + 1}</td>
+                    <td className="px-6 py-4 text-gray-600">
+                      {item.namaBarang}
+                    </td>
+                    <td className="px-6 py-4 text-gray-500">{item.satuan}</td>
+                    <td className="px-6 py-4 text-gray-500 capitalize">
+                      {item.kategori}
+                    </td>
+                    <td className="px-6 py-4 text-gray-500">{item.jumlah}</td>
+                    <td className="px-6 py-4 text-gray-500">
+                      {item.jumlahDisetujui ?? "-"}
+                    </td>
+                    <td className="px-6 py-4 text-gray-500">
+                      <span
+                        className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${getStatusBadgeClass(item.status)}`}
+                      >
+                        {item.status}
+                      </span>
+                    </td>
+                  </tr>
+                )}
+              />
 
               <div>
                 <h2 className="text-[17px] font-bold text-gray-700 mb-4">
                   Pengajuan Lainnya
                 </h2>
-                {renderTable(lainnyaRows)}
+                <Table
+                  title={null}
+                  columns={[
+                    { key: "no", label: "No" },
+                    { key: "namaBarang", label: "Nama Barang" },
+                    { key: "satuan", label: "Satuan" },
+                    { key: "kategori", label: "Kategori" },
+                    { key: "jumlah", label: "Jumlah" },
+                    { key: "jumlahDisetujui", label: "Jumlah Disetujui" },
+                    { key: "status", label: "Status" },
+                  ]}
+                  rows={lainnyaRows}
+                  renderRow={(item, index) => (
+                    <tr key={item.id}>
+                      <td className="px-6 py-4 text-gray-500">{index + 1}</td>
+                      <td className="px-6 py-4 text-gray-600">
+                        {item.namaBarang}
+                      </td>
+                      <td className="px-6 py-4 text-gray-500">{item.satuan}</td>
+                      <td className="px-6 py-4 text-gray-500 capitalize">
+                        {item.kategori}
+                      </td>
+                      <td className="px-6 py-4 text-gray-500">{item.jumlah}</td>
+                      <td className="px-6 py-4 text-gray-500">
+                        {item.jumlahDisetujui ?? "-"}
+                      </td>
+                      <td className="px-6 py-4 text-gray-500">
+                        <span
+                          className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${getStatusBadgeClass(item.status)}`}
+                        >
+                          {item.status}
+                        </span>
+                      </td>
+                    </tr>
+                  )}
+                />
               </div>
             </>
           )}

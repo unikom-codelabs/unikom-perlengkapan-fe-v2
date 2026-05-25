@@ -1,45 +1,123 @@
-import React, { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { listJabatan } from "../../../api/jabatanService";
+import { listUnitType } from "../../../api/unitTypeService";
+import { updateUser } from "../../../api/userService";
+import Dropdown from "../Dropdown";
 
-const ModalEditAkun = ({ isOpen, onClose }) => {
+const getInitialFormValues = (user) => {
+  const safeUser = user ?? {};
+
+  return {
+    nip: String(safeUser.nip ?? "").trim(),
+    username: String(safeUser.username || safeUser.nama || "").trim(),
+    email: String(safeUser.email ?? "").trim(),
+    password: "",
+    jenis_kelamin: String(
+      safeUser.jenis_kelamin || safeUser.jenisKelamin || "Pria",
+    ),
+    jabatan_id: String(safeUser.jabatan_id || safeUser.jabatanId || ""),
+    unit_id: String(safeUser.unit_id || safeUser.unitId || ""),
+    role: String(safeUser.role || "user"),
+  };
+};
+
+const getApiErrorMessage = (error, fallbackMessage) => {
+  const responseData = error?.response?.data;
+
+  if (responseData?.errors && typeof responseData.errors === "object") {
+    const detailedErrors = Object.values(responseData.errors)
+      .flat()
+      .filter(Boolean);
+
+    if (detailedErrors.length > 0) {
+      return detailedErrors.join("\n");
+    }
+  }
+
+  return responseData?.message || error?.message || fallbackMessage;
+};
+
+const ModalEditAkun = ({ isOpen, onClose, user, onSuccess }) => {
   const [shouldRender, setRender] = useState(isOpen);
   const [show, setShow] = useState(false);
   const [jabatanList, setJabatanList] = useState([]);
-  const [selectedJabatanId, setSelectedJabatanId] = useState("");
-  const [isLoadingJabatan, setIsLoadingJabatan] = useState(false);
-
-  const fetchJabatanList = async () => {
-    setIsLoadingJabatan(true);
-
-    try {
-      const data = await listJabatan();
-      setJabatanList(data);
-      if (data.length > 0) {
-        setSelectedJabatanId(String(data[0].id));
-      }
-    } catch {
-      setJabatanList([]);
-      setSelectedJabatanId("");
-    } finally {
-      setIsLoadingJabatan(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchJabatanList();
-  }, []);
+  const [unitTypeList, setUnitTypeList] = useState([]);
+  const [isLoadingOptions, setIsLoadingOptions] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [formValues, setFormValues] = useState(getInitialFormValues(user));
 
   useEffect(() => {
     if (isOpen) {
+      setFormValues(getInitialFormValues(user));
+      setErrorMessage("");
       setRender(true);
       const timer = setTimeout(() => setShow(true), 10);
       return () => clearTimeout(timer);
-    } else {
-      setShow(false);
-      const timer = setTimeout(() => setRender(false), 150);
-      return () => clearTimeout(timer);
     }
+
+    setShow(false);
+    const timer = setTimeout(() => setRender(false), 150);
+    return () => clearTimeout(timer);
+  }, [isOpen, user]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    const fetchOptions = async () => {
+      setIsLoadingOptions(true);
+
+      try {
+        const [jabatanData, unitData] = await Promise.all([
+          listJabatan(),
+          listUnitType(),
+        ]);
+        setJabatanList(jabatanData);
+        setUnitTypeList(unitData.filter((item) => item.id && item.nama));
+      } catch (error) {
+        setErrorMessage(
+          getApiErrorMessage(error, "Gagal memuat dropdown akun."),
+        );
+        setJabatanList([]);
+        setUnitTypeList([]);
+      } finally {
+        setIsLoadingOptions(false);
+      }
+    };
+
+    fetchOptions();
   }, [isOpen]);
+
+  const updateField = (name, value) => {
+    setFormValues((current) => ({
+      ...current,
+      [name]: value,
+    }));
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+
+    if (!user?.id) {
+      setErrorMessage("ID pengguna tidak ditemukan.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    setErrorMessage("");
+
+    try {
+      await updateUser(user.id, formValues);
+      await onSuccess?.();
+      onClose();
+    } catch (error) {
+      setErrorMessage(getApiErrorMessage(error, "Gagal memperbarui akun."));
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   if (!shouldRender) return null;
 
@@ -53,157 +131,155 @@ const ModalEditAkun = ({ isOpen, onClose }) => {
       onClick={onClose}
     >
       <div
-        className={`bg-white rounded-lg shadow-lg w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh] transition-all duration-150 transform ${
+        className={`bg-white rounded-lg shadow-lg w-full max-w-3xl overflow-hidden flex flex-col max-h-[90vh] transition-all duration-150 transform ${
           show ? "scale-100 opacity-100" : "scale-95 opacity-0"
         }`}
-        onClick={(e) => e.stopPropagation()}
+        onClick={(event) => event.stopPropagation()}
       >
         <div className="bg-[#4279df] text-white px-6 py-4 flex justify-between items-center shrink-0">
           <h2 className="text-xl font-medium">Edit Akun</h2>
         </div>
 
-        <div className="p-6 bg-[#f8f9fa] flex flex-col gap-4 overflow-y-auto">
-          <div className="flex flex-col gap-1.5">
-            <label className="text-gray-600 font-medium text-sm">NIP</label>
-            <input
-              type="text"
-              placeholder="Masukkan NIP Anda"
-              className="w-full px-4 py-2 bg-white border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-[#4279df] focus:border-transparent text-gray-700 text-sm placeholder-gray-400"
-            />
-          </div>
+        <form
+          onSubmit={handleSubmit}
+          className="p-6 bg-[#f8f9fa] flex flex-col gap-4 overflow-y-auto"
+        >
+          {errorMessage ? (
+            <p className="rounded border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700 whitespace-pre-line">
+              {errorMessage}
+            </p>
+          ) : null}
 
-          <div className="flex flex-col gap-1.5">
-            <label className="text-gray-600 font-medium text-sm">
-              Nama Lengkap
-            </label>
-            <input
-              type="text"
-              placeholder="Masukkan Nama Lengkap Anda"
-              className="w-full px-4 py-2 bg-white border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-[#4279df] focus:border-transparent text-gray-700 text-sm placeholder-gray-400"
-            />
-          </div>
-
-          <div className="flex gap-4">
-            <div className="flex flex-col gap-1.5 w-1/2">
-              <label className="text-gray-600 font-medium text-sm">
-                Gelar Depan
-              </label>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-gray-600 font-medium text-sm">NIP</label>
               <input
                 type="text"
-                placeholder="Masukkan Gelar Depan"
-                className="w-full px-4 py-2 bg-white border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-[#4279df] focus:border-transparent text-gray-700 text-sm placeholder-gray-400"
+                value={formValues.nip}
+                onChange={(event) => updateField("nip", event.target.value)}
+                required
+                className="w-full px-4 py-2 bg-white border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-[#4279df] text-gray-700 text-sm"
               />
             </div>
-            <div className="flex flex-col gap-1.5 w-1/2">
+
+            <div className="flex flex-col gap-1.5">
               <label className="text-gray-600 font-medium text-sm">
-                Gelar Belakang
+                Nama Lengkap
               </label>
               <input
                 type="text"
-                placeholder="Masukkan Gelar Belakang"
-                className="w-full px-4 py-2 bg-white border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-[#4279df] focus:border-transparent text-gray-700 text-sm placeholder-gray-400"
+                value={formValues.username}
+                onChange={(event) =>
+                  updateField("username", event.target.value)
+                }
+                required
+                className="w-full px-4 py-2 bg-white border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-[#4279df] text-gray-700 text-sm"
               />
             </div>
           </div>
 
-          <div className="flex flex-col gap-1.5">
-            <label className="text-gray-600 font-medium text-sm">Email</label>
-            <input
-              type="email"
-              placeholder="Masukkan Email Anda"
-              className="w-full px-4 py-2 bg-white border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-[#4279df] focus:border-transparent text-gray-700 text-sm placeholder-gray-400"
-            />
-          </div>
-
-          <div className="flex flex-col gap-1.5">
-            <label className="text-gray-600 font-medium text-sm">
-              Username
-            </label>
-            <input
-              type="text"
-              placeholder="Masukkan Username Anda"
-              className="w-full px-4 py-2 bg-white border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-[#4279df] focus:border-transparent text-gray-700 text-sm placeholder-gray-400"
-            />
-          </div>
-
-          <div className="flex flex-col gap-1.5">
-            <label className="text-gray-600 font-medium text-sm">
-              Password Baru (Opsional)
-            </label>
-            <input
-              type="password"
-              placeholder="Kosongkan jika tidak ingin mengubah password"
-              className="w-full px-4 py-2 bg-white border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-[#4279df] focus:border-transparent text-gray-700 text-sm placeholder-gray-400"
-            />
-          </div>
-
-          <div className="flex flex-col gap-1.5">
-            <label className="text-gray-600 font-medium text-sm">
-              Jenis Kelamin
-            </label>
-            <div className="flex items-center gap-6 px-1 py-1 text-sm text-gray-500">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="radio"
-                  name="jenis_kelamin_edit"
-                  className="w-4 h-4 accent-primary text-primary focus:ring-primary border-gray-300"
-                  defaultChecked
-                />
-                Laki-laki
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="radio"
-                  name="jenis_kelamin_edit"
-                  className="w-4 h-4 accent-primary text-primary focus:ring-primary border-gray-300"
-                />
-                Perempuan
-              </label>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-gray-600 font-medium text-sm">Email</label>
+              <input
+                type="email"
+                value={formValues.email}
+                onChange={(event) => updateField("email", event.target.value)}
+                required
+                className="w-full px-4 py-2 bg-white border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-[#4279df] text-gray-700 text-sm"
+              />
             </div>
-          </div>
 
-          <div className="flex flex-col gap-1.5">
-            <label className="text-gray-600 font-medium text-sm">Jabatan</label>
-            <div className="relative">
-              <select
-                value={selectedJabatanId}
-                onChange={(e) => setSelectedJabatanId(e.target.value)}
-                disabled={isLoadingJabatan || jabatanList.length === 0}
-                className="w-full px-4 py-2 bg-white border border-gray-300 rounded-full appearance-none focus:outline-none focus:ring-2 focus:ring-[#4279df] focus:border-transparent text-gray-700 text-sm disabled:bg-gray-100 disabled:text-gray-500"
+            <div className="flex flex-col gap-1.5">
+              <label className="text-gray-600 font-medium text-sm">
+                Password Baru (Opsional)
+              </label>
+              <input
+                type="password"
+                value={formValues.password}
+                onChange={(event) =>
+                  updateField("password", event.target.value)
+                }
+                placeholder="Kosongkan jika tidak ingin mengubah password"
+                className="w-full px-4 py-2 bg-white border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-[#4279df] text-gray-700 text-sm"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-gray-600 font-medium text-sm">
+                Jabatan
+              </label>
+              <Dropdown
+                value={formValues.jabatan_id}
+                onChange={(event) =>
+                  updateField("jabatan_id", event.target.value)
+                }
+                required
+                disabled={isLoadingOptions}
               >
                 <option value="">
-                  {isLoadingJabatan ? "Memuat jabatan..." : "Pilih jabatan"}
+                  {isLoadingOptions ? "Memuat jabatan..." : "Pilih jabatan"}
                 </option>
                 {jabatanList.map((jabatan) => (
                   <option key={jabatan.id} value={jabatan.id}>
                     {jabatan.nama}
                   </option>
                 ))}
-              </select>
-              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-500">
-                <svg
-                  className="fill-current h-4 w-4"
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 20 20"
-                >
-                  <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
-                </svg>
-              </div>
+              </Dropdown>
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-gray-600 font-medium text-sm">
+                Pilih Bagian
+              </label>
+              <Dropdown
+                useCustom
+                searchable
+                value={formValues.unit_id}
+                onChange={(event) => updateField("unit_id", event.target.value)}
+                required
+                disabled={isLoadingOptions}
+              >
+                <option value="">
+                  {isLoadingOptions ? "Memuat bagian..." : "Pilih bagian"}
+                </option>
+                {unitTypeList.map((unit) => (
+                  <option key={unit.id} value={unit.id}>
+                    {unit.nama}
+                  </option>
+                ))}
+              </Dropdown>
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-gray-600 font-medium text-sm">Role</label>
+              <Dropdown
+                value={formValues.role}
+                onChange={(event) => updateField("role", event.target.value)}
+              >
+                <option value="user">User</option>
+                <option value="admin">Admin</option>
+              </Dropdown>
             </div>
           </div>
 
           <div className="flex justify-end gap-3 mt-4 shrink-0">
             <button
+              type="button"
               onClick={onClose}
               className="px-6 py-2 border border-[#4279df] text-[#4279df] font-medium rounded-full hover:bg-blue-50 transition-colors text-sm"
             >
               Batal
             </button>
-            <button className="px-6 py-2 bg-[#4279df] text-white hover:bg-[#3461b3] transition-colors font-medium rounded-full text-sm">
-              Simpan Perubahan
+            <button
+              type="submit"
+              disabled={isSubmitting || isLoadingOptions}
+              className="px-6 py-2 bg-[#4279df] text-white hover:bg-[#3461b3] transition-colors font-medium rounded-full text-sm disabled:bg-gray-300 disabled:cursor-not-allowed"
+            >
+              {isSubmitting ? "Menyimpan..." : "Simpan"}
             </button>
           </div>
-        </div>
+        </form>
       </div>
     </div>
   );

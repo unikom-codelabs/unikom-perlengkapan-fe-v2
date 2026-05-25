@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Helmet } from "react-helmet-async";
 import {
   MagnifyingGlassIcon,
@@ -8,66 +8,201 @@ import {
   PlusIcon,
   PencilSquareIcon,
 } from "@heroicons/react/24/outline";
+import ActionIconButton from "../../components/Element/ActionIconButton";
+import Table from "../../components/Element/Table";
 import ModalTambahAkun from "../../components/Element/ModalTambahAkun";
 import ModalEditAkun from "../../components/Element/ModalEditAkun";
 import ModalKonfirmasiHapus from "../../components/Element/ModalKonfirmasiHapus";
-
-const dataPengguna = [
-  {
-    id: 1,
-    nip: "41273530006",
-    nama: "Dr. Desayu Eka Surya, S.Sos., M.Si., CICS.",
-    satuan: "Ketua Program Studi Program Studi Magister Ilmu Komunikasi",
-  },
-  {
-    id: 2,
-    nip: "41277004015",
-    nama: "Tri Rahajoeningroem, M.T",
-    satuan: "koordinator Laboratorium Telekomunikasi",
-  },
-  {
-    id: 3,
-    nip: "41277004019",
-    nama: "Budi Herdiana, ST., MT.",
-    satuan: "koordinator Laboratorium Rangkaian Listrik",
-  },
-  {
-    id: 4,
-    nip: "41277004018",
-    nama: "Jana Utama, M.T",
-    satuan: "koordinator Laboratorium Pengukuran Listrik",
-  },
-  {
-    id: 5,
-    nip: "41277004008",
-    nama: "Dr. Muhammad Aria Rajasa Pohan, M.T",
-    satuan: "koordinator Laboratorium PLC dan Sistem Cerdas",
-  },
-];
+import { deleteUser, listUsersPaginated } from "../../api/userService";
 
 const ManajemenPenggunaPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [isModalTambahAkunOpen, setIsModalTambahAkunOpen] = useState(false);
   const [isModalEditAkunOpen, setIsModalEditAkunOpen] = useState(false);
   const [isModalHapusOpen, setIsModalHapusOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const itemsPerPage = 10;
 
-  const filteredData = dataPengguna.filter(
-    (item) =>
-      item.nama.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.nip.includes(searchQuery),
-  );
+  const [users, setUsers] = useState([]);
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    lastPage: 1,
+    perPage: itemsPerPage,
+    total: 0,
+    from: 0,
+    to: 0,
+  });
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
 
-  const totalPages = Math.ceil(filteredData.length / itemsPerPage);
-  const currentData = filteredData.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage,
-  );
+  const matchesSearch = (item, query) => {
+    if (!item) return false;
+    const normalizedQuery = query.toLowerCase();
+
+    return [
+      item?.nama,
+      item?.username,
+      item?.nip,
+      item?.email,
+      item?.satuan,
+      item?.jabatan,
+    ].some((value) =>
+      String(value ?? "")
+        .toLowerCase()
+        .includes(normalizedQuery),
+    );
+  };
+
+  const buildLocalPagination = (data, page = 1) => {
+    const total = data.length;
+    const lastPage = Math.max(Math.ceil(total / itemsPerPage), 1);
+    const from = total === 0 ? 0 : (page - 1) * itemsPerPage + 1;
+    const to = Math.min(page * itemsPerPage, total);
+
+    return {
+      currentPage: page,
+      lastPage,
+      perPage: itemsPerPage,
+      total,
+      from,
+      to,
+    };
+  };
+
+  const fetchUsers = async (page = 1, query = "") => {
+    setIsLoading(true);
+    setErrorMessage("");
+
+    try {
+      const normalizedQuery = query.trim();
+
+      if (normalizedQuery) {
+        const firstResult = await listUsersPaginated({ page: 1 });
+        const lastPage = Number(firstResult.pagination.lastPage) || 1;
+        const remainingPages = Array.from(
+          { length: Math.max(lastPage - 1, 0) },
+          (_, index) => index + 2,
+        );
+        const remainingResults = await Promise.all(
+          remainingPages.map((pageNumber) =>
+            listUsersPaginated({ page: pageNumber }),
+          ),
+        );
+        const allUsers = [
+          ...firstResult.users,
+          ...remainingResults.flatMap((result) => result.users),
+        ];
+        const filteredUsers = allUsers.filter((item) =>
+          matchesSearch(item, normalizedQuery),
+        );
+
+        setUsers(filteredUsers);
+        setPagination(buildLocalPagination(filteredUsers, page));
+        return;
+      }
+
+      const result = await listUsersPaginated({ page });
+      setUsers(result.users);
+      setPagination(result.pagination);
+    } catch (error) {
+      setErrorMessage(
+        error?.response?.data?.message ||
+          "Gagal memuat data pengguna. Silakan coba lagi.",
+      );
+      setUsers([]);
+      setPagination({
+        currentPage: 1,
+        lastPage: 1,
+        perPage: itemsPerPage,
+        total: 0,
+        from: 0,
+        to: 0,
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  useEffect(() => {
+    fetchUsers(currentPage, debouncedSearchQuery);
+  }, [currentPage, debouncedSearchQuery]);
+
+  const totalPages = Math.max(Number(pagination.lastPage) || 1, 1);
+  const currentData = useMemo(() => {
+    if (!debouncedSearchQuery.trim()) {
+      return users;
+    }
+
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return users.slice(startIndex, startIndex + itemsPerPage);
+  }, [currentPage, debouncedSearchQuery, users]);
+  const rowNumberStart =
+    Number(pagination.from) ||
+    (currentPage - 1) * (Number(pagination.perPage) || itemsPerPage) + 1;
+  const tableRows = isLoading ? [] : currentData;
+  const emptyMessage = isLoading
+    ? "Memuat data pengguna..."
+    : `Tidak ada akun yang cocok dengan pencarian "${searchQuery}"`;
 
   const handleSearch = (e) => {
     setSearchQuery(e.target.value);
     setCurrentPage(1);
+  };
+
+  const refreshUsers = async (message = "") => {
+    await fetchUsers(currentPage, debouncedSearchQuery);
+
+    if (message) {
+      setSuccessMessage(message);
+    }
+  };
+
+  const handleOpenEditModal = (user) => {
+    setSelectedUser(user);
+    setIsModalEditAkunOpen(true);
+  };
+
+  const handleOpenDeleteModal = (user) => {
+    setSelectedUser(user);
+    setErrorMessage("");
+    setIsModalHapusOpen(true);
+  };
+
+  const handleDeleteUser = async () => {
+    if (!selectedUser?.id) {
+      setErrorMessage("ID pengguna tidak ditemukan.");
+      setIsModalHapusOpen(false);
+      return;
+    }
+
+    setIsDeleting(true);
+    setErrorMessage("");
+
+    try {
+      await deleteUser(selectedUser.id);
+      await refreshUsers("Akun berhasil dihapus.");
+      setIsModalHapusOpen(false);
+      setSelectedUser(null);
+    } catch (error) {
+      setErrorMessage(
+        error?.response?.data?.message ||
+          "Gagal menghapus akun. Silakan coba lagi.",
+      );
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const getPageNumbers = () => {
@@ -138,74 +273,59 @@ const ManajemenPenggunaPage = () => {
             </button>
           </div>
 
-          <div className="overflow-x-auto border border-gray-200">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-[#f4f6fa] text-gray-700">
-                  <th className="py-4 px-6 font-semibold border-b border-r border-gray-200 w-16 text-center">
-                    No
-                  </th>
-                  <th className="py-4 px-6 font-semibold border-b border-r border-gray-200">
-                    NIP
-                  </th>
-                  <th className="py-4 px-6 font-semibold border-b border-r border-gray-200">
-                    Nama
-                  </th>
-                  <th className="py-4 px-6 font-semibold border-b border-r border-gray-200 text-center">
-                    Satuan
-                  </th>
-                  <th className="py-4 px-6 font-semibold border-b border-gray-200 text-center w-48">
-                    Aksi
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {currentData.length > 0 ? (
-                  currentData.map((item, index) => (
-                    <tr key={item.id} className="hover:bg-gray-50 bg-white">
-                      <td className="py-4 px-6 border-r border-gray-200 text-gray-500 text-center">
-                        {(currentPage - 1) * itemsPerPage + index + 1}
-                      </td>
-                      <td className="py-4 px-6 border-r border-gray-200 text-gray-600">
-                        {item.nip}
-                      </td>
-                      <td className="py-4 px-6 border-r border-gray-200 text-gray-600">
-                        {item.nama}
-                      </td>
-                      <td className="py-4 px-6 border-r border-gray-200 text-gray-500 text-center">
-                        {item.satuan}
-                      </td>
-                      <td className="py-4 px-6 text-center">
-                        <div className="flex items-center justify-center space-x-3 text-sm">
-                          <button
-                            onClick={() => setIsModalEditAkunOpen(true)}
-                            className="text-[#4a77e5] hover:text-blue-700 flex items-center space-x-1.5 transition-colors"
-                          >
-                            <span>Edit</span>
-                            <PencilSquareIcon className="h-4 w-4" />
-                          </button>
-                          <span className="text-gray-300">|</span>
-                          <button
-                            onClick={() => setIsModalHapusOpen(true)}
-                            className="text-red-500 hover:text-red-600 flex items-center space-x-1.5 transition-colors"
-                          >
-                            <span>Hapus</span>
-                            <TrashIcon className="h-4 w-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan="5" className="py-8 text-center text-gray-500">
-                      Tidak ada akun yang cocok dengan pencarian "{searchQuery}"
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+          {errorMessage && (
+            <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+              {errorMessage}
+            </div>
+          )}
+
+          {successMessage && (
+            <div className="mb-4 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
+              {successMessage}
+            </div>
+          )}
+
+          <Table
+            title={null}
+            columns={[
+              { key: "no", label: "No" },
+              { key: "nip", label: "NIP" },
+              { key: "nama", label: "Nama" },
+              { key: "jabatan", label: "Jabatan" },
+              { key: "aksi", label: "Aksi" },
+            ]}
+            rows={tableRows}
+            emptyMessage={emptyMessage}
+            wrapperClass="overflow-x-auto border border-gray-200"
+            renderRow={(item, index) => (
+              <tr key={item?.id} className="border-t border-gray-100">
+                <td className="px-6 py-4 text-gray-600 text-center">
+                  {rowNumberStart + index}
+                </td>
+                <td className="px-6 py-4 text-gray-600">{item?.nip}</td>
+                <td className="px-6 py-4 text-gray-800">{item?.nama}</td>
+                <td className="px-6 py-4 text-gray-600 text-center">
+                  {item?.jabatan}
+                </td>
+                <td className="px-6 py-4 text-center">
+                  <div className="flex items-center justify-center gap-2">
+                    <ActionIconButton
+                      label="Edit"
+                      icon={PencilSquareIcon}
+                      onClick={() => handleOpenEditModal(item)}
+                      variant="primary"
+                    />
+                    <ActionIconButton
+                      label="Hapus"
+                      icon={TrashIcon}
+                      onClick={() => handleOpenDeleteModal(item)}
+                      variant="danger"
+                    />
+                  </div>
+                </td>
+              </tr>
+            )}
+          />
 
           <div className="flex justify-end items-center mt-6">
             <nav className="flex items-center space-x-1">
@@ -252,18 +372,26 @@ const ManajemenPenggunaPage = () => {
       <ModalTambahAkun
         isOpen={isModalTambahAkunOpen}
         onClose={() => setIsModalTambahAkunOpen(false)}
+        onSuccess={() => refreshUsers("Akun berhasil ditambahkan.")}
       />
       <ModalEditAkun
         isOpen={isModalEditAkunOpen}
-        onClose={() => setIsModalEditAkunOpen(false)}
+        onClose={() => {
+          setIsModalEditAkunOpen(false);
+          setSelectedUser(null);
+        }}
+        user={selectedUser}
+        onSuccess={() => refreshUsers("Akun berhasil diperbarui.")}
       />
       <ModalKonfirmasiHapus
         isOpen={isModalHapusOpen}
         onClose={() => setIsModalHapusOpen(false)}
-        onConfirm={() => {
-          // Logika penghapusan data masukan di sini
-          setIsModalHapusOpen(false);
-        }}
+        onConfirm={handleDeleteUser}
+        isProcessing={isDeleting}
+        title="Konfirmasi Hapus Akun"
+        message={`Apakah Anda yakin ingin menghapus akun${
+          selectedUser?.nama ? ` ${selectedUser.nama}` : ""
+        }? Data yang sudah dihapus tidak dapat dikembalikan.`}
       />
     </>
   );

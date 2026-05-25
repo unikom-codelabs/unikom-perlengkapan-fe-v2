@@ -21,6 +21,7 @@ import AktivasiPage from "./pages/admin/AktivasiPage";
 import PengajuanNonRutinPage from "./pages/admin/PengajuanNonRutinPage";
 import CetakBerkasNonRutinPage from "./pages/admin/CetakBerkasNonRutinPage";
 import HistoriPengajuanPenggunaPage from "./pages/user/HistoriPengajuanPenggunaPage";
+import HistoriPengajuanAdminPage from "./pages/admin/HistoriPengajuanAdminPage";
 import PengumumanPage from "./pages/admin/PengumumanPage";
 import ProfilPage from "./pages/ProfilPage";
 import LoginPage from "./pages/LoginPage";
@@ -70,7 +71,7 @@ const router = createBrowserRouter([
     errorElement: <ErrorPage />,
   },
   {
-    path: "/pengajuan-rutin/tahunan",
+    path: "/pengajuan-rutin/:kategori",
     element: withUserLayout(<PengajuanAtkTahunanPage />),
     errorElement: <ErrorPage />,
   },
@@ -92,6 +93,11 @@ const router = createBrowserRouter([
   {
     path: "/histori-pengajuan",
     element: withProtectedLayout(<HistoriPengajuanPenggunaPage />),
+    errorElement: <ErrorPage />,
+  },
+  {
+    path: "/histori-pengajuan-admin",
+    element: withProtectedLayout(<HistoriPengajuanAdminPage />),
     errorElement: <ErrorPage />,
   },
   {

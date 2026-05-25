@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Helmet } from "react-helmet-async";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import {
   CheckIcon,
   CloudArrowUpIcon,
@@ -12,6 +12,9 @@ import {
 import apiClient from "../../api/ApiClient";
 import { listBarang } from "../../api/barangService";
 import { listAktivasiPengajuan } from "../../api/aktivasiPengajuanService";
+import Dropdown from "../../components/Element/Dropdown";
+import Table from "../../components/Element/Table";
+import { useAuth } from "../../context/useAuth";
 
 const getApiErrorMessage = (error, fallbackMessage) => {
   const responseData = error?.response?.data;
@@ -46,6 +49,31 @@ const getApiErrorMessage = (error, fallbackMessage) => {
 const CELL_PLACEHOLDER_CLASS =
   "px-3 py-2 border border-gray-200 text-center text-sm text-gray-500";
 
+const KATEGORI_LABELS = {
+  tahunan: "Tahunan",
+  ujian: "Ujian",
+  kelas: "Kelas",
+};
+
+const normalizeKategoriParam = (value) => {
+  const raw = String(value ?? "")
+    .trim()
+    .toLowerCase();
+  return ["tahunan", "ujian", "kelas"].includes(raw) ? raw : "tahunan";
+};
+
+const normalizeJabatanName = (user = {}) => {
+  const candidates = [user?.jabatan_nama, user?.jabatan?.nama, user?.jabatan];
+
+  const firstJabatan = candidates.find(
+    (value) => typeof value === "string" && value.trim().length > 0,
+  );
+
+  return String(firstJabatan ?? "")
+    .trim()
+    .toLowerCase();
+};
+
 const formatKategoriLabel = (value) =>
   String(value ?? "")
     .replace(/_/g, " ")
@@ -54,8 +82,69 @@ const formatKategoriLabel = (value) =>
     .map((word) => word[0]?.toUpperCase() + word.slice(1))
     .join(" ");
 
+const formatTipePengajuanLabel = (value) => {
+  const normalized = String(value ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/[_\s-]+/g, "");
+
+  return normalized === "nonrutin" ? "Non Rutin" : "Rutin";
+};
+
+const getAktivasiYearLabel = (aktivasiValue = {}) => {
+  const aktivasi = aktivasiValue ?? {};
+  const tahunAkademik = String(
+    aktivasi.tahunAkademik ?? aktivasi.tahun_akademik ?? aktivasi.tahun ?? "",
+  ).trim();
+
+  if (tahunAkademik) {
+    return tahunAkademik;
+  }
+
+  const dateValue =
+    aktivasi.tanggalMulai ??
+    aktivasi.aktifMulai ??
+    aktivasi.mulai ??
+    aktivasi.tanggalSelesai ??
+    aktivasi.aktifSelesai ??
+    aktivasi.selesai;
+  const date = new Date(dateValue);
+
+  if (!Number.isNaN(date.getTime())) {
+    return String(date.getFullYear());
+  }
+
+  return String(new Date().getFullYear());
+};
+
 const PengajuanAtkPage = () => {
+  const satuanOptions = [
+    "pcs",
+    "unit",
+    "set",
+    "box",
+    "pack",
+    "rim",
+    "lusin",
+    "lembar",
+    "roll",
+    "meter",
+  ];
   const navigate = useNavigate();
+  const { kategori } = useParams();
+  const { currentUser } = useAuth();
+  const normalizedKategori = useMemo(
+    () => normalizeKategoriParam(kategori),
+    [kategori],
+  );
+  const normalizedJabatan = useMemo(
+    () => normalizeJabatanName(currentUser),
+    [currentUser],
+  );
+  const isDekan =
+    normalizedJabatan.includes("dekan") ||
+    normalizedJabatan.includes("kaprodi");
+  const kategoriLabel = KATEGORI_LABELS[normalizedKategori] || "Tahunan";
   const [step, setStep] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
   const [uploadedFileName, setUploadedFileName] = useState("");
@@ -67,6 +156,7 @@ const PengajuanAtkPage = () => {
   const [isSubmittingPengajuan, setIsSubmittingPengajuan] = useState(false);
   const [activationStatus, setActivationStatus] = useState("unknown");
   const [activationError, setActivationError] = useState("");
+  const [selectedAktivasi, setSelectedAktivasi] = useState(null);
   const [quantities, setQuantities] = useState({});
   const [currentPage, setCurrentPage] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -92,6 +182,12 @@ const PengajuanAtkPage = () => {
   const itemsPerPage = 10;
   const fileInputRef = useRef(null);
   const isActivationBlocked = activationStatus === "inactive";
+  const tipePengajuanLabel = formatTipePengajuanLabel(selectedAktivasi?.tipe);
+  const tahunAktivasiLabel = getAktivasiYearLabel(selectedAktivasi);
+  const kategoriTitle = `Pengajuan ATK ${kategoriLabel}`;
+  const kategoriTitleWithYear = `${kategoriTitle} ${tahunAktivasiLabel}`;
+  const kategoriPengajuanTitleWithYear = `Pengajuan ${tipePengajuanLabel} ${kategoriLabel} ${tahunAktivasiLabel}`;
+  const pengajuanLainnyaTitle = `Pengajuan Lainnya Tahun ${tahunAktivasiLabel}`;
 
   const toTimestamp = (value) => {
     if (!value) {
@@ -129,16 +225,17 @@ const PengajuanAtkPage = () => {
     return Boolean(aktivasi?.statusAktif);
   };
 
-  const pickTahunanAktivasi = (list = []) => {
-    const tahunanList = list.filter(
-      (item) => String(item.kategori).toLowerCase() === "tahunan",
+  const pickKategoriAktivasi = (list = [], kategoriValue) => {
+    const normalized = normalizeKategoriParam(kategoriValue);
+    const kategoriList = list.filter(
+      (item) => String(item.kategori).toLowerCase() === normalized,
     );
 
-    if (tahunanList.length === 0) {
+    if (kategoriList.length === 0) {
       return null;
     }
 
-    return [...tahunanList].sort((a, b) => {
+    return [...kategoriList].sort((a, b) => {
       if (a.statusAktif !== b.statusAktif) {
         return a.statusAktif ? -1 : 1;
       }
@@ -149,6 +246,12 @@ const PengajuanAtkPage = () => {
       );
     })[0];
   };
+
+  useEffect(() => {
+    if (!isDekan && normalizedKategori !== "tahunan") {
+      navigate("/pengajuan-rutin/tahunan", { replace: true });
+    }
+  }, [isDekan, navigate, normalizedKategori]);
 
   useEffect(() => {
     const fetchBarang = async () => {
@@ -174,26 +277,29 @@ const PengajuanAtkPage = () => {
 
       try {
         const data = await listAktivasiPengajuan();
-        const tahunanAktivasi = pickTahunanAktivasi(data);
+        const kategoriAktivasi = pickKategoriAktivasi(data, normalizedKategori);
 
-        if (!tahunanAktivasi) {
+        if (!kategoriAktivasi) {
           setActivationStatus("inactive");
+          setSelectedAktivasi(null);
           return;
         }
 
         setActivationStatus(
-          isActivationActive(tahunanAktivasi) ? "active" : "inactive",
+          isActivationActive(kategoriAktivasi) ? "active" : "inactive",
         );
+        setSelectedAktivasi(kategoriAktivasi);
       } catch (error) {
         setActivationError(
           getApiErrorMessage(error, "Gagal memuat status aktivasi."),
         );
         setActivationStatus("unknown");
+        setSelectedAktivasi(null);
       }
     };
 
     fetchAktivasi();
-  }, []);
+  }, [normalizedKategori]);
 
   useEffect(() => {
     if (isActivationBlocked) {
@@ -228,27 +334,29 @@ const PengajuanAtkPage = () => {
       return next;
     });
   }, [barangList]);
-  const filteredAtkTahunan = useMemo(() => {
+  const filteredAtkItems = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
 
-    const baseRows = barangList.filter((item) => item.kategori === "tahunan");
+    const baseRows = barangList.filter(
+      (item) => item.kategori === normalizedKategori,
+    );
 
     if (!query) {
       return baseRows;
     }
 
     return baseRows.filter((item) => item.nama.toLowerCase().includes(query));
-  }, [barangList, searchQuery]);
+  }, [barangList, normalizedKategori, searchQuery]);
 
-  const totalPages = Math.ceil(filteredAtkTahunan.length / itemsPerPage);
+  const totalPages = Math.ceil(filteredAtkItems.length / itemsPerPage);
 
   const currentData = useMemo(
     () =>
-      filteredAtkTahunan.slice(
+      filteredAtkItems.slice(
         (currentPage - 1) * itemsPerPage,
         currentPage * itemsPerPage,
       ),
-    [currentPage, filteredAtkTahunan],
+    [currentPage, filteredAtkItems],
   );
 
   useEffect(() => {
@@ -268,6 +376,13 @@ const PengajuanAtkPage = () => {
   );
 
   const hasSelectedItem = selectedRows.length > 0;
+  const barangTableRows = isLoading || pageError ? [] : currentData;
+  const barangTableEmptyMessage = isLoading
+    ? "Memuat data barang..."
+    : pageError
+      ? pageError
+      : "Data tidak ditemukan";
+  const lainnyaTableEmptyMessage = "Data tidak ditemukan";
 
   const updateQuantity = (itemId, delta) => {
     setQuantities((prev) => {
@@ -441,12 +556,20 @@ const PengajuanAtkPage = () => {
     setSubmitError("");
     setIsSubmittingPengajuan(true);
 
+    if (!selectedAktivasi?.id) {
+      setSubmitError("Periode pengajuan tidak ditemukan.");
+      setIsSubmittingPengajuan(false);
+      return;
+    }
+
     const formData = new FormData();
+    formData.append("aktivasi_pengajuan_id", String(selectedAktivasi.id));
     formData.append(
       "surat_pengajuan",
       uploadedFile,
       uploadedFile.name || "surat_pengajuan",
     );
+    formData.append("tipe", normalizedKategori);
     formData.append("barang", JSON.stringify(buildBarangPayload()));
 
     const barangLainnyaPayload = buildBarangLainnyaPayload();
@@ -510,13 +633,13 @@ const PengajuanAtkPage = () => {
   return (
     <>
       <Helmet>
-        <title>Pengajuan Rutin Tahunan | UNIKOM Perlengkapan</title>
+        <title>{kategoriPengajuanTitleWithYear} | UNIKOM Perlengkapan</title>
       </Helmet>
 
       <div className="bg-white rounded border border-gray-200 w-full shadow-sm overflow-hidden">
         <div className="bg-[#4773da] text-white px-6 py-4">
           <h1 className="text-lg font-semibold">
-            Pengajuan Rutin Tahunan 2026
+            {kategoriPengajuanTitleWithYear}
           </h1>
         </div>
 
@@ -620,7 +743,7 @@ const PengajuanAtkPage = () => {
               <div className="mb-8">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-3 gap-3">
                   <h2 className="text-lg font-semibold text-gray-700">
-                    Pengajuan ATK tahunan 2026
+                    {kategoriTitleWithYear}
                   </h2>
                   <div className="relative w-full md:w-72">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -640,91 +763,54 @@ const PengajuanAtkPage = () => {
                   </div>
                 </div>
 
-                <div className="overflow-x-auto border border-gray-200">
-                  <table className="w-full text-left border-collapse min-w-190">
-                    <thead className="bg-[#f0f4fc] text-gray-600 font-semibold border-b border-gray-200">
-                      <tr>
-                        <th className="px-3 py-3 border-r border-gray-200 w-16">
-                          No
-                        </th>
-                        <th className="px-3 py-3 border-r border-gray-200">
-                          Nama Barang
-                        </th>
-                        <th className="px-3 py-3 border-r border-gray-200 w-28">
-                          Satuan
-                        </th>
-                        <th className="px-3 py-3 border-r border-gray-200 w-28">
-                          Kategori
-                        </th>
-                        <th className="px-3 py-3 w-36 text-center">Jumlah</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {isLoading ? (
-                        <tr>
-                          <td colSpan={5} className={CELL_PLACEHOLDER_CLASS}>
-                            Memuat data barang...
-                          </td>
-                        </tr>
-                      ) : pageError ? (
-                        <tr>
-                          <td colSpan={5} className={CELL_PLACEHOLDER_CLASS}>
-                            {pageError}
-                          </td>
-                        </tr>
-                      ) : currentData.length > 0 ? (
-                        currentData.map((item, index) => (
-                          <tr
-                            key={item.id}
-                            className="border-b border-gray-200 bg-white hover:bg-gray-50"
+                <Table
+                  title={null}
+                  columns={[
+                    { key: "no", label: "No" },
+                    { key: "nama", label: "Nama Barang" },
+                    { key: "satuan", label: "Satuan" },
+                    { key: "kategori", label: "Kategori" },
+                    { key: "jumlah", label: "Jumlah" },
+                  ]}
+                  rows={barangTableRows}
+                  emptyMessage={barangTableEmptyMessage}
+                  wrapperClass="overflow-x-auto border border-gray-200"
+                  renderRow={(item, index) => (
+                    <tr key={item.id} className="border-t border-gray-100">
+                      <td className="px-6 py-4 text-gray-600 text-center">
+                        {(currentPage - 1) * itemsPerPage + index + 1}
+                      </td>
+                      <td className="px-6 py-4 text-gray-800">{item.nama}</td>
+                      <td className="px-6 py-4 text-gray-600">{item.satuan}</td>
+                      <td className="px-6 py-4 text-gray-600 capitalize">
+                        {item.kategori}
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center justify-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => updateQuantity(item.id, -1)}
+                            disabled={isActivationBlocked}
+                            className="h-6 w-6 rounded bg-gray-500 text-white leading-none"
                           >
-                            <td className="px-3 py-2 border-r border-gray-200 text-sm text-gray-500">
-                              {(currentPage - 1) * itemsPerPage + index + 1}
-                            </td>
-                            <td className="px-3 py-2 border-r border-gray-200 text-sm text-gray-500">
-                              {item.nama}
-                            </td>
-                            <td className="px-3 py-2 border-r border-gray-200 text-sm text-gray-500">
-                              {item.satuan}
-                            </td>
-                            <td className="px-3 py-2 border-r border-gray-200 text-sm text-gray-500 capitalize">
-                              {item.kategori}
-                            </td>
-                            <td className="px-3 py-2">
-                              <div className="flex items-center justify-center gap-1">
-                                <button
-                                  type="button"
-                                  onClick={() => updateQuantity(item.id, -1)}
-                                  disabled={isActivationBlocked}
-                                  className="h-6 w-6 rounded bg-gray-500 text-white  leading-none"
-                                >
-                                  -
-                                </button>
-                                <span className="h-6 min-w-8 px-2 rounded bg-gray-100 border border-gray-200 text-center text-xs leading-6 text-gray-700">
-                                  {quantities[item.id] || 0}
-                                </span>
-                                <button
-                                  type="button"
-                                  onClick={() => updateQuantity(item.id, 1)}
-                                  disabled={isActivationBlocked}
-                                  className="h-6 w-6 rounded bg-[#4773da] text-white  leading-none"
-                                >
-                                  +
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))
-                      ) : (
-                        <tr>
-                          <td colSpan={5} className={CELL_PLACEHOLDER_CLASS}>
-                            Data tidak ditemukan
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
+                            -
+                          </button>
+                          <span className="h-6 min-w-8 px-2 rounded bg-gray-100 border border-gray-200 text-center text-xs leading-6 text-gray-700">
+                            {quantities[item.id] || 0}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => updateQuantity(item.id, 1)}
+                            disabled={isActivationBlocked}
+                            className="h-6 w-6 rounded bg-[#4773da] text-white leading-none"
+                          >
+                            +
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                />
 
                 {totalPages > 1 ? (
                   <div className="flex justify-end items-center mt-3">
@@ -782,7 +868,7 @@ const PengajuanAtkPage = () => {
               <div className="mb-6">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 mb-3">
                   <h2 className="text-lg font-semibold text-gray-700">
-                    Pengajuan Lainnya Tahun 2026
+                    {pengajuanLainnyaTitle}
                   </h2>
                   <button
                     type="button"
@@ -797,59 +883,34 @@ const PengajuanAtkPage = () => {
                     Tambah Pengajuan Lainnya
                   </button>
                 </div>
-                <div className="overflow-x-auto border border-gray-200">
-                  <table className="w-full text-left border-collapse min-w-190">
-                    <thead className="bg-[#f0f4fc] text-gray-600 font-semibold border-b border-gray-200">
-                      <tr>
-                        <th className="px-3 py-3 border-r border-gray-200 w-16">
-                          No
-                        </th>
-                        <th className="px-3 py-3 border-r border-gray-200">
-                          Nama Barang
-                        </th>
-                        <th className="px-3 py-3 border-r border-gray-200 w-28">
-                          Satuan
-                        </th>
-                        <th className="px-3 py-3 border-r border-gray-200 w-28">
-                          Kategori
-                        </th>
-                        <th className="px-3 py-3 w-36 text-center">Jumlah</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {pengajuanLainnya.length > 0 ? (
-                        pengajuanLainnya.map((item, index) => (
-                          <tr
-                            key={item.id}
-                            className="border-b border-gray-200 bg-white"
-                          >
-                            <td className="px-3 py-2 border-r border-gray-200 text-sm text-gray-500">
-                              {index + 1}
-                            </td>
-                            <td className="px-3 py-2 border-r border-gray-200 text-sm text-gray-500">
-                              {item.nama}
-                            </td>
-                            <td className="px-3 py-2 border-r border-gray-200 text-sm text-gray-500">
-                              {item.satuan}
-                            </td>
-                            <td className="px-3 py-2 border-r border-gray-200 text-sm text-gray-500">
-                              {formatKategoriLabel(item.kategori)}
-                            </td>
-                            <td className="px-3 py-2 text-sm text-gray-500 text-center">
-                              {item.jumlah}
-                            </td>
-                          </tr>
-                        ))
-                      ) : (
-                        <tr className="border-b border-gray-200 bg-white">
-                          <td colSpan={5} className={CELL_PLACEHOLDER_CLASS}>
-                            Data tidak ditemukan
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
+                <Table
+                  title={null}
+                  columns={[
+                    { key: "no", label: "No" },
+                    { key: "nama", label: "Nama Barang" },
+                    { key: "satuan", label: "Satuan" },
+                    { key: "kategori", label: "Kategori" },
+                    { key: "jumlah", label: "Jumlah" },
+                  ]}
+                  rows={pengajuanLainnya}
+                  emptyMessage={lainnyaTableEmptyMessage}
+                  wrapperClass="overflow-x-auto border border-gray-200"
+                  renderRow={(item, index) => (
+                    <tr key={item.id} className="border-t border-gray-100">
+                      <td className="px-6 py-4 text-gray-600 text-center">
+                        {index + 1}
+                      </td>
+                      <td className="px-6 py-4 text-gray-800">{item.nama}</td>
+                      <td className="px-6 py-4 text-gray-600">{item.satuan}</td>
+                      <td className="px-6 py-4 text-gray-600">
+                        {formatKategoriLabel(item.kategori)}
+                      </td>
+                      <td className="px-6 py-4 text-gray-600 text-center">
+                        {item.jumlah}
+                      </td>
+                    </tr>
+                  )}
+                />
               </div>
 
               <div className="flex justify-end">
@@ -871,10 +932,27 @@ const PengajuanAtkPage = () => {
             <>
               <div className="mb-6">
                 <h2 className="text-lg font-semibold text-gray-700 mb-3">
-                  Pengajuan ATK tahunan 2026
+                  {kategoriTitleWithYear}
                 </h2>
-                <div className="overflow-x-auto border border-gray-200">
-                  <table className="w-full text-left border-collapse min-w-245">
+                <Table
+                  title={null}
+                  columns={[
+                    { key: "no", label: "No" },
+                    { key: "nama", label: "Nama Barang" },
+                    { key: "satuan", label: "Satuan" },
+                    { key: "jumlah", label: "Jumlah" },
+                    { key: "sisa", label: "Sisa" },
+                    { key: "rusakJumlah", label: "Rusak" },
+                    { key: "rusakFoto", label: "Foto Barang" },
+                    { key: "rusakSurat", label: "Surat Lampiran" },
+                    { key: "hilangJumlah", label: "Jumlah" },
+                    { key: "hilangSurat", label: "Surat Lampiran" },
+                    { key: "lainnya", label: "Lainnya" },
+                  ]}
+                  rows={selectedRows}
+                  emptyMessage={lainnyaTableEmptyMessage}
+                  wrapperClass="overflow-x-auto border border-gray-200"
+                  renderHeader={() => (
                     <thead className="bg-[#f0f4fc] text-gray-600 font-semibold border-b border-gray-200">
                       <tr>
                         <th
@@ -952,95 +1030,65 @@ const PengajuanAtkPage = () => {
                         </th>
                       </tr>
                     </thead>
-                    <tbody>
-                      {selectedRows.map((row, index) => (
-                        <tr
-                          key={row.id}
-                          className="border-b border-gray-200 bg-white hover:bg-gray-50"
-                        >
-                          <td className="px-3 py-2 border border-gray-200 text-sm text-gray-500 text-center">
-                            {index + 1}
-                          </td>
-                          <td className="px-3 py-2 border border-gray-200 text-sm text-gray-500">
-                            {row.nama}
-                          </td>
-                          <td className="px-3 py-2 border border-gray-200 text-sm text-gray-500 text-center">
-                            {row.satuan}
-                          </td>
-                          <td className="px-3 py-2 border border-gray-200 text-sm text-gray-500 text-center">
-                            {quantities[row.id] || 0}
-                          </td>
-                          <td className={CELL_PLACEHOLDER_CLASS}>-</td>
-                          <td className={CELL_PLACEHOLDER_CLASS}>-</td>
-                          <td className={CELL_PLACEHOLDER_CLASS}>-</td>
-                          <td className={CELL_PLACEHOLDER_CLASS}>-</td>
-                          <td className={CELL_PLACEHOLDER_CLASS}>-</td>
-                          <td className={CELL_PLACEHOLDER_CLASS}>-</td>
-                          <td className={CELL_PLACEHOLDER_CLASS}>-</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                  )}
+                  renderRow={(row, index) => (
+                    <tr key={row.id} className="border-t border-gray-100">
+                      <td className="px-3 py-2 border border-gray-200 text-sm text-gray-500 text-center">
+                        {index + 1}
+                      </td>
+                      <td className="px-3 py-2 border border-gray-200 text-sm text-gray-500">
+                        {row.nama}
+                      </td>
+                      <td className="px-3 py-2 border border-gray-200 text-sm text-gray-500 text-center">
+                        {row.satuan}
+                      </td>
+                      <td className="px-3 py-2 border border-gray-200 text-sm text-gray-500 text-center">
+                        {quantities[row.id] || 0}
+                      </td>
+                      <td className={CELL_PLACEHOLDER_CLASS}>-</td>
+                      <td className={CELL_PLACEHOLDER_CLASS}>-</td>
+                      <td className={CELL_PLACEHOLDER_CLASS}>-</td>
+                      <td className={CELL_PLACEHOLDER_CLASS}>-</td>
+                      <td className={CELL_PLACEHOLDER_CLASS}>-</td>
+                      <td className={CELL_PLACEHOLDER_CLASS}>-</td>
+                      <td className={CELL_PLACEHOLDER_CLASS}>-</td>
+                    </tr>
+                  )}
+                />
               </div>
 
               <div className="mb-6">
                 <h2 className="text-lg font-semibold text-gray-700 mb-3">
-                  Pengajuan Lainnya Tahun 2026
+                  {pengajuanLainnyaTitle}
                 </h2>
-                <div className="overflow-x-auto border border-gray-200">
-                  <table className="w-full text-left border-collapse min-w-190">
-                    <thead className="bg-[#f0f4fc] text-gray-600 font-semibold border-b border-gray-200">
-                      <tr>
-                        <th className="px-3 py-3 border-r border-gray-200 w-16">
-                          No
-                        </th>
-                        <th className="px-3 py-3 border-r border-gray-200">
-                          Nama Barang
-                        </th>
-                        <th className="px-3 py-3 border-r border-gray-200 w-28">
-                          Satuan
-                        </th>
-                        <th className="px-3 py-3 border-r border-gray-200 w-28">
-                          Kategori
-                        </th>
-                        <th className="px-3 py-3 w-36 text-center">Jumlah</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {pengajuanLainnya.length > 0 ? (
-                        pengajuanLainnya.map((item, index) => (
-                          <tr
-                            key={item.id}
-                            className="border-b border-gray-200 bg-white"
-                          >
-                            <td className="px-3 py-2 border-r border-gray-200 text-sm text-gray-500">
-                              {index + 1}
-                            </td>
-                            <td className="px-3 py-2 border-r border-gray-200 text-sm text-gray-500">
-                              {item.nama}
-                            </td>
-                            <td className="px-3 py-2 border-r border-gray-200 text-sm text-gray-500">
-                              {item.satuan}
-                            </td>
-                            <td className="px-3 py-2 border-r border-gray-200 text-sm text-gray-500">
-                              {formatKategoriLabel(item.kategori)}
-                            </td>
-                            <td className="px-3 py-2 text-sm text-gray-500 text-center">
-                              {item.jumlah}
-                            </td>
-                          </tr>
-                        ))
-                      ) : (
-                        <tr className="border-b border-gray-200 bg-white">
-                          <td colSpan={5} className={CELL_PLACEHOLDER_CLASS}>
-                            Data tidak ditemukan
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
+                <Table
+                  title={null}
+                  columns={[
+                    { key: "no", label: "No" },
+                    { key: "nama", label: "Nama Barang" },
+                    { key: "satuan", label: "Satuan" },
+                    { key: "kategori", label: "Kategori" },
+                    { key: "jumlah", label: "Jumlah" },
+                  ]}
+                  rows={pengajuanLainnya}
+                  emptyMessage={lainnyaTableEmptyMessage}
+                  wrapperClass="overflow-x-auto border border-gray-200"
+                  renderRow={(item, index) => (
+                    <tr key={item.id} className="border-t border-gray-100">
+                      <td className="px-6 py-4 text-gray-600 text-center">
+                        {index + 1}
+                      </td>
+                      <td className="px-6 py-4 text-gray-800">{item.nama}</td>
+                      <td className="px-6 py-4 text-gray-600">{item.satuan}</td>
+                      <td className="px-6 py-4 text-gray-600">
+                        {formatKategoriLabel(item.kategori)}
+                      </td>
+                      <td className="px-6 py-4 text-gray-600 text-center">
+                        {item.jumlah}
+                      </td>
+                    </tr>
+                  )}
+                />
               </div>
 
               <div className="flex justify-end">
@@ -1110,9 +1158,7 @@ const PengajuanAtkPage = () => {
                   <label className="text-gray-600 font-medium text-sm">
                     Satuan
                   </label>
-                  <input
-                    type="text"
-                    placeholder="Contoh: pcs"
+                  <Dropdown
                     value={formLainnya.satuan}
                     disabled={isActivationBlocked}
                     onChange={(event) =>
@@ -1121,9 +1167,15 @@ const PengajuanAtkPage = () => {
                         satuan: event.target.value,
                       }))
                     }
-                    className="w-full px-4 py-2 bg-white border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-[#4279df] focus:border-transparent text-gray-700  placeholder-gray-400"
                     required
-                  />
+                  >
+                    <option value="">Pilih satuan</option>
+                    {satuanOptions.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </Dropdown>
                 </div>
 
                 <div className="flex flex-col gap-1.5">
@@ -1152,37 +1204,20 @@ const PengajuanAtkPage = () => {
                 <label className="text-gray-600 font-medium text-sm">
                   Kategori
                 </label>
-                <div className="relative">
-                  <select
-                    value={formLainnya.kategori}
-                    disabled={isActivationBlocked}
-                    onChange={(event) =>
-                      setFormLainnya((prev) => ({
-                        ...prev,
-                        kategori: event.target.value,
-                      }))
-                    }
-                    className="w-full appearance-none px-4 py-2 pr-10 bg-white border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-[#4279df] focus:border-transparent text-gray-700 text-sm"
-                    required
-                  >
-                    <option value="habis_pakai">Habis Pakai</option>
-                    <option value="tidak_habis_pakai">Tidak Habis Pakai</option>
-                  </select>
-                  <span className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-gray-500">
-                    <svg
-                      className="h-4 w-4"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                      aria-hidden="true"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.94a.75.75 0 111.08 1.04l-4.24 4.5a.75.75 0 01-1.08 0l-4.24-4.5a.75.75 0 01.02-1.06z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                  </span>
-                </div>
+                <Dropdown
+                  value={formLainnya.kategori}
+                  disabled={isActivationBlocked}
+                  onChange={(event) =>
+                    setFormLainnya((prev) => ({
+                      ...prev,
+                      kategori: event.target.value,
+                    }))
+                  }
+                  required
+                >
+                  <option value="habis_pakai">Habis Pakai</option>
+                  <option value="tidak_habis_pakai">Tidak Habis Pakai</option>
+                </Dropdown>
               </div>
 
               {modalError ? (

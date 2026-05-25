@@ -150,6 +150,32 @@ export const listUnitType = async ({ parentId } = {}) => {
     return [];
 };
 
+export const listUnitTypeTree = async ({ parentId } = {}) => {
+    const params = {};
+
+    if (parentId === null) {
+        params.parent_id = "null";
+    } else if (parentId !== undefined && parentId !== "") {
+        params.parent_id = String(parentId);
+    }
+
+    for (const endpoint of UNIT_TYPE_ENDPOINTS) {
+        try {
+            const response = await apiClient.get(endpoint, {
+                params: Object.keys(params).length > 0 ? params : undefined,
+            });
+
+            return extractListData(response.data);
+        } catch (error) {
+            if (error?.response?.status !== 404) {
+                throw error;
+            }
+        }
+    }
+
+    return [];
+};
+
 export const listUnitTypeByParentId = async (parentId) => {
     return listUnitType({ parentId });
 };

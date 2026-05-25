@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import Dropdown from "../Dropdown";
 
 const ModalTambahBagian = ({
   isOpen,
@@ -80,31 +81,19 @@ const ModalTambahBagian = ({
         >
           <div className="flex flex-col gap-1.5">
             <label className="text-gray-600 font-medium text-sm">Jabatan</label>
-            <div className="relative">
-              <select
-                value={selectedJabatanId}
-                onChange={(event) => onJabatanChange?.(event.target.value)}
-                className="w-full px-4 py-2 bg-white border border-gray-300 rounded-full appearance-none focus:outline-none focus:ring-2 focus:ring-[#4279df] focus:border-transparent text-gray-700 text-sm"
-                disabled={isSubmitting}
-                required
-              >
-                <option value="">Pilih jabatan</option>
-                {jabatanList.map((jabatan) => (
-                  <option key={jabatan.id} value={String(jabatan.id)}>
-                    {jabatan.nama}
-                  </option>
-                ))}
-              </select>
-              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-500">
-                <svg
-                  className="fill-current h-4 w-4"
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 20 20"
-                >
-                  <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
-                </svg>
-              </div>
-            </div>
+            <Dropdown
+              value={selectedJabatanId}
+              onChange={(event) => onJabatanChange?.(event.target.value)}
+              disabled={isSubmitting}
+              required
+            >
+              <option value="">Pilih jabatan</option>
+              {jabatanList.map((jabatan) => (
+                <option key={jabatan.id} value={String(jabatan.id)}>
+                  {jabatan.nama}
+                </option>
+              ))}
+            </Dropdown>
           </div>
 
           <div className="flex flex-col gap-1.5">
@@ -142,11 +131,7 @@ const ModalTambahBagian = ({
               className="px-5 py-2 bg-[#4279df] text-white hover:bg-blue-600 font-medium rounded-full text-sm disabled:bg-gray-200 disabled:text-gray-500 disabled:cursor-not-allowed"
               disabled={isSubmitting || isInvalid}
             >
-              {isSubmitting
-                ? "Menyimpan..."
-                : modalMode === "edit"
-                  ? "Perbarui"
-                  : "Simpan"}
+              {isSubmitting ? "Menyimpan..." : "Simpan"}
             </button>
           </div>
         </form>

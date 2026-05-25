@@ -6,6 +6,8 @@ import {
   PencilSquareIcon,
   TrashIcon,
 } from "@heroicons/react/24/outline";
+import ActionIconButton from "../../components/Element/ActionIconButton";
+import Table from "../../components/Element/Table";
 import {
   createVendor,
   deleteVendor,
@@ -169,6 +171,12 @@ const VendorPage = () => {
         ),
     [searchQuery, vendors],
   );
+  const tableRows = isLoading ? [] : rows;
+  const emptyMessage = isLoading
+    ? "Memuat data vendor..."
+    : searchQuery.trim()
+      ? `Tidak ada vendor yang cocok dengan pencarian "${searchQuery}".`
+      : "Belum ada data vendor.";
 
   return (
     <>
@@ -212,77 +220,46 @@ const VendorPage = () => {
             </p>
           ) : null}
 
-          <div className="overflow-x-auto border border-gray-200">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-[#f4f6fa] text-gray-700">
-                  <th className="py-4 px-6 font-semibold border-b border-r border-gray-200 w-16 text-center">
-                    No
-                  </th>
-                  <th className="py-4 px-6 font-semibold border-b border-r border-gray-200">
-                    Nama Vendor
-                  </th>
-                  <th className="py-4 px-6 font-semibold border-b border-gray-200 text-center w-48">
-                    Aksi
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {isLoading ? (
-                  <tr>
-                    <td colSpan="3" className="py-8 text-center text-gray-500">
-                      Memuat data vendor...
-                    </td>
-                  </tr>
-                ) : rows.length > 0 ? (
-                  rows.map((item, index) => (
-                    <tr
-                      key={`${item.id}-${index}`}
-                      className="hover:bg-gray-50 bg-white"
-                    >
-                      <td className="py-4 px-6 border-r border-gray-200 text-gray-500 text-center">
-                        {index + 1}
-                      </td>
-                      <td className="py-4 px-6 border-r border-gray-200 text-gray-600">
-                        {item.nama}
-                      </td>
-                      <td className="py-4 px-6 text-center">
-                        <div className="flex items-center justify-center space-x-3 text-sm">
-                          <button
-                            type="button"
-                            onClick={() => handleOpenEditModal(item)}
-                            className="text-[#4a77e5] hover:text-blue-700 flex items-center space-x-1.5 transition-colors"
-                            disabled={isSubmitting || isDeleting}
-                          >
-                            <span>Edit</span>
-                            <PencilSquareIcon className="h-4 w-4" />
-                          </button>
-                          <span className="text-gray-300">|</span>
-                          <button
-                            type="button"
-                            onClick={() => handleOpenDeleteModal(item)}
-                            className="text-red-500 hover:text-red-600 flex items-center space-x-1.5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                            disabled={isSubmitting || isDeleting}
-                          >
-                            <span>Hapus</span>
-                            <TrashIcon className="h-4 w-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan="3" className="py-8 text-center text-gray-500">
-                      {searchQuery.trim()
-                        ? `Tidak ada vendor yang cocok dengan pencarian "${searchQuery}".`
-                        : "Belum ada data vendor."}
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+          <Table
+            title={null}
+            columns={[
+              { key: "no", label: "No" },
+              { key: "nama", label: "Nama Vendor" },
+              { key: "aksi", label: "Aksi" },
+            ]}
+            rows={tableRows}
+            emptyMessage={emptyMessage}
+            wrapperClass="overflow-x-auto border border-gray-200"
+            renderRow={(item, index) => (
+              <tr
+                key={`${item.id}-${index}`}
+                className="border-t border-gray-100"
+              >
+                <td className="px-6 py-4 text-gray-600 text-center">
+                  {index + 1}
+                </td>
+                <td className="px-6 py-4 text-gray-800">{item.nama}</td>
+                <td className="px-6 py-4 text-center">
+                  <div className="flex items-center justify-center gap-2">
+                    <ActionIconButton
+                      label="Edit"
+                      icon={PencilSquareIcon}
+                      onClick={() => handleOpenEditModal(item)}
+                      disabled={isSubmitting || isDeleting}
+                      variant="primary"
+                    />
+                    <ActionIconButton
+                      label="Hapus"
+                      icon={TrashIcon}
+                      onClick={() => handleOpenDeleteModal(item)}
+                      disabled={isSubmitting || isDeleting}
+                      variant="danger"
+                    />
+                  </div>
+                </td>
+              </tr>
+            )}
+          />
         </div>
       </div>
 
@@ -291,7 +268,7 @@ const VendorPage = () => {
         title={modalMode === "edit" ? "Edit Vendor" : "Tambah Vendor"}
         label="Nama Vendor"
         placeholder="Masukkan nama vendor"
-        submitLabel={modalMode === "edit" ? "Perbarui" : "Simpan"}
+        submitLabel="Simpan"
         value={vendorName}
         onValueChange={setVendorName}
         onClose={handleCloseModal}

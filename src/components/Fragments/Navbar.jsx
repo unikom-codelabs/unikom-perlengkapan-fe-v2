@@ -30,7 +30,7 @@ const Navbar = () => {
   };
 
   return (
-    <header className="h-20 bg-white flex items-center justify-between px-8 sticky top-0 z-10">
+    <header className="h-20 bg-white flex items-center justify-between px-8 sticky top-0 z-10 shadow-sm">
       <div className="text-gray-400 text-sm font-medium flex gap-1">
         <Link
           to="/"
