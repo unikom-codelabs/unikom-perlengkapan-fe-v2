@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Helmet } from "react-helmet-async";
+import PageHelmet from "../../components/SEO/PageHelmet";
 import AktivasiCard from "../../components/Element/AktivasiCard";
 import ModalAktivasiPengajuan from "../../components/Element/ModalAktivasiPengajuan";
 import ModalKonfirmasiHapus from "../../components/Element/ModalKonfirmasiHapus";
@@ -688,9 +688,10 @@ const AktivasiPage = () => {
 
   return (
     <>
-      <Helmet>
-        <title>Aktivasi | UNIKOM Perlengkapan</title>
-      </Helmet>
+      <PageHelmet
+        title="Aktivasi"
+        description="Kelola periode aktivasi pengajuan perlengkapan UNIKOM."
+      />
       {pageError ? (
         <p className="mb-4 rounded border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700 whitespace-pre-line">
           {pageError}

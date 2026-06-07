@@ -32,7 +32,7 @@ const toNumberOrNull = (value) => {
     return Number.isFinite(numericValue) ? numericValue : null;
 };
 
-const normalizeKategori = (value, semesterValue = "", ujianValue = "") => {
+const normalizeKnownKategori = (value, semesterValue = "", ujianValue = "") => {
     const raw = String(value ?? "").toLowerCase().trim();
     const semester = String(semesterValue ?? "").toLowerCase().trim();
     const ujian = String(ujianValue ?? "").toLowerCase().trim();
@@ -53,7 +53,24 @@ const normalizeKategori = (value, semesterValue = "", ujianValue = "") => {
         return "tahunan";
     }
 
-    return "tahunan";
+    return "";
+};
+
+const normalizeKategori = (value, semesterValue = "", ujianValue = "", fallback = "tahunan") =>
+    normalizeKnownKategori(value, semesterValue, ujianValue) || fallback || "tahunan";
+
+const normalizeKategoriBarang = (value) => {
+    const raw = String(value ?? "").toLowerCase().trim();
+
+    if (["habis_pakai", "habis pakai", "habis-pakai"].includes(raw)) {
+        return "habis_pakai";
+    }
+
+    if (["tidak_habis_pakai", "tidak habis pakai", "tidak-habis-pakai"].includes(raw)) {
+        return "tidak_habis_pakai";
+    }
+
+    return "";
 };
 
 const normalizeStatus = (value) => {
@@ -70,7 +87,7 @@ const normalizeStatus = (value) => {
     return "Menunggu";
 };
 
-const normalizeSubmissionItems = (submission = {}) => {
+const normalizeSubmissionItems = (submission = {}, submissionKategori = "tahunan") => {
     const itemCandidates = [
         submission.barang_pengajuan,
         submission.barangPengajuan,
@@ -89,17 +106,22 @@ const normalizeSubmissionItems = (submission = {}) => {
         .flat();
 
     return items.map((item, index) => {
+        const rawKategori = pickValue(
+            item.kategori,
+            item.jenis,
+            item.tipe,
+            item.barang?.kategori,
+            item.barang?.jenis,
+            item.barang?.tipe,
+        );
         const kategori = normalizeKategori(
-            pickValue(
-                item.kategori,
-                item.jenis,
-                item.tipe,
-                item.barang?.kategori,
-                item.barang?.jenis,
-                item.barang?.tipe,
-            ),
+            rawKategori,
             submission.semester,
             submission.ujian,
+            submissionKategori,
+        );
+        const kategoriBarang = normalizeKategoriBarang(
+            pickValue(item.kategori_barang, item.kategoriBarang, rawKategori),
         );
 
         const isLainnya = Boolean(
@@ -122,6 +144,7 @@ const normalizeSubmissionItems = (submission = {}) => {
                 pickValue(item.satuan, item.barang?.satuan, item.unit, "-"),
             ).trim(),
             kategori,
+            kategoriBarang,
             jumlah:
                 toNumberOrNull(
                     pickValue(
@@ -154,6 +177,10 @@ const normalizeSubmissionItems = (submission = {}) => {
 };
 
 const normalizeSubmission = (submission = {}) => {
+    const aktivasi =
+        [submission.aktivasi, submission.aktivasi_pengajuan, submission.aktivasiPengajuan]
+            .find((item) => item && typeof item === "object") || {};
+
     const inferAcademicYear = (dateValue) => {
         if (!dateValue) {
             return "";
@@ -176,12 +203,18 @@ const normalizeSubmission = (submission = {}) => {
             submission.tipe_pengajuan,
             submission.jenis_pengajuan,
             submission.unit_type,
+            aktivasi.kategori,
+            aktivasi.jenis_pengajuan,
+            aktivasi.tipe_pengajuan,
+            aktivasi.tipe,
+            aktivasi.nama_periode,
+            aktivasi.nama,
         ),
         submission.semester,
         submission.ujian,
     );
 
-    const items = normalizeSubmissionItems(submission);
+    const items = normalizeSubmissionItems(submission, kategori);
 
     const fallbackItem = {
         id: `submission-${pickValue(submission.id, submission.pengajuan_id, Date.now())}`,
@@ -309,6 +342,24 @@ const extractBarangMasterMap = (payload) => {
     });
 
     return map;
+};
+
+const inferAdminSubmissionKategori = (submission = {}, barangMasterById = new Map(), fallbackKategori = "tahunan") => {
+    const barangItems = Array.isArray(submission.barang) ? submission.barang : [];
+    const kategoriSet = new Set(
+        barangItems
+            .map((item) => {
+                const master = barangMasterById.get(String(item.id_barang ?? item.idBarang ?? item.barang_id ?? ""));
+                return normalizeKnownKategori(pickValue(item.kategori, master?.kategori));
+            })
+            .filter(Boolean),
+    );
+
+    if (kategoriSet.size === 1) {
+        return [...kategoriSet][0];
+    }
+
+    return fallbackKategori;
 };
 
 const getAdminAktivasiKey = (submission = {}, tipe = "rutin") => {
@@ -449,7 +500,7 @@ const normalizeAdminSubmission = (submission = {}, barangMasterById = new Map())
         ),
     );
     const aktivasi = submission.aktivasi || {};
-    const kategori = normalizeKategori(
+    const explicitKategori = normalizeKnownKategori(
         pickValue(
             submission.kategori,
             submission.jenis_pengajuan,
@@ -460,6 +511,11 @@ const normalizeAdminSubmission = (submission = {}, barangMasterById = new Map())
         ),
         submission.semester ?? aktivasi.semester,
         submission.ujian ?? aktivasi.ujian,
+    );
+    const kategori = inferAdminSubmissionKategori(
+        submission,
+        barangMasterById,
+        explicitKategori || "tahunan",
     );
     const aktivasiKey = getAdminAktivasiKey(submission, tipe);
     const aktivasiLabel = getAdminAktivasiLabel(submission, tipe, kategori);
@@ -485,6 +541,7 @@ const normalizeAdminSubmission = (submission = {}, barangMasterById = new Map())
                 pickValue(item.kategori, master?.kategori, submission.kategori, kategori),
                 submission.semester,
                 submission.ujian,
+                kategori,
             ),
             namaBarang: String(pickValue(item.nama_barang, item.namaBarang, item.nama, "-")).trim(),
             satuan: String(pickValue(item.satuan, item.unit, item.barang?.satuan, master?.satuan, "-")).trim(),
@@ -496,6 +553,7 @@ const normalizeAdminSubmission = (submission = {}, barangMasterById = new Map())
     });
 
     const barangLainnya = (Array.isArray(submission.barang_lainnya) ? submission.barang_lainnya : []).map((item, index) => ({
+        kategoriBarang: normalizeKategoriBarang(pickValue(item.kategori_barang, item.kategoriBarang, item.kategori)),
         id: `lainnya-${submission.id}-${item.id ?? index}`,
         submissionId: submission.id,
         itemId: item.id,
@@ -509,7 +567,12 @@ const normalizeAdminSubmission = (submission = {}, barangMasterById = new Map())
         aktivasiKey,
         aktivasiLabel,
         tipe,
-        kategori: normalizeKategori(pickValue(item.kategori, submission.kategori, kategori), submission.semester, submission.ujian),
+        kategori: normalizeKategori(
+            pickValue(submission.kategori, item.tipe, item.jenis, kategori),
+            submission.semester,
+            submission.ujian,
+            kategori,
+        ),
         namaBarang: String(pickValue(item.nama_barang, item.namaBarang, item.nama, "-")).trim(),
         satuan: String(pickValue(item.satuan, item.unit, "-")).trim(),
         jumlah: toNumberOrNull(pickValue(item.jumlah_diajukan, item.jumlah, item.qty, 0)) ?? 0,

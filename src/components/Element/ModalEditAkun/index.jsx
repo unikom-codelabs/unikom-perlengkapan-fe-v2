@@ -215,7 +215,7 @@ const ModalEditAkun = ({ isOpen, onClose, user, onSuccess }) => {
                   updateField("jabatan_id", event.target.value)
                 }
                 required
-                disabled={isLoadingOptions}
+                disabled
               >
                 <option value="">
                   {isLoadingOptions ? "Memuat jabatan..." : "Pilih jabatan"}
@@ -226,6 +226,7 @@ const ModalEditAkun = ({ isOpen, onClose, user, onSuccess }) => {
                   </option>
                 ))}
               </Dropdown>
+              <p className="text-xs text-gray-400">Tidak dapat diubah.</p>
             </div>
 
             <div className="flex flex-col gap-1.5">
@@ -238,7 +239,7 @@ const ModalEditAkun = ({ isOpen, onClose, user, onSuccess }) => {
                 value={formValues.unit_id}
                 onChange={(event) => updateField("unit_id", event.target.value)}
                 required
-                disabled={isLoadingOptions}
+                disabled
               >
                 <option value="">
                   {isLoadingOptions ? "Memuat bagian..." : "Pilih bagian"}
@@ -249,6 +250,7 @@ const ModalEditAkun = ({ isOpen, onClose, user, onSuccess }) => {
                   </option>
                 ))}
               </Dropdown>
+              <p className="text-xs text-gray-400">Tidak dapat diubah.</p>
             </div>
 
             <div className="flex flex-col gap-1.5">
@@ -256,10 +258,12 @@ const ModalEditAkun = ({ isOpen, onClose, user, onSuccess }) => {
               <Dropdown
                 value={formValues.role}
                 onChange={(event) => updateField("role", event.target.value)}
+                disabled
               >
                 <option value="user">User</option>
                 <option value="admin">Admin</option>
               </Dropdown>
+              <p className="text-xs text-gray-400">Tidak dapat diubah.</p>
             </div>
           </div>
 

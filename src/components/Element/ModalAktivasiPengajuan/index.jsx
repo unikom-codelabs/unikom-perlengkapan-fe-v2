@@ -84,13 +84,17 @@ const ModalAktivasiPengajuan = ({
     }),
   );
   const isEditMode = mode === "edit";
-  const yearOptions = useYearOnly
+  const baseYearOptions = useYearOnly
     ? [getCurrentYear(), getNextYear()]
     : [
         getPreviousAcademicYear(),
         getCurrentAcademicYear(),
         getNextAcademicYear(),
       ];
+  const defaultYearValue = String(defaultValues?.tahun_akademik ?? "").trim();
+  const yearOptions = Array.from(
+    new Set([...baseYearOptions, defaultYearValue].filter(Boolean)),
+  );
 
   useEffect(() => {
     setFormValues(

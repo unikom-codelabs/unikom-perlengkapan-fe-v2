@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { Helmet } from "react-helmet-async";
+import PageHelmet from "../../components/Seo/PageHelmet";
 import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/outline";
 import Table from "../../components/Element/Table";
 import { useAuth } from "../../context/useAuth";
@@ -606,9 +606,10 @@ const HistoriPengajuanPenggunaPage = () => {
 
   return (
     <>
-      <Helmet>
-        <title>Histori Pengajuan</title>
-      </Helmet>
+      <PageHelmet
+        title="Histori Pengajuan"
+        description="Lihat histori pengajuan perlengkapan yang pernah dibuat pengguna."
+      />
 
       <div className="bg-white rounded shadow-sm overflow-hidden mb-6">
         <div className="bg-[#4773da] text-white px-6 py-4">

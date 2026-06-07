@@ -50,6 +50,77 @@ const formatDateLabel = (value) => {
   }).format(date);
 };
 
+const extractYearFromText = (value) => {
+  const text = String(value ?? "").trim();
+  if (!text) {
+    return "";
+  }
+
+  const academicMatch = text.match(
+    /\b((?:19|20)\d{2})\s*[/-]\s*((?:19|20)\d{2})\b/,
+  );
+  if (academicMatch) {
+    return academicMatch[2];
+  }
+
+  const yearMatch = text.match(/\b(?:19|20)\d{2}\b/);
+  return yearMatch ? yearMatch[0] : "";
+};
+
+const formatTahunanYear = (aktivasi = {}) => {
+  const yearFromAkademik = extractYearFromText(aktivasi.tahunAkademik);
+  if (yearFromAkademik) {
+    return yearFromAkademik;
+  }
+
+  const yearFromNama = extractYearFromText(aktivasi.namaPeriode);
+  if (yearFromNama) {
+    return yearFromNama;
+  }
+
+  const dateValue = aktivasi.tanggalMulai || aktivasi.tanggalSelesai;
+  const date = dateValue ? new Date(dateValue) : null;
+  if (date && !Number.isNaN(date.getTime())) {
+    return String(date.getFullYear());
+  }
+
+  return "-";
+};
+
+const formatAcademicYear = (aktivasi = {}) => {
+  const rawText = String(aktivasi.tahunAkademik ?? "").trim();
+
+  if (/\b\d{4}\s*[/-]\s*\d{4}\b/.test(rawText)) {
+    return rawText;
+  }
+
+  const yearText = extractYearFromText(rawText);
+  if (yearText) {
+    const yearNumber = Number(yearText);
+    if (Number.isFinite(yearNumber)) {
+      return `${yearNumber}/${yearNumber + 1}`;
+    }
+  }
+
+  const dateValue = aktivasi.tanggalMulai || aktivasi.tanggalSelesai;
+  const date = dateValue ? new Date(dateValue) : null;
+  if (date && !Number.isNaN(date.getTime())) {
+    const startYear = date.getFullYear();
+    return `${startYear}/${startYear + 1}`;
+  }
+
+  return "-";
+};
+
+const formatPeriodLabel = (aktivasi = {}) => {
+  const kategori = String(aktivasi.kategori ?? "")
+    .trim()
+    .toLowerCase();
+  return kategori === "tahunan"
+    ? formatTahunanYear(aktivasi)
+    : formatAcademicYear(aktivasi);
+};
+
 const toDateKey = (value) => {
   if (!value) {
     return "";
@@ -341,7 +412,7 @@ const DashboardDetailModal = ({ isOpen, onClose, title, summaryId }) => {
             <div className="grid grid-cols-[180px_1fr] items-center">
               <span className="text-gray-500">Pengajuan Tahun</span>
               <span className="text-gray-800">
-                : {aktivasi.tahunAkademik || "-"}
+                : {formatPeriodLabel(aktivasi)}
               </span>
             </div>
             <div className="grid grid-cols-[180px_1fr] items-center">

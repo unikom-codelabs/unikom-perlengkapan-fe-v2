@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Helmet } from "react-helmet-async";
+import PageHelmet from "../../components/SEO/PageHelmet";
 import {
   MagnifyingGlassIcon,
   TrashIcon,
@@ -241,9 +241,10 @@ const ManajemenPenggunaPage = () => {
 
   return (
     <>
-      <Helmet>
-        <title>Manajemen Pengguna | UNIKOM Perlengkapan</title>
-      </Helmet>
+      <PageHelmet
+        title="Manajemen Pengguna"
+        description="Kelola akun dan peran pengguna aplikasi UNIKOM Perlengkapan."
+      />
       <div className="bg-white rounded border border-gray-200 w-full shadow-sm">
         <div className="bg-[#4279df] w-full text-white px-6 py-4 rounded-t">
           <h1 className="text-xl font-semibold">Daftar Akun</h1>

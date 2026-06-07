@@ -8,7 +8,7 @@ const Table = ({
   emptyMessage = "Data tidak ditemukan",
   footer = null,
   renderHeader = null,
-  wrapperClass = "overflow-x-auto rounded-t-lg border border-gray-200",
+  wrapperClass = "overflow-x-auto overflow-y-visible rounded-t-lg border border-gray-200",
 }) => {
   const hasRows = rows.length > 0;
 

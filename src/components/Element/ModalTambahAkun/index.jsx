@@ -15,6 +15,13 @@ const initialFormValues = {
   role: "user",
 };
 
+const INPUT_CLASS =
+  "w-full px-4 py-2 bg-white border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-[#4279df] text-gray-700 text-sm placeholder-gray-400";
+
+const FieldHint = ({ children }) => (
+  <p className="text-xs leading-5 text-gray-400">{children}</p>
+);
+
 const getApiErrorMessage = (error, fallbackMessage) => {
   const responseData = error?.response?.data;
 
@@ -119,7 +126,7 @@ const ModalTambahAkun = ({ isOpen, onClose, onSuccess }) => {
       onClick={onClose}
     >
       <div
-        className={`bg-white rounded-lg shadow-lg w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh] transition-all duration-150 transform ${
+        className={`bg-white rounded-lg shadow-lg w-full max-w-3xl overflow-hidden flex flex-col max-h-[90vh] transition-all duration-150 transform ${
           show ? "scale-100 opacity-100" : "scale-95 opacity-0"
         }`}
         onClick={(event) => event.stopPropagation()}
@@ -138,131 +145,126 @@ const ModalTambahAkun = ({ isOpen, onClose, onSuccess }) => {
             </p>
           ) : null}
 
-          <div className="flex flex-col gap-1.5">
-            <label className="text-gray-600 font-medium text-sm">NIP</label>
-            <input
-              type="text"
-              value={formValues.nip}
-              onChange={(event) => updateField("nip", event.target.value)}
-              required
-              className="w-full px-4 py-2 bg-white border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-[#4279df] text-gray-700 text-sm"
-            />
-          </div>
-
-          <div className="flex flex-col gap-1.5">
-            <label className="text-gray-600 font-medium text-sm">
-              Nama Lengkap
-            </label>
-            <input
-              type="text"
-              value={formValues.username}
-              onChange={(event) => updateField("username", event.target.value)}
-              required
-              className="w-full px-4 py-2 bg-white border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-[#4279df] text-gray-700 text-sm"
-            />
-          </div>
-
-          <div className="flex flex-col gap-1.5">
-            <label className="text-gray-600 font-medium text-sm">Email</label>
-            <input
-              type="email"
-              value={formValues.email}
-              onChange={(event) => updateField("email", event.target.value)}
-              required
-              className="w-full px-4 py-2 bg-white border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-[#4279df] text-gray-700 text-sm"
-            />
-          </div>
-
-          <div className="flex flex-col gap-1.5">
-            <label className="text-gray-600 font-medium text-sm">
-              Password
-            </label>
-            <input
-              type="password"
-              value={formValues.password}
-              onChange={(event) => updateField("password", event.target.value)}
-              required
-              className="w-full px-4 py-2 bg-white border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-[#4279df] text-gray-700 text-sm"
-            />
-          </div>
-
-          <div className="flex flex-col gap-1.5">
-            <label className="text-gray-600 font-medium text-sm">
-              Jenis Kelamin
-            </label>
-            <div className="flex items-center gap-6 px-1 py-1 text-sm text-gray-500">
-              {["Pria", "Wanita"].map((value) => (
-                <label
-                  key={value}
-                  className="flex items-center gap-2 cursor-pointer"
-                >
-                  <input
-                    type="radio"
-                    name="jenis_kelamin"
-                    value={value}
-                    checked={formValues.jenis_kelamin === value}
-                    onChange={(event) =>
-                      updateField("jenis_kelamin", event.target.value)
-                    }
-                    className="w-4 h-4 accent-primary"
-                  />
-                  {value}
-                </label>
-              ))}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-gray-600 font-medium text-sm">NIP</label>
+              <input
+                type="text"
+                value={formValues.nip}
+                onChange={(event) => updateField("nip", event.target.value)}
+                placeholder="Contoh: 4127XXXXXXXX"
+                required
+                className={INPUT_CLASS}
+              />
+              <FieldHint>Masukkan NIP/NIK pengguna tanpa spasi.</FieldHint>
             </div>
-          </div>
 
-          <div className="flex flex-col gap-1.5">
-            <label className="text-gray-600 font-medium text-sm">Jabatan</label>
-            <Dropdown
-              value={formValues.jabatan_id}
-              onChange={(event) =>
-                updateField("jabatan_id", event.target.value)
-              }
-              required
-              disabled={isLoadingOptions}
-            >
-              <option value="">
-                {isLoadingOptions ? "Memuat jabatan..." : "Pilih jabatan"}
-              </option>
-              {jabatanList.map((jabatan) => (
-                <option key={jabatan.id} value={jabatan.id}>
-                  {jabatan.nama}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-gray-600 font-medium text-sm">
+                Nama Lengkap
+              </label>
+              <input
+                type="text"
+                value={formValues.username}
+                onChange={(event) =>
+                  updateField("username", event.target.value)
+                }
+                placeholder="Masukkan nama lengkap"
+                required
+                className={INPUT_CLASS}
+              />
+              <FieldHint>Gunakan nama lengkap sesuai data pegawai.</FieldHint>
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-gray-600 font-medium text-sm">Email</label>
+              <input
+                type="email"
+                value={formValues.email}
+                onChange={(event) => updateField("email", event.target.value)}
+                placeholder="nama@unikom.ac.id"
+                required
+                className={INPUT_CLASS}
+              />
+              <FieldHint>Masukkan alamat email aktif pengguna.</FieldHint>
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-gray-600 font-medium text-sm">
+                Password
+              </label>
+              <input
+                type="password"
+                value={formValues.password}
+                onChange={(event) =>
+                  updateField("password", event.target.value)
+                }
+                placeholder="Masukkan password awal"
+                required
+                className={INPUT_CLASS}
+              />
+              <FieldHint>Password ini digunakan untuk login pertama kali.</FieldHint>
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-gray-600 font-medium text-sm">
+                Jabatan
+              </label>
+              <Dropdown
+                value={formValues.jabatan_id}
+                onChange={(event) =>
+                  updateField("jabatan_id", event.target.value)
+                }
+                required
+                disabled={isLoadingOptions}
+              >
+                <option value="">
+                  {isLoadingOptions ? "Memuat jabatan..." : "Pilih jabatan"}
                 </option>
-              ))}
-            </Dropdown>
-          </div>
+                {jabatanList.map((jabatan) => (
+                  <option key={jabatan.id} value={jabatan.id}>
+                    {jabatan.nama}
+                  </option>
+                ))}
+              </Dropdown>
+              <FieldHint>Pilih jabatan sesuai struktur pengguna.</FieldHint>
+            </div>
 
-          <div className="flex flex-col gap-1.5">
-            <label className="text-gray-600 font-medium text-sm">
-              Pilih Bagian
-            </label>
-            <Dropdown
-              value={formValues.unit_id}
-              onChange={(event) => updateField("unit_id", event.target.value)}
-              required
-              disabled={isLoadingOptions}
-            >
-              <option value="">
-                {isLoadingOptions ? "Memuat bagian..." : "Pilih bagian"}
-              </option>
-              {unitTypeList.map((unit) => (
-                <option key={unit.id} value={unit.id}>
-                  {unit.nama}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-gray-600 font-medium text-sm">
+                Pilih Bagian
+              </label>
+              <Dropdown
+                value={formValues.unit_id}
+                onChange={(event) => updateField("unit_id", event.target.value)}
+                required
+                disabled={isLoadingOptions}
+              >
+                <option value="">
+                  {isLoadingOptions ? "Memuat bagian..." : "Pilih bagian"}
                 </option>
-              ))}
-            </Dropdown>
-          </div>
+                {unitTypeList.map((unit) => (
+                  <option key={unit.id} value={unit.id}>
+                    {unit.nama}
+                  </option>
+                ))}
+              </Dropdown>
+              <FieldHint>
+                Pilih unit, bagian, fakultas, atau program studi pengguna.
+              </FieldHint>
+            </div>
 
-          <div className="flex flex-col gap-1.5">
-            <label className="text-gray-600 font-medium text-sm">Role</label>
-            <Dropdown
-              value={formValues.role}
-              onChange={(event) => updateField("role", event.target.value)}
-            >
-              <option value="user">User</option>
-              <option value="admin">Admin</option>
-            </Dropdown>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-gray-600 font-medium text-sm">Role</label>
+              <Dropdown
+                value={formValues.role}
+                onChange={(event) => updateField("role", event.target.value)}
+              >
+                <option value="user">User</option>
+                <option value="admin">Admin</option>
+              </Dropdown>
+              <FieldHint>User untuk pengaju, Admin untuk pengelola sistem.</FieldHint>
+            </div>
           </div>
 
           <div className="flex justify-end gap-3 mt-4 shrink-0">

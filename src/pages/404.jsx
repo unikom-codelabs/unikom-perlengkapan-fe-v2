@@ -1,14 +1,15 @@
 import { Link, useRouteError } from "react-router-dom";
-import { Helmet } from "react-helmet-async";
+import PageHelmet from "../components/Seo/PageHelmet";
 
 const ErrorPage = () => {
   const error = useRouteError();
 
   return (
     <>
-      <Helmet>
-        <title>Halaman Tidak Ditemukan | UNIKOM Perlengkapan</title>
-      </Helmet>
+      <PageHelmet
+        title="Halaman Tidak Ditemukan"
+        description="Halaman yang diminta tidak ditemukan di aplikasi UNIKOM Perlengkapan."
+      />
       <div className="flex justify-center min-h-screen items-center font-poppins px-6">
         <div className="text-center">
           <h1 className="font-bold text-2xl mb-4">Oops!</h1>

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Helmet } from "react-helmet-async";
+import PageHelmet from "../../components/Seo/PageHelmet";
 import {
   MagnifyingGlassIcon,
   TrashIcon,
@@ -244,9 +244,10 @@ const BarangPengajuanPage = () => {
 
   return (
     <>
-      <Helmet>
-        <title>Barang Pengajuan | UNIKOM Perlengkapan</title>
-      </Helmet>
+      <PageHelmet
+        title="Barang Pengajuan"
+        description="Kelola data barang yang tersedia untuk pengajuan perlengkapan."
+      />
       <div className="bg-white rounded border border-gray-200 w-full shadow-sm">
         <div className="bg-[#4279df] w-full text-white px-6 py-4 rounded-t">
           <h1 className="text-xl font-semibold">Data Barang Pengajuan</h1>

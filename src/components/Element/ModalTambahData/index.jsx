@@ -6,6 +6,12 @@ const ModalTambahData = ({
   submitLabel = "Simpan",
   value = "",
   onValueChange,
+  secondaryLabel = "",
+  secondaryPlaceholder = "",
+  secondaryValue = "",
+  onSecondaryValueChange,
+  secondaryRequired = false,
+  secondaryInputType = "text",
   onClose,
   onSubmit,
   isSubmitting = false,
@@ -26,7 +32,12 @@ const ModalTambahData = ({
   const handleSubmit = async (event) => {
     event.preventDefault();
 
-    if (!onSubmit || isSubmitting || !String(value).trim()) {
+    const primaryValid = String(value).trim();
+    const secondaryValid = secondaryRequired
+      ? String(secondaryValue).trim()
+      : true;
+
+    if (!onSubmit || isSubmitting || !primaryValid || !secondaryValid) {
       return;
     }
 
@@ -59,6 +70,24 @@ const ModalTambahData = ({
             />
           </div>
 
+          {secondaryLabel ? (
+            <div className="mt-4 flex flex-col gap-1.5">
+              <label className="text-gray-600 font-medium text-sm">
+                {secondaryLabel}
+              </label>
+              <input
+                type={secondaryInputType}
+                placeholder={secondaryPlaceholder}
+                value={secondaryValue}
+                onChange={(event) =>
+                  onSecondaryValueChange?.(event.target.value)
+                }
+                className="w-full px-4 py-2 bg-white border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-[#4279df] focus:border-transparent text-gray-700 text-sm"
+                required={secondaryRequired}
+              />
+            </div>
+          ) : null}
+
           {errorMessage ? (
             <p className="mt-3 text-sm text-red-600 whitespace-pre-line">
               {errorMessage}
@@ -77,7 +106,11 @@ const ModalTambahData = ({
             <button
               type="submit"
               className="px-5 py-2 bg-[#4279df] text-white hover:bg-blue-600 font-medium rounded-full text-sm disabled:bg-gray-200 disabled:text-gray-500 disabled:cursor-not-allowed"
-              disabled={isSubmitting || !String(value).trim()}
+              disabled={
+                isSubmitting ||
+                !String(value).trim() ||
+                (secondaryRequired && !String(secondaryValue).trim())
+              }
             >
               {isSubmitting ? "Menyimpan..." : submitLabel}
             </button>

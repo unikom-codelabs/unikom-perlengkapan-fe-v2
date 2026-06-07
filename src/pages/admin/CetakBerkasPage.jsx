@@ -1,6 +1,6 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { Helmet } from "react-helmet-async";
+import PageHelmet from "../../components/Seo/PageHelmet";
 import {
   ChevronLeftIcon,
   ChevronRightIcon,
@@ -163,7 +163,6 @@ const CetakBerkasPage = ({ tipe = "rutin" }) => {
   const [mainPage, setMainPage] = useState(1);
   const [otherPage, setOtherPage] = useState(1);
   const [otherPrices, setOtherPrices] = useState({});
-
   const normalizedTipe = String(tipe).trim().toLowerCase();
   const tipeLabel = normalizedTipe === "nonrutin" ? "Non Rutin" : "Rutin";
   const pageTitle = `Cetak Berkas ${tipeLabel}`;
@@ -176,18 +175,21 @@ const CetakBerkasPage = ({ tipe = "rutin" }) => {
       const kategori = String(item?.kategori ?? kategoriAtk)
         .trim()
         .toLowerCase();
+      const academicYearMatch = tahunAkademik.match(
+        /\b((?:19|20)\d{2})\s*[/-]\s*((?:19|20)\d{2})\b/,
+      );
+
+      if (academicYearMatch) {
+        return kategori === "tahunan"
+          ? academicYearMatch[1]
+          : academicYearMatch[2];
+      }
+
       const digits = tahunAkademik.match(/\d{4}/g);
 
       if (kategori === "tahunan") {
         if (digits?.length) {
           return digits[0];
-        }
-      }
-
-      if (tahunAkademik.includes("/")) {
-        const parts = tahunAkademik.split("/").map((part) => part.trim());
-        if (parts[0]) {
-          return parts[0];
         }
       }
 
@@ -729,9 +731,10 @@ const CetakBerkasPage = ({ tipe = "rutin" }) => {
 
   return (
     <>
-      <Helmet>
-        <title>{pageTitle}</title>
-      </Helmet>
+      <PageHelmet
+        title={pageTitle}
+        description={`Cetak dan unduh berkas pengajuan ${tipeLabel.toLowerCase()} di UNIKOM Perlengkapan.`}
+      />
 
       <div className="bg-white rounded shadow-sm overflow-hidden mb-6">
         <div className="bg-[#4773da] text-white px-6 py-4">

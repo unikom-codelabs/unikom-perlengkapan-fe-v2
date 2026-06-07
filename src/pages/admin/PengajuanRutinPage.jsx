@@ -1,14 +1,19 @@
-import { useEffect, useMemo, useState } from "react";
-import { PDFDownloadLink } from "@react-pdf/renderer";
-import { Helmet } from "react-helmet-async";
-import Table from "../../components/Element/Table";
-import Dropdown from "../../components/Element/Dropdown";
-import BapDocument from "../../components/Pdf/BapDocument";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import PageHelmet from "../../components/SEO/PageHelmet";
+import BapPrintModal from "../../components/Fragments/BapPrintModal";
+import FilterSelect from "../../components/Fragments/FilterSelect";
+import {
+  AlertMessage,
+  ToastMessage,
+} from "../../components/Fragments/PageMessages";
+import PengajuanApprovalTable from "../../components/Fragments/PengajuanApprovalTable";
+import PengajuanTabs from "../../components/Fragments/PengajuanTabs";
 import {
   approveBarangPengajuanAdmin,
   listDaftarPengajuanAdmin,
 } from "../../api/pengajuanService";
 import { listUnitTypeTree } from "../../api/unitTypeService";
+import { listUsersPaginated } from "../../api/userService";
 
 const BASE_STORAGE_URL = "http://perlengkapan.codelabspace.or.id/storage/";
 
@@ -113,6 +118,25 @@ const statusBadgeClass = (status) => {
   return "bg-yellow-100 text-yellow-700";
 };
 
+const buildDefaultBapNumber = () => {
+  const year = new Date().getFullYear();
+  return `/BA-BP/UNIKOM/${year}`;
+};
+
+const buildDefaultBapForm = (secondPartyRoleValue = "") => ({
+  bapNumber: buildDefaultBapNumber(),
+  ttd1Role: "Kepala Bagian Perlengkapan",
+  ttd2Role: secondPartyRoleValue,
+  ttd3Role: "",
+  ttd4Role: "",
+  tembusan: [""],
+});
+
+const normalizeLookupValue = (value) =>
+  String(value ?? "")
+    .trim()
+    .toLowerCase();
+
 const sanitizeFilenameSegment = (value) =>
   String(value ?? "")
     .trim()
@@ -206,6 +230,12 @@ const AdminDaftarPengajuanPage = ({ tipe = "rutin" }) => {
   const [updatingRowId, setUpdatingRowId] = useState("");
   const [inputErrors, setInputErrors] = useState({});
   const [toastMessage, setToastMessage] = useState("");
+  const [ttdUsers, setTtdUsers] = useState([]);
+  const [isLoadingTtdUsers, setIsLoadingTtdUsers] = useState(false);
+  const [isBapModalOpen, setIsBapModalOpen] = useState(false);
+  const [shouldRenderBapModal, setShouldRenderBapModal] = useState(false);
+  const [showBapModal, setShowBapModal] = useState(false);
+  const [bapForm, setBapForm] = useState(() => buildDefaultBapForm(""));
 
   const isTahunanTab = activeTab === "tahunan";
   const isUjianTab = activeTab === "ujian";
@@ -279,7 +309,7 @@ const AdminDaftarPengajuanPage = ({ tipe = "rutin" }) => {
     return getChildOptions(kaprodi?.children);
   }, [jabatanOptions]);
 
-  const fetchRows = async () => {
+  const fetchRows = useCallback(async () => {
     setIsLoading(true);
     setPageError("");
 
@@ -294,11 +324,11 @@ const AdminDaftarPengajuanPage = ({ tipe = "rutin" }) => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchRows();
-  }, [normalizedTipe]);
+  }, [fetchRows, normalizedTipe]);
 
   useEffect(() => {
     const fetchFilters = async () => {
@@ -501,6 +531,12 @@ const AdminDaftarPengajuanPage = ({ tipe = "rutin" }) => {
     submitApproval(row, { status, jumlahDisetujui });
   };
 
+  const handleJumlahBlur = (row, value) => {
+    submitApproval(row, {
+      jumlahDisetujui: Math.min(row.jumlah, Math.max(0, Number(value) || 0)),
+    });
+  };
+
   useEffect(() => {
     if (!toastMessage) {
       return undefined;
@@ -527,81 +563,46 @@ const AdminDaftarPengajuanPage = ({ tipe = "rutin" }) => {
 
       return (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-          <div>
-            <label className="block text-sm text-gray-500 mb-2">Jabatan</label>
-            <Dropdown
-              value={selectedBagianType}
-              onChange={(event) => setSelectedBagianType(event.target.value)}
-              className="w-full border border-gray-300 rounded-full px-4 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 appearance-none bg-white text-gray-500"
-              disabled={isLoadingFilters}
-            >
-              <option value="">-- Pilih Jabatan --</option>
-              {ujianJabatanOptions.map((option) => (
-                <option key={option.value} value={option.label}>
-                  {option.label}
-                </option>
-              ))}
-            </Dropdown>
-          </div>
+          <FilterSelect
+            label="Jabatan"
+            value={selectedBagianType}
+            onChange={setSelectedBagianType}
+            placeholder="-- Pilih Jabatan --"
+            options={ujianJabatanOptions.map((option) => ({
+              ...option,
+              value: option.label,
+            }))}
+            disabled={isLoadingFilters}
+          />
 
           {selectedBagianType && isDekan ? (
-            <div>
-              <label className="block text-sm text-gray-500 mb-2">Bagian</label>
-              <Dropdown
-                value={selectedBagian}
-                onChange={(event) => setSelectedBagian(event.target.value)}
-                className="w-full border border-gray-300 rounded-full px-4 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 appearance-none bg-white text-gray-500"
-              >
-                <option value="">-- Pilih Bagian --</option>
-                {dekanBagianOptions.map((option) => (
-                  <option key={option.id} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </Dropdown>
-            </div>
+            <FilterSelect
+              label="Bagian"
+              value={selectedBagian}
+              onChange={setSelectedBagian}
+              placeholder="-- Pilih Bagian --"
+              options={dekanBagianOptions}
+            />
           ) : null}
 
           {selectedBagianType && !isDekan ? (
-            <div>
-              <label className="block text-sm text-gray-500 mb-2">
-                Program Studi
-              </label>
-              <Dropdown
-                value={selectedProdi}
-                onChange={(event) => setSelectedProdi(event.target.value)}
-                className="w-full border border-gray-300 rounded-full px-4 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 appearance-none bg-white text-gray-500"
-              >
-                <option value="">-- Pilih Program Studi --</option>
-                {kaprodiProdiOptions.map((option) => (
-                  <option key={option.id} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </Dropdown>
-            </div>
+            <FilterSelect
+              label="Program Studi"
+              value={selectedProdi}
+              onChange={setSelectedProdi}
+              placeholder="-- Pilih Program Studi --"
+              options={kaprodiProdiOptions}
+            />
           ) : null}
 
           {selectedBagianType && selectedUnit ? (
-            <div>
-              <label className="block text-sm text-gray-500 mb-2">
-                Aktivasi
-              </label>
-              <Dropdown
-                value={selectedAktivasiValue}
-                onChange={(event) =>
-                  setSelectedAktivasiValue(event.target.value)
-                }
-                className="w-full border border-gray-300 rounded-full px-4 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 appearance-none bg-white text-gray-500"
-              >
-                <option value="">-- Pilih Aktivasi --</option>
-                {options.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </Dropdown>
-            </div>
+            <FilterSelect
+              label="Aktivasi"
+              value={selectedAktivasiValue}
+              onChange={setSelectedAktivasiValue}
+              placeholder="-- Pilih Aktivasi --"
+              options={options}
+            />
           ) : null}
         </div>
       );
@@ -609,151 +610,37 @@ const AdminDaftarPengajuanPage = ({ tipe = "rutin" }) => {
 
     return (
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-        <div>
-          <label className="block text-sm text-gray-500 mb-2">Jabatan</label>
-          <Dropdown
-            value={selectedJabatan}
-            onChange={(event) => setSelectedJabatan(event.target.value)}
-            className="w-full border border-gray-300 rounded-full px-4 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 appearance-none bg-white text-gray-500"
-            disabled={isLoadingFilters}
-          >
-            <option value="">-- Pilih Jabatan --</option>
-            {jabatanOptions.map((option) => (
-              <option key={option.id} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </Dropdown>
-        </div>
+        <FilterSelect
+          label="Jabatan"
+          value={selectedJabatan}
+          onChange={setSelectedJabatan}
+          placeholder="-- Pilih Jabatan --"
+          options={jabatanOptions}
+          disabled={isLoadingFilters}
+        />
 
         {selectedJabatan ? (
-          <div>
-            <label className="block text-sm text-gray-500 mb-2">Bagian</label>
-            <Dropdown
-              value={selectedBagian}
-              onChange={(event) => setSelectedBagian(event.target.value)}
-              className="w-full border border-gray-300 rounded-full px-4 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 appearance-none bg-white text-gray-500"
-            >
-              <option value="">-- Pilih Bagian --</option>
-              {bagianOptions.map((option) => (
-                <option key={option.id} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </Dropdown>
-          </div>
+          <FilterSelect
+            label="Bagian"
+            value={selectedBagian}
+            onChange={setSelectedBagian}
+            placeholder="-- Pilih Bagian --"
+            options={bagianOptions}
+          />
         ) : null}
 
         {selectedJabatan && selectedBagian ? (
-          <div>
-            <label className="block text-sm text-gray-500 mb-2">Aktivasi</label>
-            <Dropdown
-              value={selectedAktivasi}
-              onChange={(event) => setSelectedAktivasi(event.target.value)}
-              className="w-full border border-gray-300 rounded-full px-4 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 appearance-none bg-white text-gray-500"
-            >
-              <option value="">-- Pilih Aktivasi --</option>
-              {aktivasiOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </Dropdown>
-          </div>
+          <FilterSelect
+            label="Aktivasi"
+            value={selectedAktivasi}
+            onChange={setSelectedAktivasi}
+            placeholder="-- Pilih Aktivasi --"
+            options={aktivasiOptions}
+          />
         ) : null}
       </div>
     );
   };
-
-  const renderTable = (title, tableRows, emptyMessage, pengajuLabel) => (
-    <div className="mb-8 last:mb-0">
-      {pengajuLabel ? (
-        <div className="mb-2 text-sm text-gray-600">
-          <span className="font-bold text-gray-700">Pengaju:</span>{" "}
-          {pengajuLabel}
-        </div>
-      ) : null}
-      <Table
-        title={title}
-        columns={[
-          { key: "no", label: "No" },
-          { key: "namaBarang", label: "Nama Barang" },
-          { key: "satuan", label: "Satuan" },
-          { key: "kategori", label: "Kategori" },
-          { key: "jumlah", label: "Jumlah" },
-          { key: "jumlahDisetujui", label: "Jumlah Disetujui" },
-          { key: "status", label: "Status" },
-          { key: "aksi", label: "Aksi" },
-        ]}
-        rows={tableRows}
-        emptyMessage={emptyMessage}
-        wrapperClass="overflow-x-auto border border-gray-200"
-        renderRow={(row, index) => {
-          const isUpdating = updatingRowId === row.id;
-          const inputError = inputErrors[row.id];
-
-          return (
-            <tr key={row.id} className="border-t border-gray-100">
-              <td className="px-6 py-4 text-gray-600">{index + 1}</td>
-              <td className="px-6 py-4 text-gray-800">{row.namaBarang}</td>
-              <td className="px-6 py-4 text-gray-600">{row.satuan}</td>
-              <td className="px-6 py-4 text-gray-600">
-                {formatKategori(row.kategori)}
-              </td>
-              <td className="px-6 py-4 text-gray-600">{row.jumlah}</td>
-              <td className="px-6 py-4">
-                <div className="relative inline-flex">
-                  <input
-                    type="number"
-                    min="0"
-                    value={row.jumlahDisetujui}
-                    onChange={(event) =>
-                      handleJumlahChange(row, event.target.value)
-                    }
-                    onBlur={(event) =>
-                      submitApproval(row, {
-                        jumlahDisetujui: Math.min(
-                          row.jumlah,
-                          Math.max(0, Number(event.target.value) || 0),
-                        ),
-                      })
-                    }
-                    disabled={isUpdating}
-                    className={`w-20 rounded border px-2 py-1 text-sm text-gray-600 focus:outline-none focus:ring-1 disabled:bg-gray-100 ${
-                      inputError
-                        ? "border-red-500 focus:ring-red-300 animate-[shake_260ms_ease-in-out] motion-reduce:animate-none"
-                        : "border-gray-300 focus:ring-blue-500"
-                    }`}
-                  />
-                </div>
-              </td>
-              <td className="px-6 py-4">
-                <span
-                  className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${statusBadgeClass(row.status)}`}
-                >
-                  {formatStatus(row.status)}
-                </span>
-              </td>
-              <td className="px-6 py-4">
-                <Dropdown
-                  value={row.status}
-                  onChange={(event) =>
-                    handleStatusChange(row, event.target.value)
-                  }
-                  disabled={isUpdating}
-                  className="w-40 rounded border border-gray-300 px-3 py-2 text-sm text-gray-600 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100"
-                >
-                  <option value={0}>Belum Disetujui</option>
-                  <option value={1}>Disetujui</option>
-                  <option value={2}>Tidak Disetujui</option>
-                </Dropdown>
-              </td>
-            </tr>
-          );
-        }}
-      />
-    </div>
-  );
 
   const emptyMessage = isLoading
     ? "Memuat data pengajuan..."
@@ -798,6 +685,58 @@ const AdminDaftarPengajuanPage = ({ tipe = "rutin" }) => {
     firstBapRow.userJabatan ||
     (isUjianTab || isKelasTab ? selectedBagianType : selectedJabatanLabel) ||
     "-";
+
+  const fetchTtdUsers = useCallback(async () => {
+    setIsLoadingTtdUsers(true);
+
+    try {
+      const firstResult = await listUsersPaginated({ page: 1 });
+      const totalPages = Number(firstResult.pagination?.lastPage ?? 1);
+      const users = [...(firstResult.users ?? [])];
+
+      if (totalPages > 1) {
+        const pageNumbers = Array.from(
+          { length: totalPages - 1 },
+          (_, index) => index + 2,
+        );
+        const results = await Promise.all(
+          pageNumbers.map((page) => listUsersPaginated({ page })),
+        );
+
+        results.forEach((result) => {
+          users.push(...(result.users ?? []));
+        });
+      }
+
+      setTtdUsers(users);
+    } catch {
+      setTtdUsers([]);
+    } finally {
+      setIsLoadingTtdUsers(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isBapModalOpen) {
+      setBapForm(buildDefaultBapForm(secondPartyRole));
+      setShouldRenderBapModal(true);
+      const timer = setTimeout(() => setShowBapModal(true), 10);
+      return () => clearTimeout(timer);
+    }
+
+    setShowBapModal(false);
+    const timer = setTimeout(() => setShouldRenderBapModal(false), 150);
+    return () => clearTimeout(timer);
+  }, [isBapModalOpen, secondPartyRole]);
+
+  useEffect(() => {
+    if (!isBapModalOpen || isLoadingTtdUsers || ttdUsers.length > 0) {
+      return;
+    }
+
+    fetchTtdUsers();
+  }, [fetchTtdUsers, isBapModalOpen, isLoadingTtdUsers, ttdUsers.length]);
+
   const bapFileName = [
     "bap",
     tipeLabel,
@@ -809,12 +748,126 @@ const AdminDaftarPengajuanPage = ({ tipe = "rutin" }) => {
     .filter(Boolean)
     .join("-");
   const hasBapRows = filteredRows.length > 0;
+  const ttdOptions = useMemo(() => {
+    const optionMap = new Map();
+
+    jabatanOptions.forEach((jabatan) => {
+      getChildOptions(jabatan.children).forEach((child) => {
+        if (!optionMap.has(child.value)) {
+          optionMap.set(child.value, {
+            value: child.value,
+            label: child.label,
+          });
+        }
+      });
+    });
+
+    return Array.from(optionMap.values());
+  }, [jabatanOptions]);
+
+  const updateBapField = (name, value) => {
+    setBapForm((current) => ({
+      ...current,
+      [name]: value,
+    }));
+  };
+
+  const updateTembusan = (index, value) => {
+    setBapForm((current) => {
+      const nextTembusan = [...current.tembusan];
+      nextTembusan[index] = value;
+      return { ...current, tembusan: nextTembusan };
+    });
+  };
+
+  const handleAddTembusan = () => {
+    setBapForm((current) => ({
+      ...current,
+      tembusan: [...current.tembusan, ""],
+    }));
+  };
+
+  const handleRemoveTembusan = () => {
+    setBapForm((current) => {
+      if (current.tembusan.length <= 1) {
+        return current;
+      }
+      return {
+        ...current,
+        tembusan: current.tembusan.slice(0, -1),
+      };
+    });
+  };
+
+  const handleResetBapForm = () => {
+    setBapForm(buildDefaultBapForm(secondPartyRole));
+  };
+
+  const resolveTtdUser = useCallback(
+    (bagianName) => {
+      const normalizedBagian = normalizeLookupValue(bagianName);
+      if (!normalizedBagian) {
+        return null;
+      }
+
+      return (
+        ttdUsers.find((user) => {
+          const unitName = normalizeLookupValue(user.satuan);
+          const nestedUnitName = normalizeLookupValue(user.unit?.nama);
+          return (
+            unitName === normalizedBagian || nestedUnitName === normalizedBagian
+          );
+        }) ?? null
+      );
+    },
+    [ttdUsers],
+  );
+
+  const ttd3User = useMemo(
+    () => resolveTtdUser(bapForm.ttd3Role),
+    [bapForm.ttd3Role, resolveTtdUser],
+  );
+  const ttd4User = useMemo(
+    () => resolveTtdUser(bapForm.ttd4Role),
+    [bapForm.ttd4Role, resolveTtdUser],
+  );
+
+  const isBapFormValid =
+    bapForm.bapNumber.trim() &&
+    bapForm.ttd3Role.trim() &&
+    bapForm.ttd4Role.trim() &&
+    bapForm.tembusan.every((item) => item.trim());
+
+  const bapDocumentData = {
+    mainRows,
+    otherRows: lainnyaRows,
+    unitLabel: selectedUnitLabel || "-",
+    secondPartyName: firstBapRow.user || "-",
+    secondPartyRole: bapForm.ttd2Role,
+    secondPartyNip: firstBapRow.userNip || "-",
+    bapNumber: bapForm.bapNumber,
+    firstPartyRole: bapForm.ttd1Role,
+    knownByPrimary: {
+      title: bapForm.ttd3Role,
+      role: "",
+      name: ttd3User?.nama ?? "",
+      nip: ttd3User?.nip ?? "",
+    },
+    knownBySecondary: {
+      title: bapForm.ttd4Role,
+      role: "",
+      name: ttd4User?.nama ?? "",
+      nip: ttd4User?.nip ?? "",
+    },
+    tembusan: bapForm.tembusan,
+  };
 
   return (
     <>
-      <Helmet>
-        <title>{title} | UNIKOM Perlengkapan</title>
-      </Helmet>
+      <PageHelmet
+        title={title}
+        description={`Kelola daftar pengajuan ${tipeLabel.toLowerCase()} dan cetak BAP pengajuan.`}
+      />
 
       <div className="bg-white rounded shadow-sm overflow-hidden">
         <div className="bg-[#4773da] text-white px-6 py-4">
@@ -822,48 +875,17 @@ const AdminDaftarPengajuanPage = ({ tipe = "rutin" }) => {
         </div>
 
         <div className="p-6">
-          {toastMessage ? (
-            <div className="fixed top-24 right-6 z-50 animate-[toast-in_220ms_ease-out] motion-reduce:animate-none rounded border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700 shadow">
-              <div className="flex items-start gap-2">
-                <span className="mt-0.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-red-100 text-red-600">
-                  !
-                </span>
-                <span>{toastMessage}</span>
-              </div>
-            </div>
-          ) : null}
-          <div className="flex space-x-6 border-b border-gray-100 mb-6">
-            {TAB_OPTIONS.map((tab) => (
-              <button
-                key={tab.value}
-                onClick={() => setActiveTab(tab.value)}
-                className={`pb-3 text-[15px] font-medium transition-colors relative ${
-                  activeTab === tab.value
-                    ? "text-[#4773da]"
-                    : "text-gray-400 hover:text-gray-600"
-                }`}
-              >
-                {tab.label}
-                {activeTab === tab.value ? (
-                  <span className="absolute bottom-0 left-0 w-full h-0.5 bg-[#4773da]" />
-                ) : null}
-              </button>
-            ))}
-          </div>
+          <ToastMessage>{toastMessage}</ToastMessage>
+          <PengajuanTabs
+            tabs={TAB_OPTIONS}
+            activeValue={activeTab}
+            onChange={setActiveTab}
+          />
 
           {renderFilters()}
 
-          {pageError ? (
-            <p className="mb-4 rounded border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700 whitespace-pre-line">
-              {pageError}
-            </p>
-          ) : null}
-
-          {actionError ? (
-            <p className="mb-4 rounded border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700 whitespace-pre-line">
-              {actionError}
-            </p>
-          ) : null}
+          <AlertMessage>{pageError}</AlertMessage>
+          <AlertMessage>{actionError}</AlertMessage>
 
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
             <div className="text-sm text-gray-600">
@@ -886,24 +908,13 @@ const AdminDaftarPengajuanPage = ({ tipe = "rutin" }) => {
                 </span>
               )}
               {hasBapRows ? (
-                <PDFDownloadLink
-                  document={
-                    <BapDocument
-                      mainRows={mainRows}
-                      otherRows={lainnyaRows}
-                      unitLabel={selectedUnitLabel || "-"}
-                      secondPartyName={firstBapRow.user || "-"}
-                      secondPartyRole={secondPartyRole}
-                      secondPartyNip={firstBapRow.userNip || "-"}
-                    />
-                  }
-                  fileName={`${bapFileName || "bap-pengajuan"}.pdf`}
+                <button
+                  type="button"
+                  onClick={() => setIsBapModalOpen(true)}
                   className="inline-flex items-center justify-center rounded bg-[#4773da] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#365db8]"
                 >
-                  {({ loading }) =>
-                    loading ? "Menyiapkan BAP..." : "Cetak BAP"
-                  }
-                </PDFDownloadLink>
+                  Cetak BAP
+                </button>
               ) : (
                 <span className="inline-flex items-center justify-center rounded bg-gray-200 px-4 py-2 text-sm font-medium text-gray-500 cursor-not-allowed select-none">
                   Cetak BAP
@@ -912,14 +923,52 @@ const AdminDaftarPengajuanPage = ({ tipe = "rutin" }) => {
             </div>
           </div>
 
-          {renderTable(
-            `Aktivasi : ${activeAktivasiLabel || "-"}`,
-            mainRows,
-            emptyMessage,
-          )}
-          {renderTable("Pengajuan Lainnya", lainnyaRows, emptyMessage)}
+          <PengajuanApprovalTable
+            title={`Aktivasi : ${activeAktivasiLabel || "-"}`}
+            rows={mainRows}
+            emptyMessage={emptyMessage}
+            updatingRowId={updatingRowId}
+            inputErrors={inputErrors}
+            formatKategori={formatKategori}
+            formatStatus={formatStatus}
+            statusBadgeClass={statusBadgeClass}
+            onJumlahChange={handleJumlahChange}
+            onJumlahBlur={handleJumlahBlur}
+            onStatusChange={handleStatusChange}
+          />
+          <PengajuanApprovalTable
+            title="Pengajuan Lainnya"
+            rows={lainnyaRows}
+            emptyMessage={emptyMessage}
+            updatingRowId={updatingRowId}
+            inputErrors={inputErrors}
+            formatKategori={formatKategori}
+            formatStatus={formatStatus}
+            statusBadgeClass={statusBadgeClass}
+            onJumlahChange={handleJumlahChange}
+            onJumlahBlur={handleJumlahBlur}
+            onStatusChange={handleStatusChange}
+          />
         </div>
       </div>
+
+      {shouldRenderBapModal ? (
+        <BapPrintModal
+          isVisible={showBapModal}
+          form={bapForm}
+          ttdOptions={ttdOptions}
+          isLoadingTtdUsers={isLoadingTtdUsers}
+          isFormValid={Boolean(isBapFormValid)}
+          documentData={bapDocumentData}
+          fileName={bapFileName}
+          onClose={() => setIsBapModalOpen(false)}
+          onFieldChange={updateBapField}
+          onTembusanChange={updateTembusan}
+          onAddTembusan={handleAddTembusan}
+          onRemoveTembusan={handleRemoveTembusan}
+          onReset={handleResetBapForm}
+        />
+      ) : null}
     </>
   );
 };

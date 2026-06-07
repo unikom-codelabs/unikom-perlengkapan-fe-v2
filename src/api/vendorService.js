@@ -23,10 +23,12 @@ export const listVendor = async () => {
 
 const buildVendorPayload = (payload = {}) => {
     const nama = String(payload.nama ?? payload.name ?? "").trim();
+    const kontak = String(payload.kontak ?? payload.contact ?? "").trim();
 
     return {
         nama,
         name: nama,
+        kontak,
     };
 };
 

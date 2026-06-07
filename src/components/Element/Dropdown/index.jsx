@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 const Dropdown = React.forwardRef(
   (
@@ -22,7 +23,10 @@ const Dropdown = React.forwardRef(
     const containerRef = useRef(null);
     const [isOpen, setIsOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
+    const [menuStyles, setMenuStyles] = useState(null);
     const searchInputRef = useRef(null);
+    const buttonRef = useRef(null);
+    const menuRef = useRef(null);
 
     const optionItems = useMemo(() => {
       return React.Children.toArray(children)
@@ -65,8 +69,26 @@ const Dropdown = React.forwardRef(
         return undefined;
       }
 
+      const updateMenuPosition = () => {
+        if (!buttonRef.current) {
+          return;
+        }
+
+        const rect = buttonRef.current.getBoundingClientRect();
+        setMenuStyles({
+          top: rect.bottom + window.scrollY,
+          left: rect.left + window.scrollX,
+          width: rect.width,
+        });
+      };
+
+      updateMenuPosition();
+
       const handleClickOutside = (event) => {
-        if (!containerRef.current?.contains(event.target)) {
+        if (
+          !containerRef.current?.contains(event.target) &&
+          !menuRef.current?.contains(event.target)
+        ) {
           setIsOpen(false);
         }
       };
@@ -79,6 +101,8 @@ const Dropdown = React.forwardRef(
 
       document.addEventListener("mousedown", handleClickOutside);
       document.addEventListener("keydown", handleEscape);
+      window.addEventListener("resize", updateMenuPosition);
+      window.addEventListener("scroll", updateMenuPosition, true);
 
       if (isSearchEnabled) {
         const timer = setTimeout(() => {
@@ -88,12 +112,16 @@ const Dropdown = React.forwardRef(
           clearTimeout(timer);
           document.removeEventListener("mousedown", handleClickOutside);
           document.removeEventListener("keydown", handleEscape);
+          window.removeEventListener("resize", updateMenuPosition);
+          window.removeEventListener("scroll", updateMenuPosition, true);
         };
       }
 
       return () => {
         document.removeEventListener("mousedown", handleClickOutside);
         document.removeEventListener("keydown", handleEscape);
+        window.removeEventListener("resize", updateMenuPosition);
+        window.removeEventListener("scroll", updateMenuPosition, true);
       };
     }, [isOpen]);
 
@@ -102,7 +130,7 @@ const Dropdown = React.forwardRef(
         return;
       }
 
-      onChange?.({ target: { value: optionValue } });
+      onChange?.({ target: { value: optionValue, name } });
       setIsOpen(false);
     };
 
@@ -154,6 +182,7 @@ const Dropdown = React.forwardRef(
           {children}
         </select>
         <button
+          ref={buttonRef}
           type="button"
           onClick={() => !disabled && setIsOpen((prev) => !prev)}
           disabled={disabled}
@@ -175,52 +204,59 @@ const Dropdown = React.forwardRef(
             />
           </svg>
         </span>
-        {isOpen ? (
-          <div className="absolute z-20 mt-2 w-full overflow-hidden rounded-2xl border border-gray-200 bg-white py-1 shadow-lg">
-            {isSearchEnabled ? (
-              <div className="px-3 py-2 border-b border-gray-200">
-                <input
-                  ref={searchInputRef}
-                  type="text"
-                  value={searchQuery}
-                  onChange={(event) => setSearchQuery(event.target.value)}
-                  placeholder={searchPlaceholder}
-                  className="w-full rounded-full border border-gray-200 px-3 py-1.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#4279df]"
-                />
-              </div>
-            ) : null}
-            <ul className="max-h-60 overflow-y-auto" role="listbox">
-              {filteredOptions.length === 0 ? (
-                <li className="px-4 py-2 text-sm text-gray-400">
-                  Tidak ada opsi
-                </li>
-              ) : (
-                filteredOptions.map((option) => (
-                  <li
-                    key={option.value}
-                    role="option"
-                    aria-selected={value === option.value}
-                  >
-                    <button
-                      type="button"
-                      onClick={() => handleSelect(option.value)}
-                      disabled={option.disabled}
-                      className={`w-full text-left px-4 py-2 text-sm transition-colors ${
-                        option.disabled
-                          ? "text-gray-300 cursor-not-allowed"
-                          : value === option.value
-                            ? "bg-blue-50 text-blue-700"
-                            : "text-gray-700 hover:bg-gray-50"
-                      }`}
-                    >
-                      {option.label}
-                    </button>
-                  </li>
-                ))
-              )}
-            </ul>
-          </div>
-        ) : null}
+        {isOpen && menuStyles
+          ? createPortal(
+              <div
+                ref={menuRef}
+                className="absolute z-1000 mt-2 overflow-hidden rounded-2xl border border-gray-200 bg-white py-1 shadow-lg"
+                style={menuStyles}
+              >
+                {isSearchEnabled ? (
+                  <div className="px-3 py-2 border-b border-gray-200">
+                    <input
+                      ref={searchInputRef}
+                      type="text"
+                      value={searchQuery}
+                      onChange={(event) => setSearchQuery(event.target.value)}
+                      placeholder={searchPlaceholder}
+                      className="w-full rounded-full border border-gray-200 px-3 py-1.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#4279df]"
+                    />
+                  </div>
+                ) : null}
+                <ul className="max-h-60 overflow-y-auto" role="listbox">
+                  {filteredOptions.length === 0 ? (
+                    <li className="px-4 py-2 text-sm text-gray-400">
+                      Tidak ada opsi
+                    </li>
+                  ) : (
+                    filteredOptions.map((option) => (
+                      <li
+                        key={option.value}
+                        role="option"
+                        aria-selected={value === option.value}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => handleSelect(option.value)}
+                          disabled={option.disabled}
+                          className={`w-full text-left px-4 py-2 text-sm transition-colors ${
+                            option.disabled
+                              ? "text-gray-300 cursor-not-allowed"
+                              : value === option.value
+                                ? "bg-blue-50 text-blue-700"
+                                : "text-gray-700 hover:bg-gray-50"
+                          }`}
+                        >
+                          {option.label}
+                        </button>
+                      </li>
+                    ))
+                  )}
+                </ul>
+              </div>,
+              document.body,
+            )
+          : null}
       </div>
     );
   },

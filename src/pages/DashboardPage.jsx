@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Helmet } from "react-helmet-async";
+import PageHelmet from "../components/SEO/PageHelmet";
 import DashboardCard from "../components/Element/DashboardCard";
 import DashboardAktivasiSummaryCard from "../components/Element/DashboardAktivasiSummaryCard";
 import DashboardPengumumanSection from "../components/Element/DashboardPengumumanSection";
@@ -78,6 +78,107 @@ const toTimestamp = (value) => {
 
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? 0 : date.getTime();
+};
+
+const extractYearFromText = (value) => {
+  const text = String(value ?? "").trim();
+  if (!text) {
+    return "";
+  }
+
+  const academicMatch = text.match(
+    /\b((?:19|20)\d{2})\s*[/-]\s*((?:19|20)\d{2})\b/,
+  );
+  if (academicMatch) {
+    return academicMatch[2];
+  }
+
+  const yearMatch = text.match(/\b(?:19|20)\d{2}\b/);
+  return yearMatch ? yearMatch[0] : "";
+};
+
+const formatTahunanYear = (aktivasi = {}) => {
+  const yearFromAkademik = extractYearFromText(aktivasi.tahunAkademik);
+  if (yearFromAkademik) {
+    return yearFromAkademik;
+  }
+
+  const yearFromNama = extractYearFromText(aktivasi.namaPeriode);
+  if (yearFromNama) {
+    return yearFromNama;
+  }
+
+  const dateValue = aktivasi.tanggalMulai || aktivasi.tanggalSelesai;
+  const date = dateValue ? new Date(dateValue) : null;
+  if (date && !Number.isNaN(date.getTime())) {
+    return String(date.getFullYear());
+  }
+
+  return "-";
+};
+
+const formatAcademicYear = (aktivasi = {}) => {
+  const rawText = String(aktivasi.tahunAkademik ?? "").trim();
+
+  if (/\b\d{4}\s*[/-]\s*\d{4}\b/.test(rawText)) {
+    return rawText;
+  }
+
+  const yearText = extractYearFromText(rawText);
+  if (yearText) {
+    const yearNumber = Number(yearText);
+    if (Number.isFinite(yearNumber)) {
+      return `${yearNumber}/${yearNumber + 1}`;
+    }
+  }
+
+  const dateValue = aktivasi.tanggalMulai || aktivasi.tanggalSelesai;
+  const date = dateValue ? new Date(dateValue) : null;
+  if (date && !Number.isNaN(date.getTime())) {
+    const startYear = date.getFullYear();
+    return `${startYear}/${startYear + 1}`;
+  }
+
+  return "-";
+};
+
+const formatPeriodLabel = (aktivasi = {}, kategoriFallback = "") => {
+  const kategori = String(aktivasi.kategori || kategoriFallback)
+    .trim()
+    .toLowerCase();
+
+  if (kategori === "tahunan") {
+    return formatTahunanYear(aktivasi);
+  }
+
+  return formatAcademicYear(aktivasi);
+};
+
+const buildLatestByKategori = (aktivasiList = []) => {
+  const byKategori = new Map();
+  const sortedList = [...aktivasiList].sort((a, b) => {
+    if (a.statusAktif !== b.statusAktif) {
+      return a.statusAktif ? -1 : 1;
+    }
+
+    return (
+      toTimestamp(b.tanggalSelesai || b.tanggalMulai) -
+      toTimestamp(a.tanggalSelesai || a.tanggalMulai)
+    );
+  });
+
+  sortedList.forEach((item) => {
+    const kategori = String(item.kategori ?? "")
+      .trim()
+      .toLowerCase();
+    if (!kategori || byKategori.has(kategori)) {
+      return;
+    }
+
+    byKategori.set(kategori, item);
+  });
+
+  return byKategori;
 };
 
 const normalizeUserRole = (user = {}) => {
@@ -183,11 +284,27 @@ const DashboardPage = () => {
       setAdminSummaryError("");
 
       try {
+        const aktivasiList = await listAktivasiPengajuan();
+        const latestByKategori = buildLatestByKategori(aktivasiList);
+
         const settledSummaries = await Promise.allSettled(
-          ADMIN_DASHBOARD_CARDS.map((card) =>
-            getAktivasiPengajuanSummary(card.id),
-          ),
+          ADMIN_DASHBOARD_CARDS.map((card) => {
+            const aktivasi = latestByKategori.get(card.kategori);
+            if (!aktivasi?.id) {
+              return Promise.resolve({
+                aktivasi: aktivasi || { kategori: card.kategori },
+                statistik: { jumlahPengajuanMasuk: 0, totalPengaju: 0 },
+                detailPengajuan: [],
+              });
+            }
+
+            return getAktivasiPengajuanSummary(aktivasi.id).then((summary) => ({
+              ...summary,
+              aktivasi: summary.aktivasi?.id ? summary.aktivasi : aktivasi,
+            }));
+          }),
         );
+
         const summariesById = settledSummaries.reduce((map, result, index) => {
           const cardId = ADMIN_DASHBOARD_CARDS[index].id;
 
@@ -199,12 +316,6 @@ const DashboardPage = () => {
         }, {});
 
         setAdminSummaries(summariesById);
-
-        if (settledSummaries.some((result) => result.status === "rejected")) {
-          setAdminSummaryError(
-            "Sebagian ringkasan dashboard gagal dimuat.",
-          );
-        }
       } catch (error) {
         setAdminSummaries({});
         setAdminSummaryError(
@@ -273,9 +384,10 @@ const DashboardPage = () => {
 
   return (
     <>
-      <Helmet>
-        <title>Dashboard | UNIKOM Perlengkapan</title>
-      </Helmet>
+      <PageHelmet
+        title="Dashboard"
+        description="Ringkasan pengajuan, aktivasi, dan pengumuman perlengkapan UNIKOM."
+      />
 
       {isUserRole ? (
         <>
@@ -352,11 +464,15 @@ const DashboardPage = () => {
                   value={
                     isLoadingAdminSummaries
                       ? "..."
-                      : summary?.statistik?.jumlahPengajuanMasuk ?? 0
+                      : (summary?.statistik?.jumlahPengajuanMasuk ?? 0)
                   }
                   icon={card.icon}
-                  periodLabel={summary?.aktivasi?.tahunAkademik || "-"}
-                  summaryId={card.id}
+                  periodLabel={
+                    summary?.aktivasi
+                      ? formatPeriodLabel(summary.aktivasi, card.kategori)
+                      : "-"
+                  }
+                  summaryId={summary?.aktivasi?.id}
                 />
               );
             })}

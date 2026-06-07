@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Helmet } from "react-helmet-async";
+import PageHelmet from "../../components/SEO/PageHelmet";
 import { listPengajuanSaya } from "../../api/pengajuanService";
 import { useAuth } from "../../context/useAuth";
 import Table from "../../components/Element/Table";
@@ -86,6 +86,18 @@ const getStatusBadgeClass = (status) => {
   return "bg-yellow-100 text-yellow-700";
 };
 
+const formatKategoriLabel = (value) => {
+  const map = {
+    tahunan: "Tahunan",
+    ujian: "Ujian",
+    kelas: "Kelas",
+    habis_pakai: "Habis Pakai",
+    tidak_habis_pakai: "Tidak Habis Pakai",
+  };
+
+  return map[value] ?? value ?? "-";
+};
+
 const DaftarPengajuanUserPage = () => {
   const { currentUser } = useAuth();
   const [activeTab, setActiveTab] = useState("tahunan");
@@ -150,6 +162,7 @@ const DaftarPengajuanUserPage = () => {
         namaBarang: item.namaBarang || "-",
         satuan: item.satuan || "-",
         kategori: item.kategori || submission.kategori || "tahunan",
+        kategoriBarang: item.kategoriBarang || "",
         jumlah: item.jumlah ?? 0,
         jumlahDisetujui: item.jumlahDisetujui,
         status: item.status || submission.status || "Menunggu",
@@ -173,9 +186,10 @@ const DaftarPengajuanUserPage = () => {
 
   return (
     <>
-      <Helmet>
-        <title>Daftar Pengajuan | UNIKOM Perlengkapan</title>
-      </Helmet>
+      <PageHelmet
+        title="Daftar Pengajuan"
+        description="Daftar kategori pengajuan perlengkapan yang tersedia untuk pengguna."
+      />
 
       <div className="bg-white rounded shadow-sm overflow-hidden">
         <div className="bg-[#4773da] text-white px-6 py-4">
@@ -234,7 +248,7 @@ const DaftarPengajuanUserPage = () => {
                     </td>
                     <td className="px-6 py-4 text-gray-500">{item.satuan}</td>
                     <td className="px-6 py-4 text-gray-500 capitalize">
-                      {item.kategori}
+                      {formatKategoriLabel(item.kategori)}
                     </td>
                     <td className="px-6 py-4 text-gray-500">{item.jumlah}</td>
                     <td className="px-6 py-4 text-gray-500">
@@ -275,7 +289,9 @@ const DaftarPengajuanUserPage = () => {
                       </td>
                       <td className="px-6 py-4 text-gray-500">{item.satuan}</td>
                       <td className="px-6 py-4 text-gray-500 capitalize">
-                        {item.kategori}
+                        {formatKategoriLabel(
+                          item.kategoriBarang || item.kategori,
+                        )}
                       </td>
                       <td className="px-6 py-4 text-gray-500">{item.jumlah}</td>
                       <td className="px-6 py-4 text-gray-500">

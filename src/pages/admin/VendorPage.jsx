@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Helmet } from "react-helmet-async";
+import PageHelmet from "../../components/SEO/PageHelmet";
 import {
   MagnifyingGlassIcon,
   PlusIcon,
@@ -42,6 +42,7 @@ const getApiErrorMessage = (error, fallbackMessage) => {
 const normalizeVendor = (item = {}) => ({
   id: Number(item.id),
   nama: String(item.nama ?? item.name ?? item.vendor ?? "-").trim() || "-",
+  kontak: String(item.kontak ?? item.contact ?? "").trim(),
 });
 
 const VendorPage = () => {
@@ -53,6 +54,7 @@ const VendorPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState("create");
   const [vendorName, setVendorName] = useState("");
+  const [vendorKontak, setVendorKontak] = useState("");
   const [pageError, setPageError] = useState("");
   const [modalError, setModalError] = useState("");
   const [activeVendor, setActiveVendor] = useState(null);
@@ -80,6 +82,7 @@ const VendorPage = () => {
     setModalMode("create");
     setActiveVendor(null);
     setVendorName("");
+    setVendorKontak("");
     setModalError("");
     setIsModalOpen(true);
   };
@@ -88,6 +91,7 @@ const VendorPage = () => {
     setModalMode("edit");
     setActiveVendor(vendor);
     setVendorName(vendor.nama || "");
+    setVendorKontak(vendor.kontak || "");
     setModalError("");
     setIsModalOpen(true);
   };
@@ -101,6 +105,7 @@ const VendorPage = () => {
     setModalMode("create");
     setActiveVendor(null);
     setVendorName("");
+    setVendorKontak("");
     setModalError("");
   };
 
@@ -110,9 +115,12 @@ const VendorPage = () => {
 
     try {
       if (modalMode === "edit" && activeVendor?.id) {
-        await updateVendor(activeVendor.id, { name: vendorName });
+        await updateVendor(activeVendor.id, {
+          name: vendorName,
+          kontak: vendorKontak,
+        });
       } else {
-        await createVendor({ name: vendorName });
+        await createVendor({ name: vendorName, kontak: vendorKontak });
       }
 
       handleCloseModal();
@@ -180,9 +188,10 @@ const VendorPage = () => {
 
   return (
     <>
-      <Helmet>
-        <title>Manajemen Vendor | UNIKOM Perlengkapan</title>
-      </Helmet>
+      <PageHelmet
+        title="Manajemen Vendor"
+        description="Kelola data vendor penyedia barang perlengkapan UNIKOM."
+      />
 
       <div className="bg-white rounded border border-gray-200 w-full shadow-sm">
         <div className="bg-[#4279df] w-full text-white px-6 py-4 rounded-t">
@@ -225,6 +234,7 @@ const VendorPage = () => {
             columns={[
               { key: "no", label: "No" },
               { key: "nama", label: "Nama Vendor" },
+              { key: "kontak", label: "Kontak Personal" },
               { key: "aksi", label: "Aksi" },
             ]}
             rows={tableRows}
@@ -238,7 +248,12 @@ const VendorPage = () => {
                 <td className="px-6 py-4 text-gray-600 text-center">
                   {index + 1}
                 </td>
-                <td className="px-6 py-4 text-gray-800">{item.nama}</td>
+                <td className="px-6 py-4 text-gray-800 text-center">
+                  {item.nama}
+                </td>
+                <td className="px-6 py-4 text-gray-600 text-center">
+                  {item.kontak || "-"}
+                </td>
                 <td className="px-6 py-4 text-center">
                   <div className="flex items-center justify-center gap-2">
                     <ActionIconButton
@@ -271,6 +286,11 @@ const VendorPage = () => {
         submitLabel="Simpan"
         value={vendorName}
         onValueChange={setVendorName}
+        secondaryLabel="Kontak Personal"
+        secondaryPlaceholder="Masukkan kontak personal"
+        secondaryValue={vendorKontak}
+        onSecondaryValueChange={setVendorKontak}
+        secondaryRequired
         onClose={handleCloseModal}
         onSubmit={handleSubmitVendor}
         isSubmitting={isSubmitting}

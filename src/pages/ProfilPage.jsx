@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Helmet } from "react-helmet-async";
+import PageHelmet from "../components/Seo/PageHelmet";
 import ProfileLogo from "/src/assets/img/logo-unikom.png";
 import { useAuth } from "../context/useAuth";
 
@@ -164,9 +164,10 @@ const ProfilPage = () => {
 
   return (
     <>
-      <Helmet>
-        <title>Profil</title>
-      </Helmet>
+      <PageHelmet
+        title="Profil"
+        description="Kelola informasi profil dan akun pengguna UNIKOM Perlengkapan."
+      />
 
       <div className="bg-white rounded shadow-sm overflow-hidden mb-6 flex flex-col justify-start min-h-150">
         <div className="bg-[#4773da] text-white px-6 py-4">

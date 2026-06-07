@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Helmet } from "react-helmet-async";
+import PageHelmet from "../../components/SEO/PageHelmet";
 import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 import { listUnitTypeTree } from "../../api/unitTypeService";
 import Table from "../../components/Element/Table";
@@ -103,9 +103,10 @@ const BagianPage = () => {
 
   return (
     <>
-      <Helmet>
-        <title>Manajemen Bagian | UNIKOM Perlengkapan</title>
-      </Helmet>
+      <PageHelmet
+        title="Manajemen Bagian"
+        description="Kelola data bagian dan struktur unit di UNIKOM Perlengkapan."
+      />
 
       <div className="bg-white rounded border border-gray-200 w-full shadow-sm">
         <div className="bg-[#4279df] w-full text-white px-6 py-4 rounded-t">

@@ -426,6 +426,15 @@ const PengajuanAtkPage = () => {
     setStep(2);
   };
 
+  const handlePreviousStep = () => {
+    if (isSubmittingPengajuan) {
+      return;
+    }
+
+    setSubmitError("");
+    setStep(1);
+  };
+
   useEffect(() => {
     if (isModalOpen) {
       setFormLainnya({
@@ -1091,7 +1100,19 @@ const PengajuanAtkPage = () => {
                 />
               </div>
 
-              <div className="flex justify-end">
+              <div className="flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={handlePreviousStep}
+                  disabled={isSubmittingPengajuan}
+                  className={`px-5 py-2 rounded-full font-medium transition-colors ${
+                    isSubmittingPengajuan
+                      ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                      : "bg-white border border-gray-300 text-gray-600 hover:bg-gray-50"
+                  }`}
+                >
+                  Kembali
+                </button>
                 <button
                   type="button"
                   onClick={handleSubmitPengajuan}

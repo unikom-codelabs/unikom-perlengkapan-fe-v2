@@ -1,10 +1,4 @@
-import {
-  Document,
-  Page,
-  StyleSheet,
-  Text,
-  View,
-} from "@react-pdf/renderer";
+import { Document, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
 
 const FIRST_PARTY = {
   name: "Yayah Sutisnawati, S.E., M.M",
@@ -96,6 +90,50 @@ const cleanText = (value, fallback = "-") => {
   return text || fallback;
 };
 
+const formatDocumentCase = (value) => {
+  const lowerCaseWords = new Set(["dan", "di", "ke", "dari", "untuk"]);
+
+  return String(value ?? "")
+    .trim()
+    .toLowerCase()
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((word, index) => {
+      if (index > 0 && lowerCaseWords.has(word)) {
+        return word;
+      }
+
+      return word.charAt(0).toUpperCase() + word.slice(1);
+    })
+    .join(" ");
+};
+
+const normalizeForCompare = (value) =>
+  String(value ?? "")
+    .trim()
+    .toLowerCase();
+
+const buildReceiptRoleText = (role, unitLabel) => {
+  const cleanRole = cleanText(role, "");
+  const cleanUnit = cleanText(unitLabel, "");
+
+  if (!cleanRole) {
+    return formatDocumentCase(cleanUnit);
+  }
+
+  if (!cleanUnit || normalizeForCompare(cleanRole).includes(normalizeForCompare(cleanUnit))) {
+    return cleanRole;
+  }
+
+  const formattedUnit = formatDocumentCase(cleanUnit);
+  const shouldUseFacultyPrefix =
+    normalizeForCompare(cleanRole) === "dekan" &&
+    !normalizeForCompare(cleanUnit).startsWith("fakultas");
+  const unitPrefix = shouldUseFacultyPrefix ? "Fakultas " : "";
+
+  return `${cleanRole} ${unitPrefix}${formattedUnit}`.trim();
+};
+
 const styles = StyleSheet.create({
   page: {
     paddingTop: 129,
@@ -153,6 +191,21 @@ const styles = StyleSheet.create({
     borderLeftWidth: 0.75,
     borderTopWidth: 0.75,
   },
+  receiptFormTable: {
+    display: "flex",
+    width: "100%",
+    borderStyle: "solid",
+    borderColor: "#dddddd",
+    borderLeftWidth: 0.75,
+  },
+  receiptTable: {
+    display: "flex",
+    width: "100%",
+    borderStyle: "solid",
+    borderColor: "#dddddd",
+    borderLeftWidth: 0.75,
+    borderTopWidth: 0.75,
+  },
   tableHeader: {
     flexDirection: "row",
     minHeight: 28,
@@ -169,6 +222,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
     paddingVertical: 7,
     justifyContent: "center",
+  },
+  receiptCell: {
+    borderRightWidth: 0.75,
+    borderBottomWidth: 0.75,
+    borderStyle: "solid",
+    borderColor: "#dddddd",
+    paddingHorizontal: 4,
+    paddingVertical: 7,
+    justifyContent: "center",
+    borderTopWidth: 0,
+  },
+  receiptHeaderCell: {
+    borderTopWidth: 0.75,
   },
   tableHeaderText: {
     fontFamily: "Helvetica-Bold",
@@ -225,14 +291,17 @@ const styles = StyleSheet.create({
   },
   formProgram: {
     flexDirection: "row",
-    marginBottom: 12,
-    fontSize: 10.5,
+    marginBottom: 6,
+    fontSize: 9,
   },
   formProgramLabel: {
     width: 96,
   },
+  formProgramColon: {
+    width: 8,
+  },
   formProgramValue: {
-    fontFamily: "Helvetica-Bold",
+    flex: 1,
   },
 });
 
@@ -241,7 +310,7 @@ const BapTable = ({ rows = [] }) => {
   const widths = [51, 274, 51, 51, 102];
 
   return (
-    <View style={styles.table}>
+    <View style={styles.receiptTable}>
       <View style={styles.tableHeader}>
         {["No", "Nama Barang", "Jumlah", "Satuan", "Keterangan"].map(
           (label, index) => (
@@ -255,9 +324,14 @@ const BapTable = ({ rows = [] }) => {
         )}
       </View>
       {displayRows.map((row, index) => (
-        <View key={row.id ?? `${row.namaBarang}-${index}`} style={styles.tableRow}>
+        <View
+          key={row.id ?? `${row.namaBarang}-${index}`}
+          style={styles.tableRow}
+        >
           <View style={[styles.tableCell, { width: widths[0] }]}>
-            <Text style={styles.centerText}>{row.namaBarang ? index + 1 : ""}</Text>
+            <Text style={styles.centerText}>
+              {row.namaBarang ? index + 1 : ""}
+            </Text>
           </View>
           <View style={[styles.tableCell, { width: widths[1] }]}>
             <Text>{row.namaBarang ?? ""}</Text>
@@ -281,10 +355,10 @@ const BapTable = ({ rows = [] }) => {
 
 const ReceiptTable = ({ rows = [], generatedDate }) => {
   const displayRows = rows.length > 0 ? rows : [{ id: "empty-receipt-row" }];
-  const widths = [27, 72, 143, 69, 40, 39, 85, 58];
+  const widths = [30, 86, 210, 86, 48, 48];
 
   return (
-    <View style={styles.table}>
+    <View style={styles.receiptFormTable}>
       <View style={styles.tableHeader}>
         {[
           "No",
@@ -293,48 +367,56 @@ const ReceiptTable = ({ rows = [], generatedDate }) => {
           "Jenis Barang",
           "Jumlah",
           "Satuan",
-          "Keterangan / Nama",
-          "TTD",
         ].map((label, index) => (
           <View
             key={label}
-            style={[styles.tableCell, { width: widths[index] }]}
+            style={[
+              styles.receiptCell,
+              styles.receiptHeaderCell,
+              { width: widths[index] },
+            ]}
           >
             <Text style={styles.tableHeaderText}>{label}</Text>
           </View>
         ))}
       </View>
       {displayRows.map((row, index) => (
-        <View key={row.id ?? `${row.namaBarang}-${index}`} style={styles.tableRow}>
-          <View style={[styles.tableCell, { width: widths[0] }]}>
-            <Text style={styles.centerText}>{row.namaBarang ? index + 1 : ""}</Text>
-          </View>
-          <View style={[styles.tableCell, { width: widths[1] }]}>
+        <View
+          key={row.id ?? `${row.namaBarang}-${index}`}
+          style={styles.tableRow}
+        >
+          <View style={[styles.receiptCell, { width: widths[0] }]}>
             <Text style={styles.centerText}>
-              {row.namaBarang ? formatLetterDate(row.tanggal || generatedDate) : ""}
+              {row.namaBarang ? index + 1 : ""}
             </Text>
           </View>
-          <View style={[styles.tableCell, { width: widths[2] }]}>
+          <View style={[styles.receiptCell, { width: widths[1] }]}>
+            <Text style={styles.centerText}>
+              {row.namaBarang
+                ? formatLetterDate(row.tanggal || generatedDate)
+                : ""}
+            </Text>
+          </View>
+          <View style={[styles.receiptCell, { width: widths[2] }]}>
             <Text>{row.namaBarang ?? ""}</Text>
           </View>
-          <View style={[styles.tableCell, { width: widths[3] }]}>
+          <View style={[styles.receiptCell, { width: widths[3] }]}>
             <Text style={styles.centerText}>
               {row.namaBarang ? formatKategori(row.kategori) : ""}
             </Text>
           </View>
-          <View style={[styles.tableCell, { width: widths[4] }]}>
+          <View style={[styles.receiptCell, { width: widths[4] }]}>
             <Text style={styles.centerText}>
               {row.namaBarang ? formatNumber(getApprovedQuantity(row)) : ""}
             </Text>
           </View>
-          <View style={[styles.tableCell, { width: widths[5] }]}>
+          <View
+            style={[
+              styles.receiptCell,
+              { width: widths[5] },
+            ]}
+          >
             <Text style={styles.centerText}>{row.satuan ?? ""}</Text>
-          </View>
-          <View style={[styles.tableCell, { width: widths[6] }]}>
-            <Text>{row.user ?? ""}</Text>
-          </View>
-          <View style={[styles.tableCell, { width: widths[7] }]}>
-            <Text />
           </View>
         </View>
       ))}
@@ -342,14 +424,20 @@ const ReceiptTable = ({ rows = [], generatedDate }) => {
   );
 };
 
-const SignatureColumn = ({ title, role, name, nip }) => (
-  <View style={styles.signatureColumn}>
-    <Text>{title}</Text>
-    <Text style={styles.signatureRole}>{role}</Text>
-    <Text style={styles.signatureName}>{name}</Text>
-    <Text style={styles.signatureNip}>NIP. {nip || "-"}</Text>
-  </View>
-);
+const SignatureColumn = ({ title, role, name, nip }) => {
+  const safeRole = cleanText(role, "");
+  const safeName = cleanText(name, "");
+  const safeNip = cleanText(nip, "");
+
+  return (
+    <View style={styles.signatureColumn}>
+      <Text>{title}</Text>
+      {safeRole ? <Text style={styles.signatureRole}>{safeRole}</Text> : null}
+      <Text style={styles.signatureName}>{safeName || " "}</Text>
+      {safeNip ? <Text style={styles.signatureNip}>NIP. {safeNip}</Text> : null}
+    </View>
+  );
+};
 
 const BapDocument = ({
   mainRows = [],
@@ -358,13 +446,38 @@ const BapDocument = ({
   secondPartyName = "-",
   secondPartyRole = "-",
   secondPartyNip = "-",
+  bapNumber = "",
+  firstPartyName = "",
+  firstPartyRole = "",
+  firstPartyNip = "",
+  knownByPrimary = null,
+  knownBySecondary = null,
+  tembusan = [],
   generatedAt = new Date(),
 }) => {
+  const firstParty = {
+    name: cleanText(firstPartyName, FIRST_PARTY.name),
+    role: cleanText(firstPartyRole, FIRST_PARTY.role),
+    signatureRole: cleanText(firstPartyRole, FIRST_PARTY.signatureRole),
+    nip: cleanText(firstPartyNip, FIRST_PARTY.nip),
+  };
   const secondParty = {
     name: cleanText(secondPartyName),
     role: cleanText(secondPartyRole, "Ketua"),
     nip: cleanText(secondPartyNip),
   };
+  const bapNumberText = cleanText(bapNumber, "/BA-BP/UNIKOM/2023");
+  const knownPrimary = knownByPrimary || KNOWN_BY[0];
+  const knownSecondary = knownBySecondary || {
+    title: `Ketua ${unitLabel}`,
+    role: "",
+    name: secondParty.name,
+    nip: secondParty.nip,
+  };
+  const tembusanList = Array.isArray(tembusan)
+    ? tembusan.map((item) => cleanText(item, "")).filter(Boolean)
+    : [];
+  const receiptRoleText = buildReceiptRoleText(secondParty.role, unitLabel);
 
   return (
     <Document
@@ -376,7 +489,7 @@ const BapDocument = ({
       <Page size="A4" style={styles.page}>
         <View style={styles.line}>
           <Text style={styles.label}>Nomor</Text>
-          <Text style={styles.value}>: /BA-BP/UNIKOM/2023</Text>
+          <Text style={styles.value}>: {bapNumberText}</Text>
         </View>
         <View style={styles.line}>
           <Text style={styles.label}>Lampiran</Text>
@@ -395,11 +508,11 @@ const BapDocument = ({
         <View style={styles.partyBlock}>
           <View style={styles.line}>
             <Text style={styles.label}>Nama</Text>
-            <Text style={styles.value}>: {FIRST_PARTY.name}</Text>
+            <Text style={styles.value}>: {firstParty.name}</Text>
           </View>
           <View style={styles.line}>
             <Text style={styles.label}>Jabatan</Text>
-            <Text style={styles.value}>: {FIRST_PARTY.role}</Text>
+            <Text style={styles.value}>: {firstParty.role}</Text>
           </View>
           <Text>Selanjutnya disebut sebagai pihak kesatu</Text>
         </View>
@@ -432,14 +545,16 @@ const BapDocument = ({
       </Page>
 
       <Page size="A4" style={styles.pageTwo}>
-        <Text style={styles.topNote}>Lampiran Surat No. /BA-BP/UNIKOM/2023</Text>
-        <Text style={styles.dateLine}>Bandung, {formatLetterDate(generatedAt)}</Text>
+        <Text style={styles.topNote}>Lampiran Surat No. {bapNumberText}</Text>
+        <Text style={styles.dateLine}>
+          Bandung, {formatLetterDate(generatedAt)}
+        </Text>
         <View style={styles.signatures}>
           <SignatureColumn
             title="Pihak Kesatu,"
-            role={FIRST_PARTY.signatureRole}
-            name={FIRST_PARTY.name}
-            nip={FIRST_PARTY.nip}
+            role={firstParty.signatureRole}
+            name={firstParty.name}
+            nip={firstParty.nip}
           />
           <SignatureColumn
             title="Pihak Kedua,"
@@ -451,29 +566,43 @@ const BapDocument = ({
         <Text style={styles.knownTitle}>Mengetahui,</Text>
         <View style={styles.signatures}>
           <SignatureColumn
-            title={KNOWN_BY[0].title}
-            role=""
-            name={KNOWN_BY[0].name}
-            nip={KNOWN_BY[0].nip}
+            title={cleanText(knownPrimary?.title, "")}
+            role={knownPrimary?.role}
+            name={knownPrimary?.name}
+            nip={knownPrimary?.nip}
           />
           <SignatureColumn
-            title={`Ketua ${unitLabel}`}
-            role=""
-            name={secondParty.name}
-            nip={secondParty.nip}
+            title={cleanText(knownSecondary?.title, "")}
+            role={knownSecondary?.role}
+            name={knownSecondary?.name}
+            nip={knownSecondary?.nip}
           />
         </View>
         <View style={styles.tembusan}>
           <Text>Tembusan :</Text>
-          <Text style={{ marginTop: 16 }}>1.</Text>
+          {tembusanList.length > 0 ? (
+            tembusanList.map((item, index) => (
+              <Text key={`${item}-${index}`} style={{ marginTop: 16 }}>
+                {index + 1}. {item}
+              </Text>
+            ))
+          ) : (
+            <Text style={{ marginTop: 16 }}>1.</Text>
+          )}
         </View>
       </Page>
 
       <Page size="A4" style={styles.pageThree}>
         <Text style={styles.title}>FORM SERAH TERIMA BARANG</Text>
         <View style={styles.formProgram}>
-          <Text style={styles.formProgramLabel}>Program Studi :</Text>
-          <Text style={styles.formProgramValue}>{unitLabel}</Text>
+          <Text style={styles.formProgramLabel}>Nama</Text>
+          <Text style={styles.formProgramColon}>:</Text>
+          <Text style={styles.formProgramValue}>{secondParty.name}</Text>
+        </View>
+        <View style={styles.formProgram}>
+          <Text style={styles.formProgramLabel}>Jabatan</Text>
+          <Text style={styles.formProgramColon}>:</Text>
+          <Text style={styles.formProgramValue}>{receiptRoleText}</Text>
         </View>
         <ReceiptTable rows={mainRows} generatedDate={generatedAt} />
 

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Helmet } from "react-helmet-async";
+import PageHelmet from "../../components/SEO/PageHelmet";
 import {
   MagnifyingGlassIcon,
   PlusIcon,
@@ -298,9 +298,10 @@ const PengumumanPage = () => {
 
   return (
     <>
-      <Helmet>
-        <title>Pengumuman | UNIKOM Perlengkapan</title>
-      </Helmet>
+      <PageHelmet
+        title="Pengumuman"
+        description="Kelola pengumuman yang tampil pada aplikasi UNIKOM Perlengkapan."
+      />
 
       <div className="bg-white rounded shadow-sm overflow-hidden mb-6">
         <div className="bg-[#4773da] text-white px-6 py-4">
