@@ -610,9 +610,7 @@ const DashboardDetailModal = ({ isOpen, onClose, title, summaryId }) => {
                     <div className="flex justify-center items-center gap-2">
                       <ActionIconButton
                         label={
-                          hasSubmittedPengajuan
-                            ? "Export"
-                            : "Export hanya tersedia jika sudah pengajuan"
+                          hasSubmittedPengajuan ? "Export" : "Tidak Bisa Export"
                         }
                         icon={ArrowDownTrayIcon}
                         onClick={() =>

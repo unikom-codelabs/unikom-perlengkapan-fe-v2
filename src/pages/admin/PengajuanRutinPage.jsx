@@ -12,6 +12,7 @@ import {
   approveBarangPengajuanAdmin,
   listDaftarPengajuanAdmin,
 } from "../../api/pengajuanService";
+import { listJabatan } from "../../api/jabatanService";
 import { listUnitTypeTree } from "../../api/unitTypeService";
 import { listUsersPaginated } from "../../api/userService";
 
@@ -174,6 +175,25 @@ const getChildOptions = (children = []) =>
     })
     .filter((item) => item.label);
 
+const normalizeTtdJabatanOptions = (items = []) => {
+  const optionMap = new Map();
+
+  (Array.isArray(items) ? items : []).forEach((item) => {
+    const label = String(item?.nama ?? item?.name ?? "").trim();
+
+    if (!label || optionMap.has(label.toLowerCase())) {
+      return;
+    }
+
+    optionMap.set(label.toLowerCase(), {
+      value: label,
+      label,
+    });
+  });
+
+  return Array.from(optionMap.values());
+};
+
 const getAktivasiSortValue = (row = {}) => {
   const timestamp = new Date(row.tanggal).getTime();
   return Number.isNaN(timestamp) ? 0 : timestamp;
@@ -232,6 +252,8 @@ const AdminDaftarPengajuanPage = ({ tipe = "rutin" }) => {
   const [toastMessage, setToastMessage] = useState("");
   const [ttdUsers, setTtdUsers] = useState([]);
   const [isLoadingTtdUsers, setIsLoadingTtdUsers] = useState(false);
+  const [ttdJabatanOptions, setTtdJabatanOptions] = useState([]);
+  const [isLoadingTtdJabatans, setIsLoadingTtdJabatans] = useState(false);
   const [isBapModalOpen, setIsBapModalOpen] = useState(false);
   const [shouldRenderBapModal, setShouldRenderBapModal] = useState(false);
   const [showBapModal, setShowBapModal] = useState(false);
@@ -716,6 +738,19 @@ const AdminDaftarPengajuanPage = ({ tipe = "rutin" }) => {
     }
   }, []);
 
+  const fetchTtdJabatans = useCallback(async () => {
+    setIsLoadingTtdJabatans(true);
+
+    try {
+      const data = await listJabatan();
+      setTtdJabatanOptions(normalizeTtdJabatanOptions(data));
+    } catch {
+      setTtdJabatanOptions([]);
+    } finally {
+      setIsLoadingTtdJabatans(false);
+    }
+  }, []);
+
   useEffect(() => {
     if (isBapModalOpen) {
       setBapForm(buildDefaultBapForm(secondPartyRole));
@@ -737,6 +772,23 @@ const AdminDaftarPengajuanPage = ({ tipe = "rutin" }) => {
     fetchTtdUsers();
   }, [fetchTtdUsers, isBapModalOpen, isLoadingTtdUsers, ttdUsers.length]);
 
+  useEffect(() => {
+    if (
+      !isBapModalOpen ||
+      isLoadingTtdJabatans ||
+      ttdJabatanOptions.length > 0
+    ) {
+      return;
+    }
+
+    fetchTtdJabatans();
+  }, [
+    fetchTtdJabatans,
+    isBapModalOpen,
+    isLoadingTtdJabatans,
+    ttdJabatanOptions.length,
+  ]);
+
   const bapFileName = [
     "bap",
     tipeLabel,
@@ -748,22 +800,6 @@ const AdminDaftarPengajuanPage = ({ tipe = "rutin" }) => {
     .filter(Boolean)
     .join("-");
   const hasBapRows = filteredRows.length > 0;
-  const ttdOptions = useMemo(() => {
-    const optionMap = new Map();
-
-    jabatanOptions.forEach((jabatan) => {
-      getChildOptions(jabatan.children).forEach((child) => {
-        if (!optionMap.has(child.value)) {
-          optionMap.set(child.value, {
-            value: child.value,
-            label: child.label,
-          });
-        }
-      });
-    });
-
-    return Array.from(optionMap.values());
-  }, [jabatanOptions]);
 
   const updateBapField = (name, value) => {
     setBapForm((current) => ({
@@ -787,20 +823,26 @@ const AdminDaftarPengajuanPage = ({ tipe = "rutin" }) => {
     }));
   };
 
-  const handleRemoveTembusan = () => {
+  const handleRemoveTembusan = (indexToRemove) => {
     setBapForm((current) => {
       if (current.tembusan.length <= 1) {
         return current;
       }
+
+      if (Number.isInteger(indexToRemove) && indexToRemove > 0) {
+        return {
+          ...current,
+          tembusan: current.tembusan.filter(
+            (_, index) => index !== indexToRemove,
+          ),
+        };
+      }
+
       return {
         ...current,
         tembusan: current.tembusan.slice(0, -1),
       };
     });
-  };
-
-  const handleResetBapForm = () => {
-    setBapForm(buildDefaultBapForm(secondPartyRole));
   };
 
   const resolveTtdUser = useCallback(
@@ -814,8 +856,15 @@ const AdminDaftarPengajuanPage = ({ tipe = "rutin" }) => {
         ttdUsers.find((user) => {
           const unitName = normalizeLookupValue(user.satuan);
           const nestedUnitName = normalizeLookupValue(user.unit?.nama);
+          const jabatanName = normalizeLookupValue(
+            typeof user.jabatan === "object" ? user.jabatan?.nama : user.jabatan,
+          );
+          const jabatanNama = normalizeLookupValue(user.jabatan_nama);
           return (
-            unitName === normalizedBagian || nestedUnitName === normalizedBagian
+            unitName === normalizedBagian ||
+            nestedUnitName === normalizedBagian ||
+            jabatanName === normalizedBagian ||
+            jabatanNama === normalizedBagian
           );
         }) ?? null
       );
@@ -892,35 +941,6 @@ const AdminDaftarPengajuanPage = ({ tipe = "rutin" }) => {
               <span className="font-bold text-gray-700">Pengaju:</span>{" "}
               {pengajuLabel}
             </div>
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-3">
-              {suratURL ? (
-                <a
-                  href={suratURL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-sm text-[#4773da] hover:underline font-medium"
-                >
-                  Lihat Surat Permohonan
-                </a>
-              ) : (
-                <span className="text-sm text-gray-400 cursor-not-allowed select-none">
-                  Lihat Surat Permohonan
-                </span>
-              )}
-              {hasBapRows ? (
-                <button
-                  type="button"
-                  onClick={() => setIsBapModalOpen(true)}
-                  className="inline-flex items-center justify-center rounded bg-[#4773da] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#365db8]"
-                >
-                  Cetak BAP
-                </button>
-              ) : (
-                <span className="inline-flex items-center justify-center rounded bg-gray-200 px-4 py-2 text-sm font-medium text-gray-500 cursor-not-allowed select-none">
-                  Cetak BAP
-                </span>
-              )}
-            </div>
           </div>
 
           <PengajuanApprovalTable
@@ -949,6 +969,35 @@ const AdminDaftarPengajuanPage = ({ tipe = "rutin" }) => {
             onJumlahBlur={handleJumlahBlur}
             onStatusChange={handleStatusChange}
           />
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+            {suratURL ? (
+              <a
+                href={suratURL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-6 py-2 border border-[#4279df] text-[#4279df] font-medium rounded-full hover:bg-blue-50 transition-colors text-sm"
+              >
+                Lihat Surat Permohonan
+              </a>
+            ) : (
+              <span className="text-sm px-6 py-2 border border-gray-300 font-medium rounded-full text-gray-400 cursor-not-allowed select-none">
+                Lihat Surat Permohonan
+              </span>
+            )}
+            {hasBapRows ? (
+              <button
+                type="button"
+                onClick={() => setIsBapModalOpen(true)}
+                className="flex items-center gap-2 bg-[#4279df] hover:bg-blue-600 text-white px-5 py-2.5 rounded-full transition-colors text-sm shadow-sm"
+              >
+                BAP
+              </button>
+            ) : (
+              <span className="flex items-center gap-2 bg-gray-200 px-4 py-2 text-sm font-medium text-gray-500 rounded-full cursor-not-allowed select-none">
+                BAP
+              </span>
+            )}
+          </div>
         </div>
       </div>
 
@@ -956,8 +1005,8 @@ const AdminDaftarPengajuanPage = ({ tipe = "rutin" }) => {
         <BapPrintModal
           isVisible={showBapModal}
           form={bapForm}
-          ttdOptions={ttdOptions}
-          isLoadingTtdUsers={isLoadingTtdUsers}
+          ttdOptions={ttdJabatanOptions}
+          isLoadingTtdOptions={isLoadingTtdJabatans}
           isFormValid={Boolean(isBapFormValid)}
           documentData={bapDocumentData}
           fileName={bapFileName}
@@ -966,7 +1015,6 @@ const AdminDaftarPengajuanPage = ({ tipe = "rutin" }) => {
           onTembusanChange={updateTembusan}
           onAddTembusan={handleAddTembusan}
           onRemoveTembusan={handleRemoveTembusan}
-          onReset={handleResetBapForm}
         />
       ) : null}
     </>
