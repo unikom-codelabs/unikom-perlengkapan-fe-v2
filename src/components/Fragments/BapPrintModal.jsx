@@ -149,7 +149,7 @@ const BapPrintModal = ({
           <button
             type="button"
             onClick={onAddTembusan}
-            className="w-full h-9 rounded-full border-2 border-[#4279df] text-[#4279df] text-xs font-medium transition-colors hover:bg-blue-50"
+            className="w-full h-9 rounded-full border-2 border-[#4279df] text-[#4279df] text-sm font-medium transition-colors hover:bg-blue-50"
           >
             Tambah Tembusan
           </button>
@@ -159,7 +159,7 @@ const BapPrintModal = ({
           <button
             type="button"
             onClick={onClose}
-            className="h-9 px-6 rounded-full border border-[#4279df] text-[#4279df] text-sm font-medium transition-colors hover:bg-blue-50"
+            className="h-11 text-sm px-6 rounded-full border border-[#4279df] text-[#4279df] font-medium transition-colors hover:bg-blue-50"
           >
             Batal
           </button>
@@ -167,12 +167,12 @@ const BapPrintModal = ({
             <PDFDownloadLink
               document={<BapDocument {...documentData} />}
               fileName={`${fileName || "bap-pengajuan"}.pdf`}
-              className="inline-flex h-9 items-center justify-center rounded-full bg-[#4773da] px-6 text-sm font-medium text-white transition-colors hover:bg-[#365db8]"
+              className="inline-flex h-11 text-sm items-center justify-center rounded-full bg-[#4773da] px-6 font-medium text-white transition-colors hover:bg-[#365db8]"
             >
               {({ loading }) => (loading ? "Menyiapkan..." : "Cetak BAP")}
             </PDFDownloadLink>
           ) : (
-            <span className="inline-flex h-9 items-center justify-center rounded-full bg-gray-200 px-6 text-sm font-medium text-gray-400 cursor-not-allowed select-none">
+            <span className="inline-flex h-11 items-center justify-center rounded-full bg-gray-200 px-6 text-sm font-medium text-gray-400 cursor-not-allowed select-none">
               Cetak BAP
             </span>
           )}
