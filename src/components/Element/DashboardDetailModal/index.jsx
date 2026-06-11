@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   ArrowDownTrayIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
   EyeIcon,
   XMarkIcon,
 } from "@heroicons/react/24/outline";
@@ -9,6 +11,8 @@ import { saveAs } from "file-saver";
 import { getAktivasiPengajuanSummary } from "../../../api/aktivasiPengajuanService";
 import ActionIconButton from "../ActionIconButton";
 import Table from "../Table";
+
+const ITEMS_PER_PAGE = 10;
 
 const getApiErrorMessage = (error, fallbackMessage) => {
   const responseData = error?.response?.data;
@@ -318,6 +322,81 @@ const getDetailItems = (rowValue = {}) => {
   ];
 };
 
+const paginateRows = (rows = [], page = 1, perPage = ITEMS_PER_PAGE) => {
+  const safePage = Math.max(1, page);
+  const startIndex = (safePage - 1) * perPage;
+  return rows.slice(startIndex, startIndex + perPage);
+};
+
+const getTotalPages = (rows = [], perPage = ITEMS_PER_PAGE) =>
+  Math.max(1, Math.ceil(rows.length / perPage));
+
+const getVisiblePages = (currentPage, totalPages) => {
+  const pages = new Set([1, totalPages, currentPage]);
+
+  if (currentPage > 1) pages.add(currentPage - 1);
+  if (currentPage < totalPages) pages.add(currentPage + 1);
+
+  return Array.from(pages)
+    .filter((page) => page >= 1 && page <= totalPages)
+    .sort((a, b) => a - b);
+};
+
+const Pagination = ({ currentPage, totalPages, totalItems, onPageChange }) => {
+  if (totalPages <= 1) {
+    return null;
+  }
+
+  const visiblePages = getVisiblePages(currentPage, totalPages);
+
+  return (
+    <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <p className="text-sm text-gray-500">
+        Menampilkan halaman {currentPage} dari {totalPages} ({totalItems} data)
+      </p>
+      <nav className="flex items-center justify-end gap-1">
+        <button
+          type="button"
+          onClick={() => onPageChange(Math.max(1, currentPage - 1))}
+          disabled={currentPage === 1}
+          className="rounded border border-gray-300 bg-white p-1.5 text-gray-500 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <ChevronLeftIcon className="h-4 w-4" />
+        </button>
+        {visiblePages.map((page, index) => {
+          const previousPage = visiblePages[index - 1];
+          const showGap = previousPage && page - previousPage > 1;
+
+          return (
+            <span key={page} className="flex items-center gap-1">
+              {showGap ? <span className="px-1 text-gray-500">...</span> : null}
+              <button
+                type="button"
+                onClick={() => onPageChange(page)}
+                className={`rounded border px-3 py-1.5 text-sm font-medium ${
+                  currentPage === page
+                    ? "border-[#4773da] bg-[#4773da] text-white"
+                    : "border-gray-300 bg-white text-gray-500 hover:bg-gray-50"
+                }`}
+              >
+                {page}
+              </button>
+            </span>
+          );
+        })}
+        <button
+          type="button"
+          onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
+          disabled={currentPage === totalPages}
+          className="rounded border border-gray-300 bg-white p-1.5 text-gray-500 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <ChevronRightIcon className="h-4 w-4" />
+        </button>
+      </nav>
+    </div>
+  );
+};
+
 const DashboardDetailModal = ({ isOpen, onClose, title, summaryId }) => {
   const [shouldRender, setRender] = useState(isOpen);
   const [show, setShow] = useState(false);
@@ -325,6 +404,8 @@ const DashboardDetailModal = ({ isOpen, onClose, title, summaryId }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [selectedDetail, setSelectedDetail] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [detailPage, setDetailPage] = useState(1);
 
   useEffect(() => {
     if (isOpen) {
@@ -363,12 +444,43 @@ const DashboardDetailModal = ({ isOpen, onClose, title, summaryId }) => {
     fetchSummary();
   }, [isOpen, summaryId]);
 
+  useEffect(() => {
+    if (isOpen) {
+      setCurrentPage(1);
+      setDetailPage(1);
+      setSelectedDetail(null);
+    }
+  }, [isOpen, summaryId]);
+
   const rows = useMemo(
     () =>
       Array.isArray(summary?.detailPengajuan) ? summary.detailPengajuan : [],
     [summary],
   );
+  const totalPages = getTotalPages(rows);
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const paginatedRows = paginateRows(rows, safeCurrentPage);
   const exportFilename = `${sanitizeFilenameSegment(title) || "ringkasan-pengajuan"}.xlsx`;
+  const selectedDetailItems = getDetailItems(selectedDetail);
+  const detailTotalPages = getTotalPages(selectedDetailItems);
+  const safeDetailPage = Math.min(detailPage, detailTotalPages);
+  const paginatedDetailItems = paginateRows(selectedDetailItems, safeDetailPage);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
+
+  useEffect(() => {
+    setDetailPage(1);
+  }, [selectedDetail]);
+
+  useEffect(() => {
+    if (detailPage > detailTotalPages) {
+      setDetailPage(detailTotalPages);
+    }
+  }, [detailPage, detailTotalPages]);
 
   if (!shouldRender) return null;
 
@@ -377,8 +489,6 @@ const DashboardDetailModal = ({ isOpen, onClose, title, summaryId }) => {
     jumlahPengajuanMasuk: 0,
     totalPengaju: 0,
   };
-  const selectedDetailItems = getDetailItems(selectedDetail);
-
   return (
     <div
       className={`fixed inset-0 z-50 flex items-center justify-center p-4 transition-all duration-150 ${
@@ -463,7 +573,7 @@ const DashboardDetailModal = ({ isOpen, onClose, title, summaryId }) => {
               { key: "status", label: "Status" },
               { key: "aksi", label: "Aksi" },
             ]}
-            rows={isLoading ? [] : rows}
+            rows={isLoading ? [] : paginatedRows}
             emptyMessage={
               isLoading ? "Memuat detail pengajuan..." : "Data tidak ditemukan"
             }
@@ -471,7 +581,7 @@ const DashboardDetailModal = ({ isOpen, onClose, title, summaryId }) => {
             renderRow={(item, index) => (
               <tr key={item.id} className="border-t border-gray-100">
                 <td className="px-6 py-4 text-center text-gray-600">
-                  {index + 1}
+                  {(safeCurrentPage - 1) * ITEMS_PER_PAGE + index + 1}
                 </td>
                 <td className="px-6 py-4 text-gray-800">{item.nama}</td>
                 <td className="px-6 py-4 text-gray-600">{item.unit}</td>
@@ -505,6 +615,12 @@ const DashboardDetailModal = ({ isOpen, onClose, title, summaryId }) => {
                 </td>
               </tr>
             )}
+          />
+          <Pagination
+            currentPage={safeCurrentPage}
+            totalPages={totalPages}
+            totalItems={rows.length}
+            onPageChange={setCurrentPage}
           />
         </div>
       </div>
@@ -572,7 +688,7 @@ const DashboardDetailModal = ({ isOpen, onClose, title, summaryId }) => {
                   { key: "jumlahDisetujui", label: "Jumlah Disetujui" },
                   { key: "status", label: "Status" },
                 ]}
-                rows={selectedDetailItems}
+                rows={paginatedDetailItems}
                 emptyMessage="Tidak ada barang yang diajukan"
                 wrapperClass="overflow-x-auto border border-gray-200"
                 renderRow={(item, index) => (
@@ -581,7 +697,7 @@ const DashboardDetailModal = ({ isOpen, onClose, title, summaryId }) => {
                     className="border-t border-gray-100"
                   >
                     <td className="px-6 py-4 text-center text-gray-600">
-                      {index + 1}
+                      {(safeDetailPage - 1) * ITEMS_PER_PAGE + index + 1}
                     </td>
                     <td className="px-6 py-4 text-gray-800">
                       {item.namaBarang}
@@ -603,6 +719,12 @@ const DashboardDetailModal = ({ isOpen, onClose, title, summaryId }) => {
                     </td>
                   </tr>
                 )}
+              />
+              <Pagination
+                currentPage={safeDetailPage}
+                totalPages={detailTotalPages}
+                totalItems={selectedDetailItems.length}
+                onPageChange={setDetailPage}
               />
             </div>
           </div>

@@ -21,6 +21,11 @@ export const listVendor = async () => {
     return extractListData(response.data);
 };
 
+export const fetchRekapVendor = async () => {
+    const response = await apiClient.get("/rekap-vendor");
+    return extractListData(response.data);
+};
+
 const buildVendorPayload = (payload = {}) => {
     const nama = String(payload.nama ?? payload.name ?? "").trim();
     const kontak = String(payload.kontak ?? payload.contact ?? "").trim();
