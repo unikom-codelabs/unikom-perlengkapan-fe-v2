@@ -189,28 +189,32 @@ const getItemStatusBadgeClass = (status) => {
   return "bg-yellow-100 text-yellow-700";
 };
 
-const formatBarangSummary = (row = {}) => {
-  const items = [...(row.barang ?? []), ...(row.barangLainnya ?? [])];
-
-  if (items.length === 0) {
-    return "-";
-  }
-
-  return items
-    .map((item) => {
-      const vendor =
-        item.vendor && item.vendor !== "-" ? ` (${item.vendor})` : "";
-      return `${item.namaBarang}${vendor}: ${item.jumlahDisetujui}/${item.qty}`;
-    })
-    .join(", ");
-};
-
 const sanitizeFilenameSegment = (value) =>
   String(value ?? "")
     .trim()
     .replace(/[^a-z0-9]+/gi, "-")
     .replace(/^-+|-+$/g, "")
     .toLowerCase();
+
+const isSubmittedPengajuan = (row = {}) => {
+  const normalizedStatus = String(row?.status ?? "")
+    .trim()
+    .toLowerCase();
+
+  if (normalizedStatus.includes("belum")) {
+    return false;
+  }
+
+  if (
+    normalizedStatus.includes("sudah") ||
+    normalizedStatus.includes("diajukan") ||
+    normalizedStatus.includes("submitted")
+  ) {
+    return true;
+  }
+
+  return getDetailItems(row).length > 0;
+};
 
 const exportToExcel = async (
   rows = [],
@@ -457,6 +461,10 @@ const DashboardDetailModal = ({ isOpen, onClose, title, summaryId }) => {
       Array.isArray(summary?.detailPengajuan) ? summary.detailPengajuan : [],
     [summary],
   );
+  const submittedRows = useMemo(
+    () => rows.filter((row) => isSubmittedPengajuan(row)),
+    [rows],
+  );
   const totalPages = getTotalPages(rows);
   const safeCurrentPage = Math.min(currentPage, totalPages);
   const paginatedRows = paginateRows(rows, safeCurrentPage);
@@ -464,7 +472,10 @@ const DashboardDetailModal = ({ isOpen, onClose, title, summaryId }) => {
   const selectedDetailItems = getDetailItems(selectedDetail);
   const detailTotalPages = getTotalPages(selectedDetailItems);
   const safeDetailPage = Math.min(detailPage, detailTotalPages);
-  const paginatedDetailItems = paginateRows(selectedDetailItems, safeDetailPage);
+  const paginatedDetailItems = paginateRows(
+    selectedDetailItems,
+    safeDetailPage,
+  );
 
   useEffect(() => {
     if (currentPage > totalPages) {
@@ -555,8 +566,8 @@ const DashboardDetailModal = ({ isOpen, onClose, title, summaryId }) => {
             <div className="absolute bottom-0 right-0">
               <button
                 type="button"
-                onClick={() => exportToExcel(rows, exportFilename)}
-                disabled={isLoading || rows.length === 0}
+                onClick={() => exportToExcel(submittedRows, exportFilename)}
+                disabled={isLoading || submittedRows.length === 0}
                 className="bg-[#427ced] hover:bg-blue-600 text-white px-5 py-2 rounded-full flex items-center gap-2 text-sm transition-colors shadow-sm disabled:bg-gray-300 disabled:cursor-not-allowed"
               >
                 Export Semua <ArrowDownTrayIcon className="w-4 h-4" />
@@ -578,43 +589,52 @@ const DashboardDetailModal = ({ isOpen, onClose, title, summaryId }) => {
               isLoading ? "Memuat detail pengajuan..." : "Data tidak ditemukan"
             }
             wrapperClass="overflow-x-auto border border-gray-200"
-            renderRow={(item, index) => (
-              <tr key={item.id} className="border-t border-gray-100">
-                <td className="px-6 py-4 text-center text-gray-600">
-                  {(safeCurrentPage - 1) * ITEMS_PER_PAGE + index + 1}
-                </td>
-                <td className="px-6 py-4 text-gray-800">{item.nama}</td>
-                <td className="px-6 py-4 text-gray-600">{item.unit}</td>
-                <td className="px-6 py-4 text-center">
-                  <span
-                    className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${getStatusBadgeClass(item.status)}`}
-                  >
-                    {item.status}
-                  </span>
-                </td>
-                <td className="px-6 py-4">
-                  <div className="flex justify-center items-center gap-2">
-                    <ActionIconButton
-                      label="Export"
-                      icon={ArrowDownTrayIcon}
-                      onClick={() =>
-                        exportToExcel(
-                          [item],
-                          `${sanitizeFilenameSegment(item.nama) || "pengaju"}.xlsx`,
-                        )
-                      }
-                      variant="primary"
-                    />
-                    <ActionIconButton
-                      label="Lihat"
-                      icon={EyeIcon}
-                      onClick={() => setSelectedDetail(item)}
-                      variant="primary"
-                    />
-                  </div>
-                </td>
-              </tr>
-            )}
+            renderRow={(item, index) => {
+              const hasSubmittedPengajuan = isSubmittedPengajuan(item);
+
+              return (
+                <tr key={item.id} className="border-t border-gray-100">
+                  <td className="px-6 py-4 text-center text-gray-600">
+                    {(safeCurrentPage - 1) * ITEMS_PER_PAGE + index + 1}
+                  </td>
+                  <td className="px-6 py-4 text-gray-800">{item.nama}</td>
+                  <td className="px-6 py-4 text-gray-600">{item.unit}</td>
+                  <td className="px-6 py-4 text-center">
+                    <span
+                      className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${getStatusBadgeClass(item.status)}`}
+                    >
+                      {item.status}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="flex justify-center items-center gap-2">
+                      <ActionIconButton
+                        label={
+                          hasSubmittedPengajuan
+                            ? "Export"
+                            : "Export hanya tersedia jika sudah pengajuan"
+                        }
+                        icon={ArrowDownTrayIcon}
+                        onClick={() =>
+                          exportToExcel(
+                            [item],
+                            `${sanitizeFilenameSegment(item.nama) || "pengaju"}.xlsx`,
+                          )
+                        }
+                        variant="primary"
+                        disabled={!hasSubmittedPengajuan}
+                      />
+                      <ActionIconButton
+                        label="Lihat"
+                        icon={EyeIcon}
+                        onClick={() => setSelectedDetail(item)}
+                        variant="primary"
+                      />
+                    </div>
+                  </td>
+                </tr>
+              );
+            }}
           />
           <Pagination
             currentPage={safeCurrentPage}
