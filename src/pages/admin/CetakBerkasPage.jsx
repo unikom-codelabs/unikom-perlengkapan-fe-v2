@@ -10,6 +10,8 @@ import Table from "../../components/Element/Table";
 import { listAktivasiPengajuan } from "../../api/aktivasiPengajuanService";
 import { fetchCetakBerkasAdmin } from "../../api/cetakBerkasService";
 import Dropdown from "../../components/Element/Dropdown";
+import VendorAtkDownloadModal from "../../components/Fragments/VendorAtkDownloadModal";
+import { fetchRekapVendor } from "../../api/vendorService";
 
 const ITEMS_PER_PAGE = 10;
 const TABS = ["ATK Tahunan", "ATK Ujian", "ATK Kelas"];
@@ -72,7 +74,7 @@ const normalizeRow = (item = {}, index, kind = "barang") => {
       (jumlahBeli || jumlah) * hargaValue,
     0,
   );
-  const sisa = Math.max(0, jumlah - jumlahBeli);
+  const sisa = Math.max(0, jumlah - jumlah);
 
   return {
     id:
@@ -163,6 +165,11 @@ const CetakBerkasPage = ({ tipe = "rutin" }) => {
   const [mainPage, setMainPage] = useState(1);
   const [otherPage, setOtherPage] = useState(1);
   const [otherPrices, setOtherPrices] = useState({});
+  const [isVendorAtkModalOpen, setIsVendorAtkModalOpen] = useState(false);
+  const [rekapVendorList, setRekapVendorList] = useState([]);
+  const [selectedRekapVendorId, setSelectedRekapVendorId] = useState("");
+  const [isLoadingRekapVendor, setIsLoadingRekapVendor] = useState(false);
+  const [rekapVendorError, setRekapVendorError] = useState("");
   const normalizedTipe = String(tipe).trim().toLowerCase();
   const tipeLabel = normalizedTipe === "nonrutin" ? "Non Rutin" : "Rutin";
   const pageTitle = `Cetak Berkas ${tipeLabel}`;
@@ -327,6 +334,7 @@ const CetakBerkasPage = ({ tipe = "rutin" }) => {
     setMainPage(1);
     setOtherPage(1);
     setCetakData(null);
+    setIsLoadingData(false);
     setOtherPrices({});
   }, [activeTab, selectedAktivasiId, selectedYear]);
 
@@ -335,6 +343,7 @@ const CetakBerkasPage = ({ tipe = "rutin" }) => {
 
     if (!selectedAktivasiId) {
       setCetakData(null);
+      setIsLoadingData(false);
       return () => {
         isMounted = false;
       };
@@ -494,6 +503,34 @@ const CetakBerkasPage = ({ tipe = "rutin" }) => {
     }));
   };
 
+  const openVendorAtkModal = useCallback(() => {
+    setIsVendorAtkModalOpen(true);
+    setSelectedRekapVendorId("");
+    setRekapVendorError("");
+
+    if (rekapVendorList.length > 0) {
+      return;
+    }
+
+    setIsLoadingRekapVendor(true);
+
+    fetchRekapVendor()
+      .then((data) => {
+        setRekapVendorList(Array.isArray(data) ? data : []);
+      })
+      .catch((error) => {
+        setRekapVendorList([]);
+        setRekapVendorError(error?.message ?? "Gagal memuat data vendor.");
+      })
+      .finally(() => {
+        setIsLoadingRekapVendor(false);
+      });
+  }, [rekapVendorList.length]);
+
+  const closeVendorAtkModal = () => {
+    setIsVendorAtkModalOpen(false);
+  };
+
   const renderSearchInput = (value, onChange) => (
     <div className="relative w-full md:w-80">
       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -607,7 +644,7 @@ const CetakBerkasPage = ({ tipe = "rutin" }) => {
         {row.sisa}
       </td>
       <td className="px-6 py-3 border-r border-gray-200 text-center text-gray-500">
-        {row.jumlahBeli}
+        {row.jumlah}
       </td>
       <td className="px-6 py-3 border-r border-gray-200 text-center text-gray-500">
         {formatCurrency(row.hargaValue)}
@@ -704,13 +741,23 @@ const CetakBerkasPage = ({ tipe = "rutin" }) => {
         <div className="flex flex-wrap gap-3">
           {showActions && isTahunanTab ? (
             <>
-              <button className="bg-[#4773da] hover:bg-blue-700 text-white px-5 py-2.5 rounded-full text-sm font-medium transition-colors">
+              <button
+                type="button"
+                className="bg-[#4773da] hover:bg-blue-700 text-white px-5 py-2.5 rounded-full text-sm font-medium transition-colors"
+              >
                 Download Daftar ATK
               </button>
-              <button className="bg-[#4773da] hover:bg-blue-700 text-white px-5 py-2.5 rounded-full text-sm font-medium transition-colors">
+              <button
+                type="button"
+                className="bg-[#4773da] hover:bg-blue-700 text-white px-5 py-2.5 rounded-full text-sm font-medium transition-colors"
+              >
                 Download Daftar ATK UNIKOM
               </button>
-              <button className="bg-[#4773da] hover:bg-blue-700 text-white px-5 py-2.5 rounded-full text-sm font-medium transition-colors">
+              <button
+                type="button"
+                onClick={openVendorAtkModal}
+                className="bg-[#4773da] hover:bg-blue-700 text-white px-5 py-2.5 rounded-full text-sm font-medium transition-colors"
+              >
                 Download Daftar ATK dan Vendor
               </button>
             </>
@@ -734,6 +781,16 @@ const CetakBerkasPage = ({ tipe = "rutin" }) => {
       <PageHelmet
         title={pageTitle}
         description={`Cetak dan unduh berkas pengajuan ${tipeLabel.toLowerCase()} di UNIKOM Perlengkapan.`}
+      />
+
+      <VendorAtkDownloadModal
+        isVisible={isVendorAtkModalOpen}
+        vendors={rekapVendorList}
+        selectedVendorId={selectedRekapVendorId}
+        isLoading={isLoadingRekapVendor}
+        errorMessage={rekapVendorError}
+        onSelectVendor={setSelectedRekapVendorId}
+        onClose={closeVendorAtkModal}
       />
 
       <div className="bg-white rounded shadow-sm overflow-hidden mb-6">

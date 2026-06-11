@@ -461,26 +461,19 @@ const fetchAktivasiByKategori = async (kategori) => {
 };
 
 const fetchCurrentAktivasiByKategori = async (kategori) => {
-    const fallbackEndpoints = ["/periode-aktif", "/aktivasi-pengajuan-current"];
+    try {
+        const response = await apiClient.get("/periode-aktif", {
+            params: { tipe: kategori },
+        });
 
-    for (const endpoint of fallbackEndpoints) {
-        try {
-            const response = await apiClient.get(endpoint, {
-                params: { tipe: kategori },
-            });
-
-            const normalized = normalizeAktivasiList(response.data, kategori);
-            if (normalized.length > 0) {
-                return normalized;
-            }
-        } catch (error) {
-            if (error?.response?.status === 404) {
-                continue;
-            }
+        return normalizeAktivasiList(response.data, kategori);
+    } catch (error) {
+        if (error?.response?.status === 404) {
+            return [];
         }
-    }
 
-    return [];
+        throw error;
+    }
 };
 
 const enrichAktivasiKategoriFromPengajuan = async (aktivasiList = []) => {
@@ -690,6 +683,17 @@ export const listAktivasiPengajuan = async () => {
         );
 
         return enrichAktivasiKategoriFromPengajuan([...byKategori, ...fromCurrent]);
+    }
+
+    const currentSettled = await Promise.allSettled(
+        AKTIVASI_KATEGORI.map((kategori) => fetchCurrentAktivasiByKategori(kategori)),
+    );
+    const fromCurrent = currentSettled.flatMap((result) =>
+        result.status === "fulfilled" ? result.value : [],
+    );
+
+    if (fromCurrent.length > 0) {
+        return enrichAktivasiKategoriFromPengajuan(fromCurrent);
     }
 
     const response = await apiClient.get("/aktivasi-pengajuan");
