@@ -20,29 +20,29 @@ const MONTH_SHORT = [
   "Feb",
   "Mar",
   "Apr",
-  "May",
+  "Mei",
   "Jun",
   "Jul",
-  "Aug",
+  "Agu",
   "Sep",
-  "Oct",
+  "Okt",
   "Nov",
-  "Dec",
+  "Des",
 ];
 
 const MONTH_LONG = [
-  "January",
-  "February",
-  "March",
+  "Januari",
+  "Februari",
+  "Maret",
   "April",
-  "May",
-  "June",
-  "July",
-  "August",
+  "Mei",
+  "Juni",
+  "Juli",
+  "Agustus",
   "September",
-  "October",
+  "Oktober",
   "November",
-  "December",
+  "Desember",
 ];
 
 const formatKategori = (value) => {
@@ -121,7 +121,10 @@ const buildReceiptRoleText = (role, unitLabel) => {
     return formatDocumentCase(cleanUnit);
   }
 
-  if (!cleanUnit || normalizeForCompare(cleanRole).includes(normalizeForCompare(cleanUnit))) {
+  if (
+    !cleanUnit ||
+    normalizeForCompare(cleanRole).includes(normalizeForCompare(cleanUnit))
+  ) {
     return cleanRole;
   }
 
@@ -133,6 +136,11 @@ const buildReceiptRoleText = (role, unitLabel) => {
 
   return `${cleanRole} ${unitPrefix}${formattedUnit}`.trim();
 };
+
+const getFirstReceiptRow = (...rowGroups) =>
+  rowGroups
+    .flat()
+    .find((row) => row?.namaBarang || row?.tanggal || row?.kategori) ?? {};
 
 const styles = StyleSheet.create({
   page: {
@@ -353,32 +361,27 @@ const BapTable = ({ rows = [] }) => {
   );
 };
 
-const ReceiptTable = ({ rows = [], generatedDate }) => {
+const ReceiptTable = ({ rows = [] }) => {
   const displayRows = rows.length > 0 ? rows : [{ id: "empty-receipt-row" }];
-  const widths = [30, 86, 210, 86, 48, 48];
+  const widths = [34, 251, 60, 60, 124];
 
   return (
     <View style={styles.receiptFormTable}>
       <View style={styles.tableHeader}>
-        {[
-          "No",
-          "Tanggal",
-          "Nama Barang",
-          "Jenis Barang",
-          "Jumlah",
-          "Satuan",
-        ].map((label, index) => (
-          <View
-            key={label}
-            style={[
-              styles.receiptCell,
-              styles.receiptHeaderCell,
-              { width: widths[index] },
-            ]}
-          >
-            <Text style={styles.tableHeaderText}>{label}</Text>
-          </View>
-        ))}
+        {["No", "Nama Barang", "Jumlah", "Satuan", "TTD"].map(
+          (label, index) => (
+            <View
+              key={label}
+              style={[
+                styles.receiptCell,
+                styles.receiptHeaderCell,
+                { width: widths[index] },
+              ]}
+            >
+              <Text style={styles.tableHeaderText}>{label}</Text>
+            </View>
+          ),
+        )}
       </View>
       {displayRows.map((row, index) => (
         <View
@@ -391,32 +394,18 @@ const ReceiptTable = ({ rows = [], generatedDate }) => {
             </Text>
           </View>
           <View style={[styles.receiptCell, { width: widths[1] }]}>
-            <Text style={styles.centerText}>
-              {row.namaBarang
-                ? formatLetterDate(row.tanggal || generatedDate)
-                : ""}
-            </Text>
-          </View>
-          <View style={[styles.receiptCell, { width: widths[2] }]}>
             <Text>{row.namaBarang ?? ""}</Text>
           </View>
-          <View style={[styles.receiptCell, { width: widths[3] }]}>
-            <Text style={styles.centerText}>
-              {row.namaBarang ? formatKategori(row.kategori) : ""}
-            </Text>
-          </View>
-          <View style={[styles.receiptCell, { width: widths[4] }]}>
+          <View style={[styles.receiptCell, { width: widths[2] }]}>
             <Text style={styles.centerText}>
               {row.namaBarang ? formatNumber(getApprovedQuantity(row)) : ""}
             </Text>
           </View>
-          <View
-            style={[
-              styles.receiptCell,
-              { width: widths[5] },
-            ]}
-          >
+          <View style={[styles.receiptCell, { width: widths[3] }]}>
             <Text style={styles.centerText}>{row.satuan ?? ""}</Text>
+          </View>
+          <View style={[styles.receiptCell, { width: widths[4] }]}>
+            <Text> </Text>
           </View>
         </View>
       ))}
@@ -478,6 +467,11 @@ const BapDocument = ({
     ? tembusan.map((item) => cleanText(item, "")).filter(Boolean)
     : [];
   const receiptRoleText = buildReceiptRoleText(secondParty.role, unitLabel);
+  const receiptMetadataRow = getFirstReceiptRow(mainRows, otherRows);
+  const receiptDateText = formatLetterDate(
+    receiptMetadataRow.tanggal || generatedAt,
+  );
+  const receiptCategoryText = formatKategori(receiptMetadataRow.kategori);
 
   return (
     <Document
@@ -505,7 +499,7 @@ const BapDocument = ({
           tangan dibawah ini :
         </Text>
 
-        <View style={styles.partyBlock}>
+        <View>
           <View style={styles.line}>
             <Text style={styles.label}>Nama</Text>
             <Text style={styles.value}>: {firstParty.name}</Text>
@@ -604,10 +598,22 @@ const BapDocument = ({
           <Text style={styles.formProgramColon}>:</Text>
           <Text style={styles.formProgramValue}>{receiptRoleText}</Text>
         </View>
-        <ReceiptTable rows={mainRows} generatedDate={generatedAt} />
+        <View style={styles.formProgram}>
+          <Text style={styles.formProgramLabel}>Tanggal</Text>
+          <Text style={styles.formProgramColon}>:</Text>
+          <Text style={styles.formProgramValue}>{receiptDateText}</Text>
+        </View>
+        <View style={styles.formProgram}>
+          <Text style={styles.formProgramLabel}>Jenis Pengajuan</Text>
+          <Text style={styles.formProgramColon}>:</Text>
+          <Text style={{ ...styles.formProgramValue, marginBottom: 16 }}>
+            {receiptCategoryText}
+          </Text>
+        </View>
+        <ReceiptTable rows={mainRows} />
 
         <Text style={styles.sectionTitle}>Pengajuan Lainnya</Text>
-        <ReceiptTable rows={otherRows} generatedDate={generatedAt} />
+        <ReceiptTable rows={otherRows} />
       </Page>
     </Document>
   );
