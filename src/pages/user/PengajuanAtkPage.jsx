@@ -254,29 +254,39 @@ const PengajuanAtkPage = () => {
   }, [isDekan, navigate, normalizedKategori]);
 
   useEffect(() => {
+    let isMounted = true;
+
     const fetchBarang = async () => {
       setIsLoading(true);
       setPageError("");
 
       try {
         const data = await listBarang();
-        setBarangList(data);
+        if (isMounted) setBarangList(data);
       } catch (error) {
-        setPageError(getApiErrorMessage(error, "Gagal mengambil data barang."));
+        if (isMounted) setPageError(getApiErrorMessage(error, "Gagal mengambil data barang."));
       } finally {
-        setIsLoading(false);
+        if (isMounted) setIsLoading(false);
       }
     };
 
     fetchBarang();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   useEffect(() => {
+    let isMounted = true;
+
     const fetchAktivasi = async () => {
       setActivationError("");
 
       try {
         const data = await listAktivasiPengajuan();
+        if (!isMounted) return;
+
         const kategoriAktivasi = pickKategoriAktivasi(data, normalizedKategori);
 
         if (!kategoriAktivasi) {
@@ -290,6 +300,7 @@ const PengajuanAtkPage = () => {
         );
         setSelectedAktivasi(kategoriAktivasi);
       } catch (error) {
+        if (!isMounted) return;
         setActivationError(
           getApiErrorMessage(error, "Gagal memuat status aktivasi."),
         );
@@ -299,6 +310,10 @@ const PengajuanAtkPage = () => {
     };
 
     fetchAktivasi();
+
+    return () => {
+      isMounted = false;
+    };
   }, [normalizedKategori, pickKategoriAktivasi]);
 
   useEffect(() => {
@@ -375,7 +390,7 @@ const PengajuanAtkPage = () => {
     [barangList, quantities],
   );
 
-  const hasSelectedItem = selectedRows.length > 0;
+  const hasSelectedItem = selectedRows.length > 0 || pengajuanLainnya.length > 0;
   const barangTableRows = isLoading || pageError ? [] : currentData;
   const barangTableEmptyMessage = isLoading
     ? "Memuat data barang..."
@@ -391,6 +406,26 @@ const PengajuanAtkPage = () => {
         ...prev,
         [itemId]: nextValue,
       };
+    });
+  };
+
+  const handleQuantityChange = (itemId, value) => {
+    if (value === "") {
+      setQuantities((prev) => ({ ...prev, [itemId]: "" }));
+      return;
+    }
+    const num = parseInt(value, 10);
+    if (!isNaN(num) && num >= 0) {
+      setQuantities((prev) => ({ ...prev, [itemId]: num }));
+    }
+  };
+
+  const handleQuantityBlur = (itemId) => {
+    setQuantities((prev) => {
+      if (prev[itemId] === "" || prev[itemId] === undefined) {
+        return { ...prev, [itemId]: 0 };
+      }
+      return prev;
     });
   };
 
@@ -419,8 +454,11 @@ const PengajuanAtkPage = () => {
     }
 
     if (!hasSelectedItem) {
+      setSubmitError("Pilih minimal satu barang atau tambah barang lainnya.");
       return;
     }
+
+    setSubmitError("");
 
     setStep(2);
   };
@@ -516,6 +554,18 @@ const PengajuanAtkPage = () => {
       satuan: formLainnya.satuan.trim(),
     };
 
+    if (!payload.nama || !payload.satuan) {
+      setModalError("Nama barang dan satuan tidak boleh kosong.");
+      setIsSubmittingLainnya(false);
+      return;
+    }
+
+    if (payload.jumlah <= 0 || isNaN(payload.jumlah)) {
+      setModalError("Jumlah barang harus berupa angka dan lebih dari 0.");
+      setIsSubmittingLainnya(false);
+      return;
+    }
+
     const newItem = {
       id: `lainnya-${Date.now()}`,
       nama: payload.nama,
@@ -553,6 +603,8 @@ const PengajuanAtkPage = () => {
     }
 
     if (!hasSelectedItem) {
+      setSubmitError("Pilih minimal satu barang atau tambah barang lainnya.");
+      setIsSubmittingPengajuan(false);
       return;
     }
 
@@ -774,9 +826,15 @@ const PengajuanAtkPage = () => {
                           >
                             -
                           </button>
-                          <span className="h-6 min-w-8 px-2 rounded bg-gray-100 border border-gray-200 text-center text-xs leading-6 text-gray-700">
-                            {quantities[item.id] || 0}
-                          </span>
+                          <input
+                            type="number"
+                            min="0"
+                            value={quantities[item.id] === undefined ? 0 : quantities[item.id]}
+                            onChange={(e) => handleQuantityChange(item.id, e.target.value)}
+                            onBlur={() => handleQuantityBlur(item.id)}
+                            disabled={isActivationBlocked}
+                            className="h-6 w-12 px-1 rounded bg-white border border-gray-300 text-center text-xs text-gray-700 focus:outline-none focus:ring-1 focus:ring-[#4773da] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                          />
                           <button
                             type="button"
                             onClick={() => updateQuantity(item.id, 1)}

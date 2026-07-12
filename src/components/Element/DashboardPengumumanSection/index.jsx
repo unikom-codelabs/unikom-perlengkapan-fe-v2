@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import ModalDetailPengumuman from "../ModalDetailPengumuman";
 
@@ -49,6 +49,32 @@ const DashboardPengumumanSection = ({
   errorMessage,
 }) => {
   const [selectedItem, setSelectedItem] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 5;
+
+  const filteredItems = useMemo(() => {
+    if (!searchQuery.trim()) return items;
+    const query = searchQuery.toLowerCase();
+    return items.filter(
+      (item) =>
+        item.judul?.toLowerCase().includes(query) ||
+        item.author?.toLowerCase().includes(query) ||
+        item.teks?.toLowerCase().includes(query) ||
+        item.deskripsi?.toLowerCase().includes(query)
+    );
+  }, [items, searchQuery]);
+
+  const totalPages = Math.ceil(filteredItems.length / ITEMS_PER_PAGE);
+
+  const actualPage = totalPages === 0 
+    ? 1 
+    : (currentPage > totalPages ? totalPages : currentPage);
+
+  const currentItems = useMemo(() => {
+    const start = (actualPage - 1) * ITEMS_PER_PAGE;
+    return filteredItems.slice(start, start + ITEMS_PER_PAGE);
+  }, [filteredItems, actualPage]);
 
   const handleCloseModal = () => {
     setSelectedItem(null);
@@ -56,8 +82,20 @@ const DashboardPengumumanSection = ({
 
   return (
     <div className="bg-white rounded shadow-sm overflow-hidden mt-6">
-      <div className="bg-[#4773da] text-white px-6 py-4">
+      <div className="bg-[#4773da] text-white px-6 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
         <h1 className="text-xl font-semibold">Pengumuman</h1>
+        <div className="w-full md:w-64">
+          <input
+            type="text"
+            placeholder="Cari pengumuman..."
+            value={searchQuery}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setCurrentPage(1);
+            }}
+            className="w-full px-4 py-2 text-sm text-gray-800 bg-white rounded-full focus:outline-none focus:ring-2 focus:ring-blue-300 shadow-inner"
+          />
+        </div>
       </div>
 
       <div className="p-4 md:p-6">
@@ -71,23 +109,18 @@ const DashboardPengumumanSection = ({
           <div className="py-10 text-center text-gray-500">
             Memuat pengumuman...
           </div>
-        ) : items.length > 0 ? (
-          <div className="flex flex-col gap-8">
-            {items.map((item) => (
-              <div key={item.id} className="bg-white">
-                <div className="bg-[#3e64ca] px-4 md:px-6 py-3 md:py-4 flex justify-between items-center text-white">
-                  <h2 className="font-semibold tracking-wide text-sm md:text-base">
-                    {item.judul}
-                  </h2>
-                </div>
-                <div className="p-4 md:p-6 flex flex-col md:flex-row gap-6 border-x border-b border-gray-200">
-                  <div className="w-full md:w-62.5 shrink-0">
-                    <div className="w-full aspect-3/4 border border-gray-200 bg-gray-50 flex items-center justify-center overflow-hidden">
+        ) : filteredItems.length > 0 ? (
+          <div className="flex flex-col gap-6">
+            {currentItems.map((item) => (
+              <div key={item.id} className="bg-white border border-gray-100 rounded-xl hover:shadow-md transition-shadow duration-300">
+                <div className="p-4 md:p-6 flex flex-col md:flex-row gap-6">
+                  <div className="w-full md:w-48 shrink-0">
+                    <div className="w-full aspect-4/3 md:aspect-3/4 rounded-lg border border-gray-100 bg-gray-50 flex items-center justify-center overflow-hidden">
                       {item.gambarUrl ? (
                         <img
                           src={item.gambarUrl}
                           alt={item.judul}
-                          className="w-full h-full object-cover"
+                          className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
                         />
                       ) : (
                         <span className="text-gray-400 text-sm">
@@ -97,32 +130,67 @@ const DashboardPengumumanSection = ({
                     </div>
                   </div>
                   <div className="flex flex-col grow">
-                    <h3 className="font-bold text-gray-800 text-[16px] mb-1">
-                      Dibuat Oleh {item.author}
-                    </h3>
-                    <p className="text-sm text-gray-400 mb-4">
-                      {formatDateTime(item.createdAt)}
-                    </p>
-                    <p className="mb-4 text-[15px] leading-relaxed text-gray-600">
+                    <h2 
+                      className="text-xl font-bold text-gray-800 mb-2 hover:text-[#4773da] transition-colors cursor-pointer"
+                      onClick={() => setSelectedItem(item)}
+                    >
+                      {item.judul}
+                    </h2>
+                    
+                    <div className="flex flex-wrap items-center text-sm text-gray-500 mb-4 gap-2 md:gap-3">
+                      <span className="font-medium text-gray-700">Oleh: {item.author}</span>
+                      <span className="hidden md:inline text-gray-300">&bull;</span>
+                      <span>{formatDateTime(item.createdAt)}</span>
+                    </div>
+
+                    <p className="mb-6 text-[15px] leading-relaxed text-gray-600">
                       {buildPreviewText(item)}
                     </p>
-                    <div className="mt-auto flex justify-end">
+
+                    <div className="mt-auto flex justify-start">
                       <button
                         type="button"
                         onClick={() => setSelectedItem(item)}
-                        className="text-[#4773da] text-sm hover:underline font-medium cursor-pointer bg-transparent border-none p-0"
+                        className="inline-flex items-center text-[#4773da] text-sm font-semibold hover:text-[#3e64ca] transition-colors group cursor-pointer bg-transparent border-none p-0"
                       >
                         Baca Selengkapnya
+                        <svg className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
                       </button>
                     </div>
                   </div>
                 </div>
               </div>
             ))}
+            
+            {totalPages > 1 && (
+              <div className="flex justify-center items-center mt-2 space-x-3">
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage(actualPage - 1)}
+                  disabled={actualPage === 1}
+                  className="px-4 py-1.5 rounded-full border border-[#4773da] text-[#4773da] text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed hover:bg-blue-50 transition-colors"
+                >
+                  Sebelumnya
+                </button>
+                <span className="text-sm font-medium text-gray-600 bg-gray-100 px-4 py-1.5 rounded-full">
+                  {actualPage} / {totalPages}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage(actualPage + 1)}
+                  disabled={actualPage === totalPages}
+                  className="px-4 py-1.5 rounded-full border border-[#4773da] text-[#4773da] text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed hover:bg-blue-50 transition-colors"
+                >
+                  Selanjutnya
+                </button>
+              </div>
+            )}
           </div>
         ) : (
           <div className="py-10 text-center text-gray-500 border border-gray-200 rounded">
-            Tidak ada pengumuman.
+            {searchQuery ? "Pengumuman tidak ditemukan." : "Tidak ada pengumuman."}
           </div>
         )}
       </div>
