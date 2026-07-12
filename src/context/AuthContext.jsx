@@ -7,6 +7,13 @@ import {
 } from "react";
 import { getMe, logout } from "../api/authService";
 import { listJabatan } from "../api/jabatanService";
+import {
+  clearToken,
+  isTokenExpired,
+  isValidTokenFormat,
+  loadToken,
+  saveToken,
+} from "../utils/tokenUtils";
 
 const AuthContext = createContext(null);
 
@@ -98,25 +105,40 @@ const enrichUserJabatan = (user, jabatanList = []) => {
 };
 
 export const AuthProvider = ({ children }) => {
-  const [token, setToken] = useState(() => localStorage.getItem("token"));
+  const [token, setToken] = useState(() => {
+    const stored = loadToken();
+    // Buang token yang sudah expired saat pertama kali load.
+    if (stored && isTokenExpired(stored)) {
+      clearToken();
+      return null;
+    }
+    return stored;
+  });
   const [currentUser, setCurrentUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
 
   const clearSession = useCallback(() => {
-    localStorage.removeItem("token");
+    clearToken();
     setToken(null);
     setCurrentUser(null);
   }, []);
 
   const setAuthToken = useCallback(
-    (nextToken) => {
-      if (!nextToken) {
+    (nextToken, rememberMe = true) => {
+      if (!nextToken || !isValidTokenFormat(nextToken)) {
         clearSession();
         setAuthLoading(false);
         return;
       }
 
-      localStorage.setItem("token", nextToken);
+      // Jangan simpan token yang sudah expired.
+      if (isTokenExpired(nextToken)) {
+        clearSession();
+        setAuthLoading(false);
+        return;
+      }
+
+      saveToken(nextToken, rememberMe);
       setToken(nextToken);
       setAuthLoading(true);
     },
@@ -127,8 +149,15 @@ export const AuthProvider = ({ children }) => {
     async (tokenOverride) => {
       const activeToken = tokenOverride || token;
 
-      if (!activeToken) {
+      if (!activeToken || !isValidTokenFormat(activeToken)) {
         setCurrentUser(null);
+        setAuthLoading(false);
+        return null;
+      }
+
+      // Cek expiry sebelum mengirim request ke API.
+      if (isTokenExpired(activeToken)) {
+        clearSession();
         setAuthLoading(false);
         return null;
       }

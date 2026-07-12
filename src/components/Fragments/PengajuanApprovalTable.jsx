@@ -65,7 +65,16 @@ const PengajuanApprovalTable = ({
                   type="number"
                   min="0"
                   value={row.jumlahDisetujui}
-                  onChange={(event) => onJumlahChange(row, event.target.value)}
+                  onKeyDown={(e) => {
+                    if (['.', 'e', 'E', '+', '-'].includes(e.key)) e.preventDefault();
+                  }}
+                  onChange={(event) => {
+                    let val = event.target.value;
+                    if (val !== "") {
+                      val = val.replace(/^0+/, "") || "0";
+                    }
+                    onJumlahChange(row, val);
+                  }}
                   onBlur={(event) => onJumlahBlur(row, event.target.value)}
                   disabled={isUpdating}
                   className={`w-20 rounded border px-2 py-1 text-sm text-gray-600 focus:outline-none focus:ring-1 disabled:bg-gray-100 ${

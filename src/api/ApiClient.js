@@ -1,7 +1,9 @@
 import axios from "axios";
+import { API_BASE_URL } from "../config/env";
+import { clearToken, isTokenExpired, loadToken } from "../utils/tokenUtils";
 
 const apiClient = axios.create({
-    baseURL: "http://perlengkapan.codelabspace.or.id/api",
+    baseURL: API_BASE_URL,
     headers: {
         "Content-Type": "application/json",
         "Accept": "application/json",
@@ -10,7 +12,17 @@ const apiClient = axios.create({
 
 apiClient.interceptors.request.use(
     (config) => {
-        const token = localStorage.getItem("token");
+        const token = loadToken();
+
+        // Cek expiry sebelum mengirim request — hindari request sia-sia.
+        if (token && isTokenExpired(token)) {
+            clearToken();
+            if (window.location.pathname !== "/login") {
+                window.location.href = "/login";
+            }
+            return Promise.reject(new axios.Cancel("Token expired"));
+        }
+
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
         }
@@ -37,7 +49,7 @@ apiClient.interceptors.response.use(
     },
     (error) => {
         if (error.response && error.response.status === 401) {
-            localStorage.removeItem("token");
+            clearToken();
             if (window.location.pathname !== "/login") {
                 window.location.href = "/login";
             }
@@ -47,4 +59,3 @@ apiClient.interceptors.response.use(
 );
 
 export default apiClient;
-

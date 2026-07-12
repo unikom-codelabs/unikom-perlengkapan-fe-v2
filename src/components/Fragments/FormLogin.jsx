@@ -8,6 +8,7 @@ import { useAuth } from "../../context/useAuth";
 const FormLogin = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+  const [rememberMe, setRememberMe] = useState(true);
   const navigate = useNavigate();
   const location = useLocation();
   const { setAuthToken, refreshCurrentUser, isAuthenticated, authLoading } =
@@ -45,7 +46,7 @@ const FormLogin = () => {
         throw new Error("Token login tidak ditemukan pada respons API.");
       }
 
-      setAuthToken(token);
+      setAuthToken(token, rememberMe);
       await refreshCurrentUser(token);
       navigate(redirectTo, { replace: true });
     } catch (error) {
@@ -84,6 +85,8 @@ const FormLogin = () => {
         <input
           type="checkbox"
           id="remember"
+          checked={rememberMe}
+          onChange={(e) => setRememberMe(e.target.checked)}
           className="w-4 h-4 text-primary bg-white border-gray-300 rounded focus:ring-primary"
         />
         <label htmlFor="remember" className="ml-2 text-base text-slate-800">

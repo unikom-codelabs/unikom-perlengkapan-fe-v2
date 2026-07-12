@@ -1,6 +1,12 @@
 import apiClient from "./ApiClient";
 
-const API_ORIGIN = new URL(apiClient.defaults.baseURL).origin;
+let API_ORIGIN = "";
+try {
+    API_ORIGIN = new URL(apiClient.defaults.baseURL).origin;
+} catch {
+    // Jika baseURL bukan URL valid (misal saat env belum di-set),
+    // fallback ke string kosong — normalizeImageUrl akan tetap bekerja.
+}
 
 const pickValue = (...values) =>
     values.find((value) => value !== undefined && value !== null);

@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import PageHelmet from "../../components/SEO/PageHelmet";
+import { useEffect, useMemo, useState, useCallback } from "react";
+import PageHelmet from "../../components/Seo/PageHelmet";
 import {
   MagnifyingGlassIcon,
   TrashIcon,
@@ -57,7 +57,7 @@ const ManajemenPenggunaPage = () => {
     );
   };
 
-  const buildLocalPagination = (data, page = 1) => {
+  const buildLocalPagination = useCallback((data, page = 1) => {
     const total = data.length;
     const lastPage = Math.max(Math.ceil(total / itemsPerPage), 1);
     const from = total === 0 ? 0 : (page - 1) * itemsPerPage + 1;
@@ -71,9 +71,9 @@ const ManajemenPenggunaPage = () => {
       from,
       to,
     };
-  };
+  }, [itemsPerPage]);
 
-  const fetchUsers = async (page = 1, query = "") => {
+  const fetchUsers = useCallback(async (page = 1, query = "") => {
     setIsLoading(true);
     setErrorMessage("");
 
@@ -125,7 +125,7 @@ const ManajemenPenggunaPage = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [itemsPerPage, buildLocalPagination]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -137,7 +137,7 @@ const ManajemenPenggunaPage = () => {
 
   useEffect(() => {
     fetchUsers(currentPage, debouncedSearchQuery);
-  }, [currentPage, debouncedSearchQuery]);
+  }, [currentPage, debouncedSearchQuery, fetchUsers]);
 
   const totalPages = Math.max(Number(pagination.lastPage) || 1, 1);
   const currentData = useMemo(() => {

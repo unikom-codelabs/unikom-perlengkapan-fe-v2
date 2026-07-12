@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { Helmet } from "react-helmet-async";
 import { useNavigate, useParams } from "react-router-dom";
 import {
@@ -14,6 +14,7 @@ import { listBarang } from "../../api/barangService";
 import { listAktivasiPengajuan } from "../../api/aktivasiPengajuanService";
 import Dropdown from "../../components/Element/Dropdown";
 import Table from "../../components/Element/Table";
+import FileUploadDropzone from "../../components/Element/FileUploadDropzone";
 import { useAuth } from "../../context/useAuth";
 
 const getApiErrorMessage = (error, fallbackMessage) => {
@@ -147,7 +148,7 @@ const PengajuanAtkPage = () => {
   const kategoriLabel = KATEGORI_LABELS[normalizedKategori] || "Tahunan";
   const [step, setStep] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
-  const [uploadedFileName, setUploadedFileName] = useState("");
+
   const [uploadedFile, setUploadedFile] = useState(null);
   const [barangList, setBarangList] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -180,7 +181,6 @@ const PengajuanAtkPage = () => {
     satuan: "",
   });
   const itemsPerPage = 10;
-  const fileInputRef = useRef(null);
   const isActivationBlocked = activationStatus === "inactive";
   const tipePengajuanLabel = formatTipePengajuanLabel(selectedAktivasi?.tipe);
   const tahunAktivasiLabel = getAktivasiYearLabel(selectedAktivasi);
@@ -189,14 +189,14 @@ const PengajuanAtkPage = () => {
   const kategoriPengajuanTitleWithYear = `Pengajuan ${tipePengajuanLabel} ${kategoriLabel} ${tahunAktivasiLabel}`;
   const pengajuanLainnyaTitle = `Pengajuan Lainnya Tahun ${tahunAktivasiLabel}`;
 
-  const toTimestamp = (value) => {
+  const toTimestamp = useCallback((value) => {
     if (!value) {
       return 0;
     }
 
     const date = new Date(value);
     return Number.isNaN(date.getTime()) ? 0 : date.getTime();
-  };
+  }, []);
 
   const isActivationActive = (aktivasi = {}) => {
     const now = Date.now();
@@ -225,7 +225,7 @@ const PengajuanAtkPage = () => {
     return Boolean(aktivasi?.statusAktif);
   };
 
-  const pickKategoriAktivasi = (list = [], kategoriValue) => {
+  const pickKategoriAktivasi = useCallback((list = [], kategoriValue) => {
     const normalized = normalizeKategoriParam(kategoriValue);
     const kategoriList = list.filter(
       (item) => String(item.kategori).toLowerCase() === normalized,
@@ -245,7 +245,7 @@ const PengajuanAtkPage = () => {
         toTimestamp(a.tanggalSelesai || a.tanggalMulai)
       );
     })[0];
-  };
+  }, [toTimestamp]);
 
   useEffect(() => {
     if (!isDekan && normalizedKategori !== "tahunan") {
@@ -299,7 +299,7 @@ const PengajuanAtkPage = () => {
     };
 
     fetchAktivasi();
-  }, [normalizedKategori]);
+  }, [normalizedKategori, pickKategoriAktivasi]);
 
   useEffect(() => {
     if (isActivationBlocked) {
@@ -394,23 +394,22 @@ const PengajuanAtkPage = () => {
     });
   };
 
-  const handleBrowseFile = () => {
-    if (isActivationBlocked) {
+  const handleFileSelect = (file, errorMsg) => {
+    if (isActivationBlocked) return;
+    
+    if (errorMsg) {
+      setSubmitError(errorMsg);
       return;
     }
 
-    fileInputRef.current?.click();
+
+    setUploadedFile(file || null);
+    setSubmitError("");
   };
 
-  const handleFileChange = (event) => {
-    if (isActivationBlocked) {
-      return;
-    }
+  const handleFileRemove = () => {
 
-    const selectedFile = event.target.files?.[0];
-    setUploadedFileName(selectedFile ? selectedFile.name : "");
-    setUploadedFile(selectedFile || null);
-    setSubmitError("");
+    setUploadedFile(null);
   };
 
   const handleNextStep = () => {
@@ -597,7 +596,7 @@ const PengajuanAtkPage = () => {
       setQuantities({});
       setPengajuanLainnya([]);
       setUploadedFile(null);
-      setUploadedFileName("");
+
       setIsSuccessModalOpen(true);
     } catch (error) {
       setSubmitError(getApiErrorMessage(error, "Gagal mengirim pengajuan."));
@@ -663,45 +662,16 @@ const PengajuanAtkPage = () => {
               {submitError}
             </p>
           ) : null}
-          <div className="mb-8">
-            <p className=" text-gray-500 mb-2">Surat Permohonan</p>
-            <input
-              ref={fileInputRef}
-              type="file"
-              className="hidden"
-              accept=".jpg,.jpeg,.png,.svg,.pdf"
-              onChange={handleFileChange}
-              disabled={isActivationBlocked}
-            />
-            <div className="w-full border border-dashed border-[#86a9e2] rounded-md px-4 py-5 bg-[#fcfdff]">
-              <div className="flex flex-col items-center justify-center text-center">
-                <CloudArrowUpIcon className="h-6 w-6 text-[#4773da]" />
-                <p className=" text-gray-500 mt-2">
-                  Drag your file(s) or{" "}
-                  <button
-                    type="button"
-                    onClick={handleBrowseFile}
-                    disabled={isActivationBlocked}
-                    className={`font-medium ${
-                      isActivationBlocked
-                        ? "text-gray-300 cursor-not-allowed"
-                        : "text-[#4773da]"
-                    }`}
-                  >
-                    browse
-                  </button>
-                </p>
-                <p className="text-xs text-gray-400 mt-1">
-                  jpg, png, svg, atau pdf
-                </p>
-                {uploadedFileName ? (
-                  <p className="mt-2 text-xs font-medium text-gray-600">
-                    {uploadedFileName}
-                  </p>
-                ) : null}
-              </div>
-            </div>
-          </div>
+          <FileUploadDropzone
+            selectedFile={uploadedFile}
+            onFileSelect={handleFileSelect}
+            onFileRemove={handleFileRemove}
+            accept=".jpg,.jpeg,.png,.svg,.pdf"
+            label="Surat Permohonan"
+            description="Drag your file(s) or browse"
+            subDescription="jpg, png, svg, atau pdf"
+            disabled={isActivationBlocked}
+          />
 
           <div className="mb-8 flex items-start justify-center">
             <div className="flex items-start w-full max-w-xl px-2">
@@ -1209,12 +1179,19 @@ const PengajuanAtkPage = () => {
                     placeholder="Contoh: 2"
                     value={formLainnya.jumlah}
                     disabled={isActivationBlocked}
-                    onChange={(event) =>
+                    onKeyDown={(e) => {
+                      if (['.', 'e', 'E', '+', '-'].includes(e.key)) e.preventDefault();
+                    }}
+                    onChange={(event) => {
+                      let val = event.target.value;
+                      if (val !== "") {
+                        val = val.replace(/^0+/, "") || "0";
+                      }
                       setFormLainnya((prev) => ({
                         ...prev,
-                        jumlah: event.target.value,
-                      }))
-                    }
+                        jumlah: val,
+                      }));
+                    }}
                     className="w-full px-4 py-2 bg-white border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-[#4279df] focus:border-transparent text-gray-700  placeholder-gray-400"
                     required
                   />

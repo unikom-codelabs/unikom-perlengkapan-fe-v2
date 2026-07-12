@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { XMarkIcon } from "@heroicons/react/24/outline";
+import { sanitizeRichText } from "../../../utils/sanitizeHtml";
 
 const ModalDetailPengumuman = ({
   isOpen,
@@ -11,6 +12,27 @@ const ModalDetailPengumuman = ({
   contentHtml = "",
 }) => {
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [show, setShow] = useState(false);
+  const [shouldRender, setRender] = useState(isOpen);
+
+  useEffect(() => {
+    if (isOpen) {
+      setRender(true);
+      const timer = setTimeout(() => setShow(true), 10);
+      return () => clearTimeout(timer);
+    } else {
+      setShow(false);
+      const timer = setTimeout(() => setRender(false), 150);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen]);
+
+  // Defense-in-depth: selalu sanitasi HTML sebelum render, meskipun caller
+  // sudah melakukan sanitasi sebelumnya.
+  const sanitizedHtml = useMemo(
+    () => sanitizeRichText(contentHtml),
+    [contentHtml],
+  );
 
   const handleOpenPreview = () => {
     if (!gambarUrl) {
@@ -24,17 +46,23 @@ const ModalDetailPengumuman = ({
     setIsPreviewOpen(false);
   };
 
-  if (!isOpen) {
+  if (!shouldRender) {
     return null;
   }
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      className={`fixed inset-0 z-50 flex items-center justify-center p-4 transition-all duration-150 ${
+        show
+          ? "bg-black/30 backdrop-blur-sm opacity-100"
+          : "bg-transparent opacity-0"
+      }`}
       onClick={onClose}
     >
       <div
-        className="w-full max-w-4xl overflow-hidden rounded-lg bg-white shadow-xl"
+        className={`w-full max-w-4xl overflow-hidden rounded-lg bg-white shadow-xl transition-all duration-150 transform ${
+          show ? "scale-100 opacity-100" : "scale-95 opacity-0"
+        }`}
         onClick={(event) => event.stopPropagation()}
       >
         <div className="flex items-center justify-between bg-[#3e64ca] px-6 py-4 text-white">
@@ -78,7 +106,7 @@ const ModalDetailPengumuman = ({
 
           <div
             className="pengumuman-richtext text-[15px] leading-relaxed text-gray-700"
-            dangerouslySetInnerHTML={{ __html: contentHtml || "<p>-</p>" }}
+            dangerouslySetInnerHTML={{ __html: sanitizedHtml || "<p>-</p>" }}
           />
         </div>
       </div>

@@ -5,8 +5,8 @@ import Table from "../../components/Element/Table";
 import { useAuth } from "../../context/useAuth";
 import Dropdown from "../../components/Element/Dropdown";
 import { getHistoriPengajuan } from "../../api/historiPengajuanService";
+import { STORAGE_BASE_URL as BASE_STORAGE_URL } from "../../config/env";
 
-const BASE_STORAGE_URL = "http://perlengkapan.codelabspace.or.id/storage/";
 const ITEMS_PER_PAGE = 10;
 
 const StatusBadge = ({ status }) => {
@@ -28,12 +28,15 @@ const StatusBadge = ({ status }) => {
 
 const PaginatedTable = ({ title, rows }) => {
   const [page, setPage] = useState(1);
+  const [prevRows, setPrevRows] = useState(rows);
+
+  if (rows !== prevRows) {
+    setPrevRows(rows);
+    setPage(1);
+  }
+
   const totalPages = Math.max(1, Math.ceil(rows.length / ITEMS_PER_PAGE));
   const sliced = rows.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
-
-  useEffect(() => {
-    setPage(1);
-  }, [rows]);
 
   return (
     <Table
@@ -483,11 +486,13 @@ const HistoriPengajuanPenggunaPage = () => {
     (hasJabatanField || roleIncludesRestricted) && !isDekan,
   );
 
-  const tabs = authLoading
-    ? ["ATK Tahunan"]
-    : isJabatanOrRestrictedRole
+  const tabs = useMemo(() => {
+    return authLoading
       ? ["ATK Tahunan"]
-      : ["ATK Tahunan", "ATK Ujian", "ATK Kelas"];
+      : isJabatanOrRestrictedRole
+        ? ["ATK Tahunan"]
+        : ["ATK Tahunan", "ATK Ujian", "ATK Kelas"];
+  }, [authLoading, isJabatanOrRestrictedRole]);
 
   useEffect(() => {
     if (!tabs.includes(activeTab) && tabs.length > 0) {

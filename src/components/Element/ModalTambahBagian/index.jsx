@@ -14,17 +14,25 @@ const ModalTambahBagian = ({
   namaBagian = "",
   onNamaBagianChange,
 }) => {
+  const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
   const [shouldRender, setRender] = useState(isOpen);
   const [show, setShow] = useState(false);
 
-  useEffect(() => {
+  if (isOpen !== prevIsOpen) {
+    setPrevIsOpen(isOpen);
     if (isOpen) {
       setRender(true);
+    } else {
+      setShow(false);
+    }
+  }
+
+  useEffect(() => {
+    if (isOpen) {
       const timer = setTimeout(() => setShow(true), 10);
       return () => clearTimeout(timer);
     }
 
-    setShow(false);
     const timer = setTimeout(() => setRender(false), 150);
     return () => clearTimeout(timer);
   }, [isOpen]);

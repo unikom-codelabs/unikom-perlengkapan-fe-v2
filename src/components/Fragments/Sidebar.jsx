@@ -128,8 +128,9 @@ const Sidebar = () => {
   const isDekan =
     normalizedJabatan.includes("dekan") ||
     normalizedJabatan.includes("kaprodi");
-  const allowedPengajuanKategori =
-    isUserRole && !isDekan ? ["tahunan"] : ["tahunan", "ujian", "kelas"];
+  const allowedPengajuanKategori = useMemo(() => {
+    return isUserRole && !isDekan ? ["tahunan"] : ["tahunan", "ujian", "kelas"];
+  }, [isUserRole, isDekan]);
 
   const isDaftarPengajuanActive =
     location.pathname.startsWith("/daftar-pengajuan");

@@ -27,6 +27,14 @@ const Dropdown = React.forwardRef(
     const searchInputRef = useRef(null);
     const buttonRef = useRef(null);
     const menuRef = useRef(null);
+    const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
+
+    if (isOpen !== prevIsOpen) {
+      setPrevIsOpen(isOpen);
+      if (!isOpen) {
+        setSearchQuery("");
+      }
+    }
 
     const optionItems = useMemo(() => {
       return React.Children.toArray(children)
@@ -65,7 +73,6 @@ const Dropdown = React.forwardRef(
 
     useEffect(() => {
       if (!isOpen) {
-        setSearchQuery("");
         return undefined;
       }
 
@@ -104,26 +111,23 @@ const Dropdown = React.forwardRef(
       window.addEventListener("resize", updateMenuPosition);
       window.addEventListener("scroll", updateMenuPosition, true);
 
+      let timer;
       if (isSearchEnabled) {
-        const timer = setTimeout(() => {
+        timer = setTimeout(() => {
           searchInputRef.current?.focus();
         }, 0);
-        return () => {
-          clearTimeout(timer);
-          document.removeEventListener("mousedown", handleClickOutside);
-          document.removeEventListener("keydown", handleEscape);
-          window.removeEventListener("resize", updateMenuPosition);
-          window.removeEventListener("scroll", updateMenuPosition, true);
-        };
       }
 
       return () => {
+        if (timer) {
+          clearTimeout(timer);
+        }
         document.removeEventListener("mousedown", handleClickOutside);
         document.removeEventListener("keydown", handleEscape);
         window.removeEventListener("resize", updateMenuPosition);
         window.removeEventListener("scroll", updateMenuPosition, true);
       };
-    }, [isOpen]);
+    }, [isOpen, isSearchEnabled]);
 
     const handleSelect = (optionValue) => {
       if (disabled) {

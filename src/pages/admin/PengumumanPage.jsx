@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import PageHelmet from "../../components/SEO/PageHelmet";
+import PageHelmet from "../../components/Seo/PageHelmet";
 import {
   MagnifyingGlassIcon,
   PlusIcon,
@@ -17,83 +17,7 @@ import {
   updatePengumuman,
 } from "../../api/pengumumanService";
 
-const decodeHtmlEntities = (text = "") => {
-  const parser = new DOMParser();
-  const document = parser.parseFromString(String(text), "text/html");
-  return document.documentElement.textContent || "";
-};
-
-const stripHtml = (htmlText = "") =>
-  decodeHtmlEntities(String(htmlText).replace(/<[^>]*>/g, " "))
-    .replace(/\u00a0/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-
-const sanitizeRichText = (htmlText = "") => {
-  const parser = new DOMParser();
-  const document = parser.parseFromString(String(htmlText || ""), "text/html");
-  const allowedTags = new Set([
-    "P",
-    "BR",
-    "STRONG",
-    "B",
-    "EM",
-    "I",
-    "U",
-    "S",
-    "UL",
-    "OL",
-    "LI",
-    "A",
-    "BLOCKQUOTE",
-  ]);
-
-  document
-    .querySelectorAll("script,style,iframe,object,embed,link,meta,base,form")
-    .forEach((node) => node.remove());
-
-  document.body.querySelectorAll("*").forEach((element) => {
-    const tagName = element.tagName.toUpperCase();
-
-    if (!allowedTags.has(tagName)) {
-      element.replaceWith(...element.childNodes);
-      return;
-    }
-
-    [...element.attributes].forEach((attribute) => {
-      const attributeName = attribute.name.toLowerCase();
-
-      if (
-        attributeName.startsWith("on") ||
-        attributeName === "style" ||
-        attributeName === "class" ||
-        attributeName === "id"
-      ) {
-        element.removeAttribute(attribute.name);
-        return;
-      }
-
-      if (tagName === "A" && attributeName === "href") {
-        const value = attribute.value.trim();
-        if (!/^(https?:|mailto:|tel:|#|\/)/i.test(value)) {
-          element.removeAttribute("href");
-        }
-        return;
-      }
-
-      if (!(tagName === "A" && attributeName === "href")) {
-        element.removeAttribute(attribute.name);
-      }
-    });
-
-    if (tagName === "A") {
-      element.setAttribute("target", "_blank");
-      element.setAttribute("rel", "noopener noreferrer");
-    }
-  });
-
-  return document.body.innerHTML.replace(/&nbsp;|&#160;/gi, " ").trim();
-};
+import { sanitizeRichText, stripHtml } from "../../utils/sanitizeHtml";
 
 const formatDateTime = (dateText) => {
   if (!dateText) {

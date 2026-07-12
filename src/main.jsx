@@ -97,12 +97,7 @@ const router = createBrowserRouter([
   },
   {
     path: "/histori-pengajuan-admin",
-    element: withProtectedLayout(<HistoriPengajuanAdminPage />),
-    errorElement: <ErrorPage />,
-  },
-  {
-    path: "/manajemen-pengguna",
-    element: withAdminLayout(<ManajemenPenggunaPage />),
+    element: withAdminLayout(<HistoriPengajuanAdminPage />),
     errorElement: <ErrorPage />,
   },
   {

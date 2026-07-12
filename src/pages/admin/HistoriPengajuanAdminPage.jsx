@@ -5,8 +5,7 @@ import Table from "../../components/Element/Table";
 import Dropdown from "../../components/Element/Dropdown";
 import { listUnitTypeTree } from "../../api/unitTypeService";
 import { getHistoriPengajuanAdmin } from "../../api/historiPengajuanService";
-
-const BASE_STORAGE_URL = "http://perlengkapan.codelabspace.or.id/storage/";
+import { STORAGE_BASE_URL as BASE_STORAGE_URL } from "../../config/env";
 
 const getJenisFromTab = (tab) =>
   ({

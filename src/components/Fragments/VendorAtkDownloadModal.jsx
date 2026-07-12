@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { pdf } from "@react-pdf/renderer";
 import Dropdown from "../Element/Dropdown";
 import Button from "../Element/Button";
@@ -26,7 +26,22 @@ const VendorAtkDownloadModal = ({
   const [isPreparingPdf, setIsPreparingPdf] = useState(false);
   const [downloadError, setDownloadError] = useState("");
 
-  if (!isVisible) {
+  const [show, setShow] = useState(false);
+  const [shouldRender, setRender] = useState(isVisible);
+
+  useEffect(() => {
+    if (isVisible) {
+      setRender(true);
+      const timer = setTimeout(() => setShow(true), 10);
+      return () => clearTimeout(timer);
+    } else {
+      setShow(false);
+      const timer = setTimeout(() => setRender(false), 150);
+      return () => clearTimeout(timer);
+    }
+  }, [isVisible]);
+
+  if (!shouldRender) {
     return null;
   }
 
@@ -65,11 +80,17 @@ const VendorAtkDownloadModal = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4 backdrop-blur-sm"
+      className={`fixed inset-0 z-50 flex items-center justify-center p-4 transition-all duration-150 ${
+        show
+          ? "bg-black/30 backdrop-blur-sm opacity-100"
+          : "bg-transparent opacity-0"
+      }`}
       onClick={onClose}
     >
       <div
-        className="w-full max-w-xl overflow-hidden rounded-lg bg-white shadow-lg"
+        className={`w-full max-w-xl overflow-hidden rounded-lg bg-white shadow-lg transition-all duration-150 transform ${
+          show ? "scale-100 opacity-100" : "scale-95 opacity-0"
+        }`}
         onClick={(event) => event.stopPropagation()}
       >
         <div className="bg-[#4279df] px-6 py-4 text-white">

@@ -1,4 +1,6 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
+import ModalDetailPengumuman from "../ModalDetailPengumuman";
 
 const decodeHtmlEntities = (text = "") => {
   const parser = new DOMParser();
@@ -46,6 +48,12 @@ const DashboardPengumumanSection = ({
   isLoading,
   errorMessage,
 }) => {
+  const [selectedItem, setSelectedItem] = useState(null);
+
+  const handleCloseModal = () => {
+    setSelectedItem(null);
+  };
+
   return (
     <div className="bg-white rounded shadow-sm overflow-hidden mt-6">
       <div className="bg-[#4773da] text-white px-6 py-4">
@@ -99,12 +107,13 @@ const DashboardPengumumanSection = ({
                       {buildPreviewText(item)}
                     </p>
                     <div className="mt-auto flex justify-end">
-                      <Link
-                        to="/pengumuman"
-                        className="text-[#4773da] text-sm hover:underline font-medium"
+                      <button
+                        type="button"
+                        onClick={() => setSelectedItem(item)}
+                        className="text-[#4773da] text-sm hover:underline font-medium cursor-pointer bg-transparent border-none p-0"
                       >
                         Baca Selengkapnya
-                      </Link>
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -117,6 +126,20 @@ const DashboardPengumumanSection = ({
           </div>
         )}
       </div>
+
+      <ModalDetailPengumuman
+        isOpen={Boolean(selectedItem)}
+        onClose={handleCloseModal}
+        judul={selectedItem?.judul}
+        author={selectedItem?.author}
+        createdAt={
+          selectedItem?.createdAt
+            ? formatDateTime(selectedItem.createdAt)
+            : "-"
+        }
+        gambarUrl={selectedItem?.gambarUrl}
+        contentHtml={selectedItem?.teks || selectedItem?.deskripsi}
+      />
     </div>
   );
 };

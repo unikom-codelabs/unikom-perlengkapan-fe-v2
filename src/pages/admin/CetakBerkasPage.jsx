@@ -684,7 +684,16 @@ const CetakBerkasPage = ({ tipe = "rutin" }) => {
           type="number"
           min="0"
           value={otherPrices[row.id] ?? (row.hargaValue || "")}
-          onChange={(event) => updateOtherPrice(row.id, event.target.value)}
+          onKeyDown={(e) => {
+            if (['.', 'e', 'E', '+', '-'].includes(e.key)) e.preventDefault();
+          }}
+          onChange={(event) => {
+            let val = event.target.value;
+            if (val !== "") {
+              val = val.replace(/^0+/, "") || "0";
+            }
+            updateOtherPrice(row.id, val);
+          }}
           className="w-32 rounded border border-gray-300 px-3 py-1.5 text-sm text-gray-600 focus:outline-none focus:ring-1 focus:ring-blue-500"
           placeholder="0"
         />

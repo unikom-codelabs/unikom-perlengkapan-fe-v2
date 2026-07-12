@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import PageHelmet from "../components/SEO/PageHelmet";
+import PageHelmet from "../components/Seo/PageHelmet";
 import DashboardCard from "../components/Element/DashboardCard";
 import DashboardAktivasiSummaryCard from "../components/Element/DashboardAktivasiSummaryCard";
 import DashboardPengumumanSection from "../components/Element/DashboardPengumumanSection";
@@ -230,8 +230,9 @@ const DashboardPage = () => {
     normalizedJabatan.includes("dekan") ||
     normalizedJabatan.includes("kaprodi");
 
-  const allowedKategori =
-    isUserRole && !isDekan ? ["tahunan"] : ["tahunan", "ujian", "kelas"];
+  const allowedKategori = useMemo(() => {
+    return isUserRole && !isDekan ? ["tahunan"] : ["tahunan", "ujian", "kelas"];
+  }, [isUserRole, isDekan]);
 
   useEffect(() => {
     if (!isUserRole) {
@@ -417,6 +418,7 @@ const DashboardPage = () => {
                     periodName={aktivasi.namaPeriode}
                     endDate={aktivasi.tanggalSelesai}
                     isActive={aktivasi.statusAktif}
+                    linkTo={`/pengajuan-rutin/${aktivasi.kategori}`}
                   />
                 ))}
               </div>
@@ -430,6 +432,7 @@ const DashboardPage = () => {
                   periodName={availableAktivasi[0].namaPeriode}
                   endDate={availableAktivasi[0].tanggalSelesai}
                   isActive={availableAktivasi[0].statusAktif}
+                  linkTo={`/pengajuan-rutin/${availableAktivasi[0].kategori}`}
                 />
               </div>
             )

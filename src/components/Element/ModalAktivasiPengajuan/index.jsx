@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import Dropdown from "../Dropdown";
 
 const getCurrentAcademicYear = () => {
@@ -96,45 +96,60 @@ const ModalAktivasiPengajuan = ({
     new Set([...baseYearOptions, defaultYearValue].filter(Boolean)),
   );
 
-  useEffect(() => {
-    setFormValues(
-      buildInitialFormValues({
-        ...defaultValues,
-        tahun_akademik:
-          defaultValues?.tahun_akademik ??
-          (useYearOnly ? getCurrentYear() : getCurrentAcademicYear()),
-      }),
-    );
-  }, [defaultValues, isOpen, useYearOnly]);
+  const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
+  const [prevDefaultValues, setPrevDefaultValues] = useState(defaultValues);
+  
+  const [show, setShow] = useState(false);
+  const [shouldRender, setRender] = useState(isOpen);
 
   useEffect(() => {
-    if (isEditMode) {
-      return;
+    if (isOpen) {
+      const timer = setTimeout(() => setShow(true), 10);
+      return () => clearTimeout(timer);
+    } else {
+      const timer = setTimeout(() => setRender(false), 150);
+      return () => clearTimeout(timer);
     }
+  }, [isOpen]);
 
-    const targetYear = useYearOnly
-      ? Number(formValues.tahun_akademik)
-      : getStartYearFromAcademicYear(formValues.tahun_akademik);
-
-    if (!Number.isFinite(targetYear)) {
-      return;
-    }
-
-    setFormValues((prev) => {
-      const nextStart = updateDateYear(prev.aktif_mulai, targetYear);
-      const nextEnd = updateDateYear(prev.aktif_selesai, targetYear);
-
-      if (nextStart === prev.aktif_mulai && nextEnd === prev.aktif_selesai) {
-        return prev;
+  if (isOpen !== prevIsOpen || defaultValues !== prevDefaultValues) {
+    if (isOpen !== prevIsOpen) {
+      if (isOpen) {
+        setRender(true);
+      } else {
+        setShow(false);
       }
+    }
+    
+    setPrevIsOpen(isOpen);
+    setPrevDefaultValues(defaultValues);
 
-      return {
-        ...prev,
-        aktif_mulai: nextStart,
-        aktif_selesai: nextEnd,
-      };
+    const initialValues = buildInitialFormValues({
+      ...defaultValues,
+      tahun_akademik:
+        defaultValues?.tahun_akademik ??
+        (useYearOnly ? getCurrentYear() : getCurrentAcademicYear()),
     });
-  }, [formValues.tahun_akademik, isEditMode, useYearOnly]);
+
+    if (!isEditMode) {
+      const targetYear = useYearOnly
+        ? Number(initialValues.tahun_akademik)
+        : getStartYearFromAcademicYear(initialValues.tahun_akademik);
+
+      if (Number.isFinite(targetYear)) {
+        initialValues.aktif_mulai = updateDateYear(
+          initialValues.aktif_mulai,
+          targetYear,
+        );
+        initialValues.aktif_selesai = updateDateYear(
+          initialValues.aktif_selesai,
+          targetYear,
+        );
+      }
+    }
+
+    setFormValues(initialValues);
+  }
 
   if (!isOpen) {
     return null;
@@ -150,10 +165,28 @@ const ModalAktivasiPengajuan = ({
 
   const handleChange = (event) => {
     const { name, value } = event.target;
-    setFormValues((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setFormValues((prev) => {
+      const nextValues = {
+        ...prev,
+        [name]: value,
+      };
+
+      if (name === "tahun_akademik" && !isEditMode) {
+        const targetYear = useYearOnly
+          ? Number(value)
+          : getStartYearFromAcademicYear(value);
+
+        if (Number.isFinite(targetYear)) {
+          nextValues.aktif_mulai = updateDateYear(prev.aktif_mulai, targetYear);
+          nextValues.aktif_selesai = updateDateYear(
+            prev.aktif_selesai,
+            targetYear,
+          );
+        }
+      }
+
+      return nextValues;
+    });
   };
 
   const isDateRangeInvalid =
@@ -204,13 +237,23 @@ const ModalAktivasiPengajuan = ({
     });
   };
 
+  if (!shouldRender) {
+    return null;
+  }
+
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30 backdrop-blur-sm"
+      className={`fixed inset-0 z-50 flex items-center justify-center p-4 transition-all duration-150 ${
+        show
+          ? "bg-black/30 backdrop-blur-sm opacity-100"
+          : "bg-transparent opacity-0"
+      }`}
       onClick={handleClose}
     >
       <div
-        className="bg-white rounded-lg shadow-lg w-full max-w-xl overflow-hidden flex flex-col"
+        className={`bg-white rounded-lg shadow-lg w-full max-w-xl overflow-hidden flex flex-col transition-all duration-150 transform ${
+          show ? "scale-100 opacity-100" : "scale-95 opacity-0"
+        }`}
         onClick={(event) => event.stopPropagation()}
       >
         <div className="bg-[#4279df] text-white px-6 py-4 flex justify-between items-center">
@@ -245,25 +288,60 @@ const ModalAktivasiPengajuan = ({
                   </div>
                 </div>
 
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-gray-600 font-medium text-sm">
-                    {useYearOnly ? "Tahun" : "Tahun Akademik"}
-                  </label>
-                  <div className="relative">
-                    <Dropdown
-                      name="tahun_akademik"
-                      value={formValues.tahun_akademik}
-                      onChange={handleChange}
-                      required
-                    >
-                      <option value="">Pilih Tahun</option>
-                      {yearOptions.map((yearValue) => (
-                        <option key={yearValue} value={yearValue}>
-                          {yearValue}
-                        </option>
-                      ))}
-                    </Dropdown>
+                <div
+                  className={
+                    showSemester
+                      ? "grid grid-cols-1 md:grid-cols-2 gap-4"
+                      : "grid grid-cols-1 gap-4"
+                  }
+                >
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-gray-600 font-medium text-sm">
+                      {useYearOnly ? "Tahun" : "Tahun Akademik"}
+                    </label>
+                    <div className="relative">
+                      <Dropdown
+                        name="tahun_akademik"
+                        value={formValues.tahun_akademik}
+                        onChange={handleChange}
+                        required
+                      >
+                        <option value="">Pilih Tahun</option>
+                        {yearOptions.map((yearValue) => (
+                          <option key={yearValue} value={yearValue}>
+                            {yearValue}
+                          </option>
+                        ))}
+                      </Dropdown>
+                    </div>
                   </div>
+
+                  {showSemester ? (
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-gray-600 font-medium text-sm">
+                        Semester
+                      </label>
+                      <div className="relative">
+                        <Dropdown
+                          name="semester"
+                          value={formValues.semester}
+                          onChange={handleChange}
+                          required
+                        >
+                          <option value="">Pilih Semester</option>
+                          {semesterOptions.map((semesterValue) => (
+                            <option key={semesterValue} value={semesterValue}>
+                              {semesterValue === "ganjil"
+                                ? "Ganjil"
+                                : semesterValue === "genap"
+                                  ? "Genap"
+                                  : semesterValue}
+                            </option>
+                          ))}
+                        </Dropdown>
+                      </div>
+                    </div>
+                  ) : null}
                 </div>
               </>
             ) : null}
@@ -300,33 +378,6 @@ const ModalAktivasiPengajuan = ({
                 />
               </div>
             </div>
-
-            {!isEditMode && showSemester ? (
-              <div className="flex flex-col gap-1.5">
-                <label className="text-gray-600 font-medium text-sm">
-                  Semester
-                </label>
-                <div className="relative">
-                  <Dropdown
-                    name="semester"
-                    value={formValues.semester}
-                    onChange={handleChange}
-                    required
-                  >
-                    <option value="">Pilih Semester</option>
-                    {semesterOptions.map((semesterValue) => (
-                      <option key={semesterValue} value={semesterValue}>
-                        {semesterValue === "ganjil"
-                          ? "Ganjil"
-                          : semesterValue === "genap"
-                            ? "Genap"
-                            : semesterValue}
-                      </option>
-                    ))}
-                  </Dropdown>
-                </div>
-              </div>
-            ) : null}
 
             {!isEditMode && showUjianType ? (
               <div className="flex flex-col gap-1.5">

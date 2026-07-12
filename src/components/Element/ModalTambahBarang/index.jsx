@@ -79,7 +79,7 @@ const ModalTambahBarang = ({
     if (vendors.length > 0 && !vendorId) {
       setVendorId(String(vendors[0].id));
     }
-  }, [vendors]);
+  }, [vendors, vendorId]);
 
   const handleClose = () => {
     if (isSubmitting) {
@@ -201,7 +201,16 @@ const ModalTambahBarang = ({
                 min="0"
                 placeholder="Contoh: 3000"
                 value={harga}
-                onChange={(e) => setHarga(e.target.value)}
+                onKeyDown={(e) => {
+                  if (['.', 'e', 'E', '+', '-'].includes(e.key)) e.preventDefault();
+                }}
+                onChange={(e) => {
+                  let val = e.target.value;
+                  if (val !== "") {
+                    val = val.replace(/^0+/, "") || "0";
+                  }
+                  setHarga(val);
+                }}
                 className="w-full px-4 py-2 bg-white border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-[#4279df] focus:border-transparent text-gray-700 text-sm placeholder-gray-400"
                 required
               />

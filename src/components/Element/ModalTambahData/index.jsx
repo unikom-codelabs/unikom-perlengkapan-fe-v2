@@ -1,3 +1,5 @@
+import { useState, useEffect } from "react";
+
 const ModalTambahData = ({
   isOpen,
   title = "Tambah Data",
@@ -17,7 +19,30 @@ const ModalTambahData = ({
   isSubmitting = false,
   errorMessage = "",
 }) => {
-  if (!isOpen) {
+  const [show, setShow] = useState(false);
+  const [shouldRender, setRender] = useState(isOpen);
+
+  // Derive state from props: if isOpen becomes true, immediately set shouldRender to true
+  if (isOpen && !shouldRender) {
+    setRender(true);
+  }
+  
+  // If isOpen becomes false, immediately set show to false to trigger exit animation
+  if (!isOpen && show) {
+    setShow(false);
+  }
+
+  useEffect(() => {
+    let timer;
+    if (isOpen) {
+      timer = setTimeout(() => setShow(true), 10);
+    } else {
+      timer = setTimeout(() => setRender(false), 150);
+    }
+    return () => clearTimeout(timer);
+  }, [isOpen]);
+
+  if (!shouldRender) {
     return null;
   }
 
@@ -46,11 +71,17 @@ const ModalTambahData = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30 backdrop-blur-sm"
+      className={`fixed inset-0 z-50 flex items-center justify-center p-4 transition-all duration-150 ${
+        show
+          ? "bg-black/30 backdrop-blur-sm opacity-100"
+          : "bg-transparent opacity-0"
+      }`}
       onClick={handleClose}
     >
       <div
-        className="bg-white rounded-lg shadow-lg w-full max-w-md overflow-hidden"
+        className={`bg-white rounded-lg shadow-lg w-full max-w-md overflow-hidden transition-all duration-150 transform ${
+          show ? "scale-100 opacity-100" : "scale-95 opacity-0"
+        }`}
         onClick={(event) => event.stopPropagation()}
       >
         <div className="bg-[#4279df] text-white px-6 py-4">

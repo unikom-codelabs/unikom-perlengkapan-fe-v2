@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import PageHelmet from "../../components/SEO/PageHelmet";
+import PageHelmet from "../../components/Seo/PageHelmet";
 import BapPrintModal from "../../components/Fragments/BapPrintModal";
 import FilterSelect from "../../components/Fragments/FilterSelect";
 import {
@@ -15,8 +15,7 @@ import {
 import { listJabatan } from "../../api/jabatanService";
 import { listUnitTypeTree } from "../../api/unitTypeService";
 import { listUsersPaginated } from "../../api/userService";
-
-const BASE_STORAGE_URL = "http://perlengkapan.codelabspace.or.id/storage/";
+import { STORAGE_BASE_URL as BASE_STORAGE_URL } from "../../config/env";
 
 const TAB_OPTIONS = [
   { label: "ATK Tahunan", value: "tahunan" },
@@ -522,7 +521,7 @@ const AdminDaftarPengajuanPage = ({ tipe = "rutin" }) => {
 
   const handleJumlahChange = (row, value) => {
     const rawValue = Number(value);
-    if (Number.isFinite(rawValue) && rawValue > row.jumlah) {
+    if (value !== "" && Number.isFinite(rawValue) && rawValue > row.jumlah) {
       setInputError(
         row.id,
         "Jumlah disetujui tidak boleh melebihi jumlah diajukan.",
@@ -532,11 +531,21 @@ const AdminDaftarPengajuanPage = ({ tipe = "rutin" }) => {
       setInputError(row.id, "");
     }
 
-    const jumlahDisetujui = Math.min(
+    let jumlahDisetujui = value === "" ? "" : Math.min(
       row.jumlah,
       Math.max(0, Number(value) || 0),
     );
-    updateRowLocal(row.id, { jumlahDisetujui });
+    
+    let status = row.status;
+    if (jumlahDisetujui !== "") {
+      if (jumlahDisetujui > 0) {
+        status = 1; // Disetujui
+      } else if (jumlahDisetujui === 0) {
+        status = 2; // Ditolak
+      }
+    }
+
+    updateRowLocal(row.id, { jumlahDisetujui, status });
   };
 
   const handleStatusChange = (row, value) => {
@@ -554,8 +563,17 @@ const AdminDaftarPengajuanPage = ({ tipe = "rutin" }) => {
   };
 
   const handleJumlahBlur = (row, value) => {
+    const finalJumlah = value === "" ? 0 : Math.min(row.jumlah, Math.max(0, Number(value) || 0));
+    let status = row.status;
+    if (finalJumlah > 0) {
+      status = 1;
+    } else if (finalJumlah === 0) {
+      status = 2;
+    }
+    
     submitApproval(row, {
-      jumlahDisetujui: Math.min(row.jumlah, Math.max(0, Number(value) || 0)),
+      jumlahDisetujui: finalJumlah,
+      status
     });
   };
 

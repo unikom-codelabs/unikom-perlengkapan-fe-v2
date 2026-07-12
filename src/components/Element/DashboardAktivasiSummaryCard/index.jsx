@@ -38,6 +38,7 @@ const DashboardAktivasiSummaryCard = ({
   endDate,
   isActive,
   periodName,
+  linkTo = "/aktivasi",
 }) => {
   const endDateKey = toDateKey(endDate);
   const isEnded = Boolean(endDateKey) && endDateKey < TODAY_DATE_KEY;
@@ -65,7 +66,7 @@ const DashboardAktivasiSummaryCard = ({
           ) : null}
         </div>
         <Link
-          to="/aktivasi"
+          to={linkTo}
           className="bg-secondary p-2 rounded-xl text-primary hover:bg-primary hover:text-white duration-200 ease-out"
           aria-label="Lihat detail aktivasi"
         >

@@ -1,9 +1,8 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import {
-  CloudArrowUpIcon,
   XMarkIcon,
-  DocumentIcon,
 } from "@heroicons/react/24/outline";
+import FileUploadDropzone from "../FileUploadDropzone";
 import ReactQuill from "react-quill-new";
 import "react-quill-new/dist/quill.snow.css";
 
@@ -45,14 +44,33 @@ const ModalBuatPengumuman = ({
   errorMessage = "",
   initialData = null,
 }) => {
+  const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
+  const [prevInitialData, setPrevInitialData] = useState(initialData);
   const [shouldRender, setRender] = useState(isOpen);
   const [show, setShow] = useState(false);
   const [judul, setJudul] = useState("");
   const [content, setContent] = useState("");
-  const [isDragging, setIsDragging] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   const [fileError, setFileError] = useState("");
-  const fileInputRef = useRef(null);
+
+  if (isOpen && !shouldRender) {
+    setRender(true);
+  }
+
+  if (!isOpen && show) {
+    setShow(false);
+  }
+
+  if (isOpen !== prevIsOpen || initialData !== prevInitialData) {
+    setPrevIsOpen(isOpen);
+    setPrevInitialData(initialData);
+    if (isOpen) {
+      setJudul(initialData?.judul || "");
+      setContent(initialData?.teks || initialData?.deskripsi || "");
+      setSelectedFile(null);
+      setFileError("");
+    }
+  }
 
   const modules = {
     toolbar: [
@@ -66,84 +84,48 @@ const ModalBuatPengumuman = ({
   };
 
   useEffect(() => {
+    let timer;
     if (isOpen) {
-      setJudul(initialData?.judul || "");
-      setContent(initialData?.teks || initialData?.deskripsi || "");
-      setSelectedFile(null);
-      setFileError("");
-      setRender(true);
-      const timer = setTimeout(() => setShow(true), 10);
-      return () => clearTimeout(timer);
+      timer = setTimeout(() => setShow(true), 10);
     } else {
-      setShow(false);
-      setTimeout(() => {
+      timer = setTimeout(() => {
         setRender(false);
         setContent("");
         setSelectedFile(null);
       }, 150);
     }
-  }, [initialData, isOpen]);
+    return () => clearTimeout(timer);
+  }, [isOpen]);
 
   const handleClose = () => {
-    if (isSubmitting) {
+    if (isSubmitting || !show) {
       return;
     }
 
     onClose();
   };
 
-  const handleDragOver = (e) => {
-    e.preventDefault();
-    setIsDragging(true);
-  };
-
-  const handleDragLeave = (e) => {
-    e.preventDefault();
-    setIsDragging(false);
-  };
-
-  const handleDrop = (e) => {
-    e.preventDefault();
-    setIsDragging(false);
-    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      const droppedFile = e.dataTransfer.files[0];
-
-      const validationError = getImageValidationError(droppedFile);
-      if (validationError) {
-        setSelectedFile(null);
-        setFileError(validationError);
-        return;
-      }
-
-      setFileError("");
-      setSelectedFile(droppedFile);
+  const handleFileSelect = (file, dropzoneError) => {
+    if (dropzoneError) {
+      setSelectedFile(null);
+      setFileError(dropzoneError);
+      return;
     }
-  };
 
-  const handleFileInputChange = (e) => {
-    if (e.target.files && e.target.files.length > 0) {
-      const file = e.target.files[0];
-
-      const validationError = getImageValidationError(file);
-      if (validationError) {
-        setSelectedFile(null);
-        setFileError(validationError);
-        e.target.value = "";
-        return;
-      }
-
-      setFileError("");
-      setSelectedFile(file);
+    const validationError = getImageValidationError(file);
+    if (validationError) {
+      setSelectedFile(null);
+      setFileError(validationError);
+      return;
     }
+
+    setFileError("");
+    setSelectedFile(file);
   };
 
-  const handleRemoveFile = (e) => {
-    e.stopPropagation();
+  const handleRemoveFile = () => {
     setSelectedFile(null);
     setFileError("");
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
   };
 
   const handleSubmit = async (e) => {
@@ -175,7 +157,7 @@ const ModalBuatPengumuman = ({
       className={`fixed inset-0 z-50 flex items-center justify-center p-4 transition-all duration-150 ${
         show
           ? "bg-black/30 backdrop-blur-sm opacity-100"
-          : "bg-transparent opacity-0"
+          : "bg-transparent opacity-0 pointer-events-none"
       }`}
       onClick={handleClose}
     >
@@ -230,70 +212,19 @@ const ModalBuatPengumuman = ({
 
           <div className="flex flex-col gap-1.5">
             <label className="text-gray-600 font-medium text-sm">Foto</label>
-            <div
-              className={`border-2 border-dashed rounded-lg p-8 flex flex-col items-center justify-center bg-white cursor-pointer transition-colors relative ${
-                isDragging
-                  ? "border-blue-500 bg-blue-50"
-                  : "border-[#4279df] hover:bg-blue-50/50"
-              }`}
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-              onDrop={handleDrop}
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <input
-                type="file"
-                ref={fileInputRef}
-                onChange={handleFileInputChange}
-                accept=".jpg,.jpeg,.png,.webp,image/png,image/jpeg,image/jpg,image/webp"
-                className="hidden"
-              />
-
-              {!selectedFile ? (
-                <>
-                  <CloudArrowUpIcon className="w-8 h-8 text-[#4279df] mb-2" />
-                  <p className="text-sm text-gray-600 mb-1">
-                    Drag your file(s) or{" "}
-                    <span className="text-[#4279df] font-semibold">browse</span>
-                  </p>
-                  <p className="text-xs text-gray-400">
-                    jpg, jpeg, png, atau webp
-                  </p>
-                </>
-              ) : (
-                <div
-                  className="flex flex-row justify-between items-center w-full max-w-sm bg-white border border-gray-200 rounded p-3 relative cursor-default shadow-sm"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <div className="flex items-center gap-3 overflow-hidden">
-                    <div className="bg-blue-100 p-2 rounded shrink-0">
-                      <DocumentIcon className="w-6 h-6 text-blue-600" />
-                    </div>
-                    <div className="flex flex-col overflow-hidden">
-                      <p
-                        className="text-sm font-medium text-gray-700 truncate cursor-text"
-                        title={selectedFile.name}
-                      >
-                        {selectedFile.name}
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        {(selectedFile.size / 1024).toFixed(2)} KB
-                      </p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={handleRemoveFile}
-                    title="Hapus file"
-                    className="p-1.5 ml-2 bg-red-50 text-red-500 hover:bg-red-100 rounded-md transition-colors shrink-0"
-                  >
-                    <XMarkIcon className="w-4 h-4" />
-                  </button>
-                </div>
-              )}
-            </div>
-            {fileError ? (
-              <p className="text-xs text-red-600 mt-2">{fileError}</p>
-            ) : null}
+            <FileUploadDropzone
+              selectedFile={selectedFile}
+              onFileSelect={handleFileSelect}
+              onFileRemove={handleRemoveFile}
+              accept=".jpg,.jpeg,.png,.webp,image/png,image/jpeg,image/jpg,image/webp"
+              maxSize={MAX_IMAGE_SIZE_BYTES}
+              label=""
+              description="Drag your file(s) or browse"
+              subDescription="jpg, jpeg, png, atau webp (Max 900KB)"
+              disabled={isSubmitting}
+              error={fileError}
+              className="mb-0"
+            />
           </div>
 
           {errorMessage ? (

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import PageHelmet from "../../components/SEO/PageHelmet";
+import PageHelmet from "../../components/Seo/PageHelmet";
 import { listPengajuanSaya } from "../../api/pengajuanService";
 import { useAuth } from "../../context/useAuth";
 import Table from "../../components/Element/Table";
@@ -118,7 +118,7 @@ const DaftarPengajuanUserPage = () => {
     }
 
     return TAB_OPTIONS.map((tab) => tab.value);
-  }, [isDekan, normalizedRole, normalizedJabatan]);
+  }, [isDekan, normalizedRole]);
 
   const availableTabs = useMemo(
     () => TAB_OPTIONS.filter((tab) => allowedKategori.includes(tab.value)),
