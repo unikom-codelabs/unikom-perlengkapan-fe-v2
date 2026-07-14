@@ -138,9 +138,9 @@ const BagianPage = () => {
           <Table
             title={null}
             columns={[
-              { key: "no", label: "No" },
-              { key: "jabatan", label: "Nama Jabatan" },
-              { key: "unit", label: "Unit" },
+              { key: "no", label: "No", align: "center" },
+              { key: "jabatan", label: "Nama Jabatan", align: "left" },
+              { key: "unit", label: "Unit", align: "left" },
             ]}
             rows={tableRows}
             emptyMessage={emptyMessage}
@@ -150,8 +150,8 @@ const BagianPage = () => {
                 <td className="px-6 py-4 text-gray-600 text-center">
                   {index + 1}
                 </td>
-                <td className="px-6 py-4 text-gray-800">{item.jabatan}</td>
-                <td className="px-6 py-4">
+                <td className="px-6 py-4 text-gray-800 text-left">{item.jabatan}</td>
+                <td className="px-6 py-4 text-left">
                   {item.units.length > 0 ? (
                     <div className="flex flex-wrap gap-2">
                       {item.units.map((unit) => (

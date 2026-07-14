@@ -601,26 +601,26 @@ const CetakBerkasPage = ({ tipe = "rutin" }) => {
   };
 
   const mainColumns = [
-    { key: "no", label: "No" },
-    { key: "nama_barang", label: "Nama Barang" },
-    { key: "satuan", label: "Satuan" },
-    { key: "jumlah", label: "Jumlah" },
-    { key: "sisa", label: "Sisa Pengajuan" },
-    { key: "jumlahBeli", label: "Jumlah Beli" },
-    { key: "harga", label: "Harga" },
-    { key: "subtotal", label: "Subtotal" },
-    { key: "vendor", label: "Vendor" },
+    { key: "no", label: "No", align: "center" },
+    { key: "nama_barang", label: "Nama Barang", align: "left" },
+    { key: "satuan", label: "Satuan", align: "center" },
+    { key: "jumlah", label: "Jumlah", align: "center" },
+    { key: "sisa", label: "Sisa Pengajuan", align: "center" },
+    { key: "jumlahBeli", label: "Jumlah Beli", align: "center" },
+    { key: "harga", label: "Harga", align: "center" },
+    { key: "subtotal", label: "Subtotal", align: "center" },
+    { key: "vendor", label: "Vendor", align: "left" },
   ];
   const otherColumns = [
-    { key: "no", label: "No" },
-    { key: "nama_barang", label: "Nama Barang" },
-    { key: "satuan", label: "Satuan" },
-    { key: "jumlah", label: "Jumlah" },
-    { key: "sisa", label: "Sisa Pengajuan" },
-    { key: "jumlahBeli", label: "Jumlah Beli" },
-    { key: "harga", label: "Harga" },
-    { key: "subtotal", label: "Subtotal" },
-    { key: "vendor", label: "Vendor" },
+    { key: "no", label: "No", align: "center" },
+    { key: "nama_barang", label: "Nama Barang", align: "left" },
+    { key: "satuan", label: "Satuan", align: "center" },
+    { key: "jumlah", label: "Jumlah", align: "center" },
+    { key: "sisa", label: "Sisa Pengajuan", align: "center" },
+    { key: "jumlahBeli", label: "Jumlah Beli", align: "center" },
+    { key: "harga", label: "Harga", align: "center" },
+    { key: "subtotal", label: "Subtotal", align: "center" },
+    { key: "vendor", label: "Vendor", align: "left" },
   ];
 
   const renderMainRow = (row, index) => (
@@ -631,7 +631,7 @@ const CetakBerkasPage = ({ tipe = "rutin" }) => {
       <td className="px-6 py-3 border-r border-gray-200 text-center text-gray-500">
         {(safeMainPage - 1) * ITEMS_PER_PAGE + index + 1}
       </td>
-      <td className="px-6 py-3 border-r border-gray-200 text-gray-500">
+      <td className="px-6 py-3 border-r border-gray-200 text-gray-500 text-left">
         {row.nama_barang}
       </td>
       <td className="px-6 py-3 border-r border-gray-200 text-center text-gray-500">
@@ -652,7 +652,7 @@ const CetakBerkasPage = ({ tipe = "rutin" }) => {
       <td className="px-6 py-3 border-r border-gray-200 text-center text-gray-500">
         {formatCurrency(row.subtotalValue)}
       </td>
-      <td className="px-6 py-3 text-center text-gray-500">{row.vendor}</td>
+      <td className="px-6 py-3 text-left text-gray-500">{row.vendor}</td>
     </tr>
   );
 
@@ -664,7 +664,7 @@ const CetakBerkasPage = ({ tipe = "rutin" }) => {
       <td className="px-6 py-3 border-r border-gray-200 text-center text-gray-500">
         {(safeOtherPage - 1) * ITEMS_PER_PAGE + index + 1}
       </td>
-      <td className="px-6 py-3 border-r border-gray-200 text-gray-500">
+      <td className="px-6 py-3 border-r border-gray-200 text-gray-500 text-left">
         {row.nama_barang}
       </td>
       <td className="px-6 py-3 border-r border-gray-200 text-center text-gray-500">
@@ -701,7 +701,7 @@ const CetakBerkasPage = ({ tipe = "rutin" }) => {
       <td className="px-6 py-3 border-r border-gray-200 text-center text-gray-500">
         {formatCurrency(row.subtotalValue)}
       </td>
-      <td className="px-6 py-3 text-center text-gray-500">{row.vendor}</td>
+      <td className="px-6 py-3 text-left text-gray-500">{row.vendor}</td>
     </tr>
   );
 

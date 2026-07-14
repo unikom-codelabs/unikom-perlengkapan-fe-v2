@@ -276,9 +276,9 @@ const JabatanPage = () => {
           <Table
             title={null}
             columns={[
-              { key: "no", label: "No" },
-              { key: "nama", label: "Nama Jabatan" },
-              { key: "aksi", label: "Aksi" },
+              { key: "no", label: "No", align: "center" },
+              { key: "nama", label: "Nama Jabatan", align: "left" },
+              { key: "aksi", label: "Aksi", align: "center" },
             ]}
             rows={tableRows}
             emptyMessage={emptyMessage}
@@ -288,7 +288,7 @@ const JabatanPage = () => {
                 <td className="px-6 py-4 text-gray-600 text-center">
                   {rowNumberStart + index}
                 </td>
-                <td className="px-6 py-4 text-gray-800">{item.nama}</td>
+                <td className="px-6 py-4 text-gray-800 text-left">{item.nama}</td>
                 <td className="px-6 py-4 text-center">
                   <div className="flex items-center justify-center gap-2">
                     <ActionIconButton

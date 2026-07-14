@@ -289,11 +289,11 @@ const ManajemenPenggunaPage = () => {
           <Table
             title={null}
             columns={[
-              { key: "no", label: "No" },
-              { key: "nip", label: "NIP" },
-              { key: "nama", label: "Nama" },
-              { key: "jabatan", label: "Jabatan" },
-              { key: "aksi", label: "Aksi" },
+              { key: "no", label: "No", align: "center" },
+              { key: "nip", label: "NIP", align: "center" },
+              { key: "nama", label: "Nama", align: "left" },
+              { key: "jabatan", label: "Jabatan", align: "left" },
+              { key: "aksi", label: "Aksi", align: "center" },
             ]}
             rows={tableRows}
             emptyMessage={emptyMessage}
@@ -303,9 +303,9 @@ const ManajemenPenggunaPage = () => {
                 <td className="px-6 py-4 text-gray-600 text-center">
                   {rowNumberStart + index}
                 </td>
-                <td className="px-6 py-4 text-gray-600">{item?.nip}</td>
-                <td className="px-6 py-4 text-gray-800">{item?.nama}</td>
-                <td className="px-6 py-4 text-gray-600 text-center">
+                <td className="px-6 py-4 text-gray-600 text-center">{item?.nip}</td>
+                <td className="px-6 py-4 text-gray-800 text-left">{item?.nama}</td>
+                <td className="px-6 py-4 text-gray-600 text-left">
                   {item?.jabatan}
                 </td>
                 <td className="px-6 py-4 text-center">

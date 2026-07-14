@@ -838,11 +838,11 @@ const PengajuanAtkPage = () => {
                 <Table
                   title={null}
                   columns={[
-                    { key: "no", label: "No" },
-                    { key: "nama", label: "Nama Barang" },
-                    { key: "satuan", label: "Satuan" },
-                    { key: "kategori", label: "Kategori" },
-                    { key: "jumlah", label: "Jumlah" },
+                    { key: "no", label: "No", align: "center" },
+                    { key: "nama", label: "Nama Barang", align: "left" },
+                    { key: "satuan", label: "Satuan", align: "center" },
+                    { key: "kategori", label: "Kategori", align: "center" },
+                    { key: "jumlah", label: "Jumlah", align: "center" },
                   ]}
                   rows={barangTableRows}
                   emptyMessage={barangTableEmptyMessage}
@@ -852,9 +852,9 @@ const PengajuanAtkPage = () => {
                       <td className="px-6 py-4 text-gray-600 text-center">
                         {(currentPage - 1) * itemsPerPage + index + 1}
                       </td>
-                      <td className="px-6 py-4 text-gray-800">{item.nama}</td>
-                      <td className="px-6 py-4 text-gray-600">{item.satuan}</td>
-                      <td className="px-6 py-4 text-gray-600 capitalize">
+                      <td className="px-6 py-4 text-gray-800 text-left">{item.nama}</td>
+                      <td className="px-6 py-4 text-gray-600 text-center">{item.satuan}</td>
+                      <td className="px-6 py-4 text-gray-600 capitalize text-center">
                         {item.kategori}
                       </td>
                       <td className="px-6 py-4">
@@ -964,11 +964,11 @@ const PengajuanAtkPage = () => {
                 <Table
                   title={null}
                   columns={[
-                    { key: "no", label: "No" },
-                    { key: "nama", label: "Nama Barang" },
-                    { key: "satuan", label: "Satuan" },
-                    { key: "kategori", label: "Kategori" },
-                    { key: "jumlah", label: "Jumlah" },
+                    { key: "no", label: "No", align: "center" },
+                    { key: "nama", label: "Nama Barang", align: "left" },
+                    { key: "satuan", label: "Satuan", align: "center" },
+                    { key: "kategori", label: "Kategori", align: "center" },
+                    { key: "jumlah", label: "Jumlah", align: "center" },
                   ]}
                   rows={pengajuanLainnya}
                   emptyMessage={lainnyaTableEmptyMessage}
@@ -978,9 +978,9 @@ const PengajuanAtkPage = () => {
                       <td className="px-6 py-4 text-gray-600 text-center">
                         {index + 1}
                       </td>
-                      <td className="px-6 py-4 text-gray-800">{item.nama}</td>
-                      <td className="px-6 py-4 text-gray-600">{item.satuan}</td>
-                      <td className="px-6 py-4 text-gray-600">
+                      <td className="px-6 py-4 text-gray-800 text-left">{item.nama}</td>
+                      <td className="px-6 py-4 text-gray-600 text-center">{item.satuan}</td>
+                      <td className="px-6 py-4 text-gray-600 text-center">
                         {formatKategoriLabel(item.kategori)}
                       </td>
                       <td className="px-6 py-4 text-gray-600 text-center">
@@ -1015,10 +1015,10 @@ const PengajuanAtkPage = () => {
                 <Table
                   title={null}
                   columns={[
-                    { key: "no", label: "No" },
-                    { key: "nama", label: "Nama Barang" },
-                    { key: "satuan", label: "Satuan" },
-                    { key: "jumlah", label: "Jumlah" },
+                    { key: "no", label: "No", align: "center" },
+                    { key: "nama", label: "Nama Barang", align: "left" },
+                    { key: "satuan", label: "Satuan", align: "center" },
+                    { key: "jumlah", label: "Jumlah", align: "center" },
                   ]}
                   rows={selectedRows}
                   emptyMessage={lainnyaTableEmptyMessage}
@@ -1028,7 +1028,7 @@ const PengajuanAtkPage = () => {
                       <td className="px-6 py-4 text-gray-600 text-center">
                         {index + 1}
                       </td>
-                      <td className="px-6 py-4 text-gray-800">
+                      <td className="px-6 py-4 text-gray-800 text-left">
                         {row.nama}
                       </td>
                       <td className="px-6 py-4 text-gray-600 text-center">
@@ -1061,7 +1061,7 @@ const PengajuanAtkPage = () => {
                         <th className="px-4 py-3 text-center border-r border-gray-200 w-32">Kategori</th>
                         <th className="px-4 py-3 text-center border-r border-gray-200 w-24">Jumlah</th>
                         <th className="px-4 py-3 text-center border-r border-gray-200 w-40">Bukti Foto</th>
-                        <th className="px-4 py-3 text-center w-64">Alasan</th>
+                        <th className="px-4 py-3 text-left w-64">Alasan</th>
                       </tr>
                     </thead>
                   )}

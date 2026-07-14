@@ -236,32 +236,32 @@ const DaftarPengajuanUserPage = () => {
               <Table
                 title={null}
                 columns={[
-                  { key: "no", label: "No" },
-                  { key: "namaBarang", label: "Nama Barang" },
-                  { key: "satuan", label: "Satuan" },
-                  { key: "kategori", label: "Kategori" },
-                  { key: "jumlah", label: "Jumlah" },
-                  { key: "jumlahDisetujui", label: "Jumlah Disetujui" },
-                  { key: "status", label: "Status" },
+                  { key: "no", label: "No", align: "center" },
+                  { key: "namaBarang", label: "Nama Barang", align: "left" },
+                  { key: "satuan", label: "Satuan", align: "center" },
+                  { key: "kategori", label: "Kategori", align: "center" },
+                  { key: "jumlah", label: "Jumlah", align: "center" },
+                  { key: "jumlahDisetujui", label: "Jumlah Disetujui", align: "center" },
+                  { key: "status", label: "Status", align: "center" },
                 ]}
                 rows={mainRows}
                 renderRow={(item, index) => (
                   <tr key={item.id}>
-                    <td className="px-6 py-4 text-gray-500">{index + 1}</td>
-                    <td className="px-6 py-4 text-gray-600">
+                    <td className="px-6 py-4 text-gray-500 text-center">{index + 1}</td>
+                    <td className="px-6 py-4 text-gray-600 text-left">
                       {item.namaBarang}
                     </td>
-                    <td className="px-6 py-4 text-gray-500">{item.satuan}</td>
-                    <td className="px-6 py-4 text-gray-500 capitalize">
+                    <td className="px-6 py-4 text-gray-500 text-center">{item.satuan}</td>
+                    <td className="px-6 py-4 text-gray-500 capitalize text-center">
                       {formatKategoriLabel(item.kategori)}
                     </td>
-                    <td className="px-6 py-4 text-gray-500">{item.jumlah}</td>
-                    <td className="px-6 py-4 text-gray-500">
+                    <td className="px-6 py-4 text-gray-500 text-center">{item.jumlah}</td>
+                    <td className="px-6 py-4 text-gray-500 text-center">
                       {item.jumlahDisetujui ?? "-"}
                     </td>
-                    <td className="px-6 py-4 text-gray-500">
+                    <td className="px-6 py-4 text-gray-500 text-center">
                       <span
-                        className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${getStatusBadgeClass(item.status)}`}
+                        className={`inline-flex items-center justify-center rounded-full px-3 py-1 text-xs font-medium ${getStatusBadgeClass(item.status)}`}
                       >
                         {item.status}
                       </span>
@@ -277,36 +277,36 @@ const DaftarPengajuanUserPage = () => {
                 <Table
                   title={null}
                   columns={[
-                    { key: "no", label: "No" },
-                    { key: "namaBarang", label: "Nama Barang" },
-                    { key: "satuan", label: "Satuan" },
-                    { key: "kategori", label: "Kategori" },
-                    { key: "jumlah", label: "Jumlah" },
-                    { key: "jumlahDisetujui", label: "Jumlah Disetujui" },
-                    { key: "status", label: "Status" },
-                    { key: "buktiFoto", label: "Bukti Foto" },
-                    { key: "alasan", label: "Alasan" },
+                    { key: "no", label: "No", align: "center" },
+                    { key: "namaBarang", label: "Nama Barang", align: "left" },
+                    { key: "satuan", label: "Satuan", align: "center" },
+                    { key: "kategori", label: "Kategori", align: "center" },
+                    { key: "jumlah", label: "Jumlah", align: "center" },
+                    { key: "jumlahDisetujui", label: "Jumlah Disetujui", align: "center" },
+                    { key: "status", label: "Status", align: "center" },
+                    { key: "buktiFoto", label: "Bukti Foto", align: "center" },
+                    { key: "alasan", label: "Alasan", align: "left" },
                   ]}
                   rows={lainnyaRows}
                   renderRow={(item, index) => (
                     <tr key={item.id}>
-                      <td className="px-6 py-4 text-gray-500">{index + 1}</td>
-                      <td className="px-6 py-4 text-gray-600">
+                      <td className="px-6 py-4 text-gray-500 text-center">{index + 1}</td>
+                      <td className="px-6 py-4 text-gray-600 text-left">
                         {item.namaBarang}
                       </td>
-                      <td className="px-6 py-4 text-gray-500">{item.satuan}</td>
-                      <td className="px-6 py-4 text-gray-500 capitalize">
+                      <td className="px-6 py-4 text-gray-500 text-center">{item.satuan}</td>
+                      <td className="px-6 py-4 text-gray-500 capitalize text-center">
                         {formatKategoriLabel(
                           item.kategoriBarang || item.kategori,
                         )}
                       </td>
-                      <td className="px-6 py-4 text-gray-500">{item.jumlah}</td>
-                      <td className="px-6 py-4 text-gray-500">
+                      <td className="px-6 py-4 text-gray-500 text-center">{item.jumlah}</td>
+                      <td className="px-6 py-4 text-gray-500 text-center">
                         {item.jumlahDisetujui ?? "-"}
                       </td>
-                      <td className="px-6 py-4 text-gray-500">
+                      <td className="px-6 py-4 text-gray-500 text-center">
                         <span
-                          className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${getStatusBadgeClass(item.status)}`}
+                          className={`inline-flex items-center justify-center rounded-full px-3 py-1 text-xs font-medium ${getStatusBadgeClass(item.status)}`}
                         >
                           {item.status}
                         </span>
@@ -330,7 +330,7 @@ const DaftarPengajuanUserPage = () => {
                           </span>
                         )}
                       </td>
-                      <td className="px-6 py-4 text-gray-600 max-w-[200px]">
+                      <td className="px-6 py-4 text-gray-600 max-w-[200px] text-left">
                         <div
                           className="truncate text-sm"
                           title={item.alasan}

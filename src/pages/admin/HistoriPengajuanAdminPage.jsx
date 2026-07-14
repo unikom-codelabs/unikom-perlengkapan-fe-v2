@@ -663,18 +663,18 @@ const HistoriPengajuanAdminPage = () => {
 
   const renderTableSection = (title, rows, emptyMessage, isLainnya = false) => {
     const columns = [
-      { key: "no", label: "No" },
-      { key: "nama", label: "Nama Barang" },
-      { key: "satuan", label: "Satuan" },
-      { key: "kategori", label: "Kategori" },
-      { key: "jumlah", label: "Jumlah" },
-      { key: "jumlah_disetujui", label: "Jumlah Disetujui" },
-      { key: "status", label: "Status" },
+      { key: "no", label: "No", align: "center" },
+      { key: "nama", label: "Nama Barang", align: "left" },
+      { key: "satuan", label: "Satuan", align: "center" },
+      { key: "kategori", label: "Kategori", align: "center" },
+      { key: "jumlah", label: "Jumlah", align: "center" },
+      { key: "jumlah_disetujui", label: "Jumlah Disetujui", align: "center" },
+      { key: "status", label: "Status", align: "center" },
     ];
 
     if (isLainnya) {
-      columns.push({ key: "bukti_foto", label: "Bukti Foto" });
-      columns.push({ key: "alasan", label: "Alasan" });
+      columns.push({ key: "bukti_foto", label: "Bukti Foto", align: "center" });
+      columns.push({ key: "alasan", label: "Alasan", align: "left" });
     }
 
     return (
@@ -685,13 +685,13 @@ const HistoriPengajuanAdminPage = () => {
         emptyMessage={emptyMessage}
         renderRow={(row, index) => (
           <tr key={row.id}>
-            <td className="px-6 py-4">{index + 1}</td>
-            <td className="px-6 py-4">{row.nama}</td>
-            <td className="px-6 py-4">{row.satuan}</td>
-            <td className="px-6 py-4">{row.kategori}</td>
-            <td className="px-6 py-4">{row.jumlah}</td>
-            <td className="px-6 py-4">{row.jumlah_disetujui}</td>
-            <td className="px-6 py-4">
+            <td className="px-6 py-4 text-center">{index + 1}</td>
+            <td className="px-6 py-4 text-left">{row.nama}</td>
+            <td className="px-6 py-4 text-center">{row.satuan}</td>
+            <td className="px-6 py-4 text-center">{row.kategori}</td>
+            <td className="px-6 py-4 text-center">{row.jumlah}</td>
+            <td className="px-6 py-4 text-center">{row.jumlah_disetujui}</td>
+            <td className="px-6 py-4 text-center">
               <span
                 className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${getStatusBadgeClass(row.status)}`}
               >
@@ -714,7 +714,7 @@ const HistoriPengajuanAdminPage = () => {
                     <span className="text-gray-400 text-xs italic">-</span>
                   )}
                 </td>
-                <td className="px-6 py-4 text-gray-600 max-w-[200px]">
+                <td className="px-6 py-4 text-gray-600 max-w-[200px] text-left">
                   <div className="truncate text-sm" title={row.alasan}>
                     {row.alasan || "-"}
                   </div>
