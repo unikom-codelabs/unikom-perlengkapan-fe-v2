@@ -148,7 +148,6 @@ const PengajuanAtkPage = () => {
   const kategoriLabel = KATEGORI_LABELS[normalizedKategori] || "Tahunan";
   const [step, setStep] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
-
   const [uploadedFile, setUploadedFile] = useState(null);
   const [barangList, setBarangList] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -180,6 +179,7 @@ const PengajuanAtkPage = () => {
     kategori: "habis_pakai",
     satuan: "",
   });
+  const [lainnyaDetails, setLainnyaDetails] = useState({});
   const itemsPerPage = 10;
   const isActivationBlocked = activationStatus === "inactive";
   const tipePengajuanLabel = formatTipePengajuanLabel(selectedAktivasi?.tipe);
@@ -252,6 +252,30 @@ const PengajuanAtkPage = () => {
       navigate("/pengajuan-rutin/tahunan", { replace: true });
     }
   }, [isDekan, navigate, normalizedKategori]);
+
+  useEffect(() => {
+    setStep(1);
+    setSearchQuery("");
+    setUploadedFile(null);
+    setPageError("");
+    setSubmitError("");
+    setActivationStatus("unknown");
+    setActivationError("");
+    setSelectedAktivasi(null);
+    setQuantities({});
+    setCurrentPage(1);
+    setIsModalOpen(false);
+    setIsSuccessModalOpen(false);
+    setIsActivationModalOpen(false);
+    setPengajuanLainnya([]);
+    setFormLainnya({
+      nama: "",
+      jumlah: "",
+      kategori: "habis_pakai",
+      satuan: "",
+    });
+    setModalError("");
+  }, [normalizedKategori]);
 
   useEffect(() => {
     let isMounted = true;
@@ -429,6 +453,16 @@ const PengajuanAtkPage = () => {
     });
   };
 
+  const handleLainnyaDetailChange = (itemId, field, value) => {
+    setLainnyaDetails((prev) => ({
+      ...prev,
+      [itemId]: {
+        ...(prev[itemId] || {}),
+        [field]: value,
+      },
+    }));
+  };
+
   const handleFileSelect = (file, errorMsg) => {
     if (isActivationBlocked) return;
     
@@ -584,13 +618,23 @@ const PengajuanAtkPage = () => {
       jumlah: quantities[item.id] || 0,
     }));
 
-  const buildBarangLainnyaPayload = () =>
-    pengajuanLainnya.map((item) => ({
-      nama: item.nama,
-      jumlah: item.jumlah,
-      kategori: item.kategori,
-      satuan: item.satuan,
-    }));
+  const buildBarangLainnyaPayload = (formDataToAppend) => {
+    return pengajuanLainnya.map((item, index) => {
+      const detail = lainnyaDetails[item.id] || {};
+      
+      if (detail.bukti_foto && formDataToAppend) {
+        formDataToAppend.append(`bukti_foto[${index}]`, detail.bukti_foto);
+      }
+
+      return {
+        nama: item.nama,
+        jumlah: item.jumlah,
+        kategori: item.kategori,
+        satuan: item.satuan,
+        alasan: detail.alasan || "",
+      };
+    });
+  };
 
   const handleSubmitPengajuan = async () => {
     if (isSubmittingPengajuan) {
@@ -632,7 +676,7 @@ const PengajuanAtkPage = () => {
     formData.append("tipe", normalizedKategori);
     formData.append("barang", JSON.stringify(buildBarangPayload()));
 
-    const barangLainnyaPayload = buildBarangLainnyaPayload();
+    const barangLainnyaPayload = buildBarangLainnyaPayload(formData);
     if (barangLainnyaPayload.length > 0) {
       formData.append("barang_lainnya", JSON.stringify(barangLainnyaPayload));
     }
@@ -978,117 +1022,24 @@ const PengajuanAtkPage = () => {
                     { key: "nama", label: "Nama Barang" },
                     { key: "satuan", label: "Satuan" },
                     { key: "jumlah", label: "Jumlah" },
-                    { key: "sisa", label: "Sisa" },
-                    { key: "rusakJumlah", label: "Rusak" },
-                    { key: "rusakFoto", label: "Foto Barang" },
-                    { key: "rusakSurat", label: "Surat Lampiran" },
-                    { key: "hilangJumlah", label: "Jumlah" },
-                    { key: "hilangSurat", label: "Surat Lampiran" },
-                    { key: "lainnya", label: "Lainnya" },
                   ]}
                   rows={selectedRows}
                   emptyMessage={lainnyaTableEmptyMessage}
                   wrapperClass="overflow-x-auto border border-gray-200"
-                  renderHeader={() => (
-                    <thead className="bg-[#f0f4fc] text-gray-600 font-semibold border-b border-gray-200">
-                      <tr>
-                        <th
-                          rowSpan="3"
-                          className="px-3 py-2 border border-gray-200 w-14 text-center"
-                        >
-                          No
-                        </th>
-                        <th
-                          rowSpan="3"
-                          className="px-3 py-2 border border-gray-200"
-                        >
-                          Nama Barang
-                        </th>
-                        <th
-                          rowSpan="3"
-                          className="px-3 py-2 border border-gray-200 w-24 text-center"
-                        >
-                          Satuan
-                        </th>
-                        <th
-                          rowSpan="3"
-                          className="px-3 py-2 border border-gray-200 w-24 text-center"
-                        >
-                          Jumlah
-                        </th>
-                        <th
-                          rowSpan="3"
-                          className="px-3 py-2 border border-gray-200 w-24 text-center"
-                        >
-                          Sisa
-                        </th>
-                        <th
-                          colSpan="6"
-                          className="px-3 py-2 border border-gray-200 text-center"
-                        >
-                          Keterangan
-                        </th>
-                      </tr>
-                      <tr>
-                        <th
-                          colSpan="3"
-                          className="px-3 py-2 border border-gray-200 text-center"
-                        >
-                          Rusak
-                        </th>
-                        <th
-                          colSpan="2"
-                          className="px-3 py-2 border border-gray-200 text-center"
-                        >
-                          Hilang
-                        </th>
-                        <th
-                          rowSpan="2"
-                          className="px-3 py-2 border border-gray-200 text-center"
-                        >
-                          Lainnya
-                        </th>
-                      </tr>
-                      <tr>
-                        <th className="px-3 py-2 border border-gray-200 text-center">
-                          Jumlah
-                        </th>
-                        <th className="px-3 py-2 border border-gray-200 text-center">
-                          Foto Barang
-                        </th>
-                        <th className="px-3 py-2 border border-gray-200 text-center">
-                          Surat Lampiran
-                        </th>
-                        <th className="px-3 py-2 border border-gray-200 text-center">
-                          Jumlah
-                        </th>
-                        <th className="px-3 py-2 border border-gray-200 text-center">
-                          Surat Lampiran
-                        </th>
-                      </tr>
-                    </thead>
-                  )}
                   renderRow={(row, index) => (
                     <tr key={row.id} className="border-t border-gray-100">
-                      <td className="px-3 py-2 border border-gray-200 text-sm text-gray-500 text-center">
+                      <td className="px-6 py-4 text-gray-600 text-center">
                         {index + 1}
                       </td>
-                      <td className="px-3 py-2 border border-gray-200 text-sm text-gray-500">
+                      <td className="px-6 py-4 text-gray-800">
                         {row.nama}
                       </td>
-                      <td className="px-3 py-2 border border-gray-200 text-sm text-gray-500 text-center">
+                      <td className="px-6 py-4 text-gray-600 text-center">
                         {row.satuan}
                       </td>
-                      <td className="px-3 py-2 border border-gray-200 text-sm text-gray-500 text-center">
+                      <td className="px-6 py-4 text-gray-600 text-center">
                         {quantities[row.id] || 0}
                       </td>
-                      <td className={CELL_PLACEHOLDER_CLASS}>-</td>
-                      <td className={CELL_PLACEHOLDER_CLASS}>-</td>
-                      <td className={CELL_PLACEHOLDER_CLASS}>-</td>
-                      <td className={CELL_PLACEHOLDER_CLASS}>-</td>
-                      <td className={CELL_PLACEHOLDER_CLASS}>-</td>
-                      <td className={CELL_PLACEHOLDER_CLASS}>-</td>
-                      <td className={CELL_PLACEHOLDER_CLASS}>-</td>
                     </tr>
                   )}
                 />
@@ -1100,31 +1051,121 @@ const PengajuanAtkPage = () => {
                 </h2>
                 <Table
                   title={null}
-                  columns={[
-                    { key: "no", label: "No" },
-                    { key: "nama", label: "Nama Barang" },
-                    { key: "satuan", label: "Satuan" },
-                    { key: "kategori", label: "Kategori" },
-                    { key: "jumlah", label: "Jumlah" },
-                  ]}
+                  columns={[]}
                   rows={pengajuanLainnya}
                   emptyMessage={lainnyaTableEmptyMessage}
                   wrapperClass="overflow-x-auto border border-gray-200"
-                  renderRow={(item, index) => (
-                    <tr key={item.id} className="border-t border-gray-100">
-                      <td className="px-6 py-4 text-gray-600 text-center">
-                        {index + 1}
-                      </td>
-                      <td className="px-6 py-4 text-gray-800">{item.nama}</td>
-                      <td className="px-6 py-4 text-gray-600">{item.satuan}</td>
-                      <td className="px-6 py-4 text-gray-600">
-                        {formatKategoriLabel(item.kategori)}
-                      </td>
-                      <td className="px-6 py-4 text-gray-600 text-center">
-                        {item.jumlah}
-                      </td>
-                    </tr>
+                  renderHeader={() => (
+                    <thead className="bg-[#f0f4fc] text-gray-500 font-medium text-sm">
+                      <tr>
+                        <th className="px-4 py-3 text-center border-r border-gray-200 w-14">No</th>
+                        <th className="px-4 py-3 text-left border-r border-gray-200">Nama Barang</th>
+                        <th className="px-4 py-3 text-center border-r border-gray-200 w-24">Satuan</th>
+                        <th className="px-4 py-3 text-center border-r border-gray-200 w-32">Kategori</th>
+                        <th className="px-4 py-3 text-center border-r border-gray-200 w-24">Jumlah</th>
+                        <th className="px-4 py-3 text-center border-r border-gray-200 w-40">Bukti Foto</th>
+                        <th className="px-4 py-3 text-center w-64">Alasan</th>
+                      </tr>
+                    </thead>
                   )}
+                  renderRow={(item, index) => {
+                    const detail = lainnyaDetails[item.id] || {};
+                    return (
+                      <tr key={item.id} className="border-t border-gray-200 bg-white">
+                        <td className="px-4 py-3 text-gray-600 text-center border-r border-gray-200 text-sm">
+                          {index + 1}
+                        </td>
+                        <td className="px-4 py-3 text-gray-500 border-r border-gray-200 text-sm">
+                          {item.nama}
+                        </td>
+                        <td className="px-4 py-3 text-gray-500 border-r border-gray-200 text-center text-sm">
+                          {item.satuan}
+                        </td>
+                        <td className="px-4 py-3 text-gray-500 border-r border-gray-200 text-center text-sm">
+                          {formatKategoriLabel(item.kategori)}
+                        </td>
+                        <td className="px-4 py-3 text-gray-600 text-center border-r border-gray-200 text-sm">
+                          {item.jumlah}
+                        </td>
+                        <td className="px-4 py-3 text-center border-r border-gray-200">
+                          {detail.bukti_foto ? (
+                            <div className="flex items-center justify-between p-2 border border-gray-200 rounded-lg bg-white text-left w-full min-w-[200px]">
+                              <div className="flex items-center gap-3 overflow-hidden">
+                                {(() => {
+                                  const isImage = detail.bukti_foto.type.startsWith("image/");
+                                  return (
+                                    <div className={`relative w-8 h-8 shrink-0 rounded-md flex flex-col items-center justify-center text-white ${isImage ? "bg-[#4da6ff]" : "bg-[#EA4335]"}`}>
+                                      {isImage ? (
+                                        <svg className="w-6 h-6 absolute top-0.5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                          <circle cx="15.5" cy="8.5" r="2.5" fill="#FFD700" />
+                                          <path d="M3 18L8.5 10L12 15L16 11L21 18H3Z" fill="#80c1ff" />
+                                        </svg>
+                                      ) : (
+                                        <svg className="w-4 h-4 absolute top-1.5" fill="currentColor" viewBox="0 0 24 24">
+                                          <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm-1 7V3.5L18.5 9H13z" />
+                                        </svg>
+                                      )}
+                                      <div className={`absolute bottom-0.5 px-1 rounded-sm text-[7px] font-bold tracking-wider leading-tight ${isImage ? "bg-[#155fc3]" : "bg-[#C5221F]"}`}>
+                                        {isImage ? "IMG" : "PDF"}
+                                      </div>
+                                    </div>
+                                  );
+                                })()}
+                                <div className="flex flex-col overflow-hidden">
+                                  <span className="text-xs font-semibold text-gray-800" title={detail.bukti_foto.name}>
+                                    {detail.bukti_foto.name.length > 25
+                                      ? detail.bukti_foto.name.substring(0, 22) + "..."
+                                      : detail.bukti_foto.name}
+                                  </span>
+                                  <span className="text-[10px] text-gray-400 mt-0.5">
+                                    {(detail.bukti_foto.size / 1024).toFixed(1)} KB
+                                  </span>
+                                </div>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => handleLainnyaDetailChange(item.id, "bukti_foto", null)}
+                                className="text-red-500 hover:bg-red-50 shrink-0 ml-2 rounded-full border border-red-500 p-0.5 transition-colors"
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                                  <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                                </svg>
+                              </button>
+                            </div>
+                          ) : (
+                            <div>
+                              <input
+                                type="file"
+                                accept="image/*,.pdf"
+                                id={`file-lainnya-${item.id}`}
+                                className="hidden"
+                                onChange={(e) => {
+                                  if (e.target.files && e.target.files[0]) {
+                                    handleLainnyaDetailChange(item.id, "bukti_foto", e.target.files[0]);
+                                  }
+                                }}
+                              />
+                              <label
+                                htmlFor={`file-lainnya-${item.id}`}
+                                className="inline-block cursor-pointer px-4 py-1.5 border border-[#4773da] text-[#4773da] rounded-full text-[13px] font-medium hover:bg-blue-50 transition-colors w-full text-center"
+                              >
+                                Upload Bukti
+                              </label>
+                            </div>
+                          )}
+                        </td>
+                        <td className="px-4 py-3">
+                          <textarea
+                            rows={2}
+                            placeholder="Ketikan Alasan"
+                            value={detail.alasan || ""}
+                            onChange={(e) => handleLainnyaDetailChange(item.id, "alasan", e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md text-[13px] text-gray-600 focus:outline-none focus:ring-1 focus:ring-[#4773da] focus:border-[#4773da]"
+                          ></textarea>
+                        </td>
+                      </tr>
+                    );
+                  }}
                 />
               </div>
 

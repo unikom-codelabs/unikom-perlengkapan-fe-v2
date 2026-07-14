@@ -11,18 +11,26 @@ const ModalKonfirmasiHapus = ({
   isProcessing = false,
   confirmButtonClassName = "bg-red-500 hover:bg-red-600",
 }) => {
-  const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
-  const [shouldRender, setRender] = useState(isOpen);
   const [show, setShow] = useState(false);
+  const [shouldRender, setRender] = useState(isOpen);
 
-  if (isOpen !== prevIsOpen) {
-    setPrevIsOpen(isOpen);
-    if (isOpen) {
-      setRender(true);
-    } else {
-      setShow(false);
-    }
+  if (isOpen && !shouldRender) {
+    setRender(true);
   }
+  
+  if (!isOpen && show) {
+    setShow(false);
+  }
+
+  useEffect(() => {
+    let timer;
+    if (isOpen) {
+      timer = setTimeout(() => setShow(true), 10);
+    } else {
+      timer = setTimeout(() => setRender(false), 150);
+    }
+    return () => clearTimeout(timer);
+  }, [isOpen]);
 
   const handleClose = () => {
     if (isProcessing) {
@@ -31,16 +39,6 @@ const ModalKonfirmasiHapus = ({
 
     onClose();
   };
-
-  useEffect(() => {
-    if (isOpen) {
-      const timer = setTimeout(() => setShow(true), 10);
-      return () => clearTimeout(timer);
-    } else {
-      const timer = setTimeout(() => setRender(false), 150);
-      return () => clearTimeout(timer);
-    }
-  }, [isOpen]);
 
   if (!shouldRender) return null;
 

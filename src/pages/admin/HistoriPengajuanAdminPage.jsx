@@ -656,40 +656,73 @@ const HistoriPengajuanAdminPage = () => {
       jumlah: item?.jumlah_diajukan ?? 0,
       jumlah_disetujui: item?.jumlah_disetujui ?? 0,
       status: formatStatus(item?.status),
+      bukti_foto: item?.bukti_foto,
+      alasan: item?.alasan,
     }));
   });
 
-  const renderTableSection = (title, rows, emptyMessage) => (
-    <Table
-      title={title}
-      columns={[
-        { key: "no", label: "No" },
-        { key: "nama", label: "Nama Barang" },
-        { key: "satuan", label: "Satuan" },
-        { key: "kategori", label: "Kategori" },
-        { key: "jumlah", label: "Jumlah" },
-        { key: "jumlah_disetujui", label: "Jumlah Disetujui" },
-        { key: "status", label: "Status" },
-      ]}
-      rows={rows}
-      emptyMessage={emptyMessage}
-      renderRow={(row, index) => (
-        <tr key={row.id}>
-          <td className="px-6 py-4">{index + 1}</td>
-          <td className="px-6 py-4">{row.nama}</td>
-          <td className="px-6 py-4">{row.satuan}</td>
-          <td className="px-6 py-4">{row.kategori}</td>
-          <td className="px-6 py-4">{row.jumlah}</td>
-          <td className="px-6 py-4">{row.jumlah_disetujui}</td>
-          <td className="px-6 py-4">
-            <span
-              className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${getStatusBadgeClass(row.status)}`}
-            >
-              {row.status}
-            </span>
-          </td>
-        </tr>
-      )}
+  const renderTableSection = (title, rows, emptyMessage, isLainnya = false) => {
+    const columns = [
+      { key: "no", label: "No" },
+      { key: "nama", label: "Nama Barang" },
+      { key: "satuan", label: "Satuan" },
+      { key: "kategori", label: "Kategori" },
+      { key: "jumlah", label: "Jumlah" },
+      { key: "jumlah_disetujui", label: "Jumlah Disetujui" },
+      { key: "status", label: "Status" },
+    ];
+
+    if (isLainnya) {
+      columns.push({ key: "bukti_foto", label: "Bukti Foto" });
+      columns.push({ key: "alasan", label: "Alasan" });
+    }
+
+    return (
+      <Table
+        title={title}
+        columns={columns}
+        rows={rows}
+        emptyMessage={emptyMessage}
+        renderRow={(row, index) => (
+          <tr key={row.id}>
+            <td className="px-6 py-4">{index + 1}</td>
+            <td className="px-6 py-4">{row.nama}</td>
+            <td className="px-6 py-4">{row.satuan}</td>
+            <td className="px-6 py-4">{row.kategori}</td>
+            <td className="px-6 py-4">{row.jumlah}</td>
+            <td className="px-6 py-4">{row.jumlah_disetujui}</td>
+            <td className="px-6 py-4">
+              <span
+                className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${getStatusBadgeClass(row.status)}`}
+              >
+                {row.status}
+              </span>
+            </td>
+            {isLainnya && (
+              <>
+                <td className="px-6 py-4 text-center">
+                  {row.bukti_foto ? (
+                    <a
+                      href={`${BASE_STORAGE_URL}${row.bukti_foto}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center justify-center px-3 py-1 text-[11px] font-semibold text-[#4773da] bg-blue-50 border border-[#4773da] rounded-full hover:bg-[#4773da] hover:text-white transition-colors"
+                    >
+                      Lihat Foto
+                    </a>
+                  ) : (
+                    <span className="text-gray-400 text-xs italic">-</span>
+                  )}
+                </td>
+                <td className="px-6 py-4 text-gray-600 max-w-[200px]">
+                  <div className="truncate text-sm" title={row.alasan}>
+                    {row.alasan || "-"}
+                  </div>
+                </td>
+              </>
+            )}
+          </tr>
+        )}
       footer={
         <div className="flex justify-end mt-4">
           <div className="flex items-center space-x-1">
@@ -707,6 +740,7 @@ const HistoriPengajuanAdminPage = () => {
       }
     />
   );
+  };
 
   const renderContent = () => (
     <>
@@ -1019,6 +1053,7 @@ const HistoriPengajuanAdminPage = () => {
               : selectedJabatan && selectedBagian && selectedAktivasi
                 ? "Data tidak ditemukan"
                 : "Pilih jabatan, bagian, dan aktivasi untuk melihat data",
+        true
       )}
     </>
   );

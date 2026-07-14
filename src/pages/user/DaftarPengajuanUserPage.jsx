@@ -3,6 +3,8 @@ import PageHelmet from "../../components/Seo/PageHelmet";
 import { listPengajuanSaya } from "../../api/pengajuanService";
 import { useAuth } from "../../context/useAuth";
 import Table from "../../components/Element/Table";
+import { STORAGE_BASE_URL as BASE_STORAGE_URL } from "../../config/env";
+import { XMarkIcon } from "@heroicons/react/24/outline";
 
 const TAB_OPTIONS = [
   { label: "ATK Tahunan", value: "tahunan" },
@@ -104,6 +106,7 @@ const DaftarPengajuanUserPage = () => {
   const [pengajuanList, setPengajuanList] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [pageError, setPageError] = useState("");
+  const [previewImage, setPreviewImage] = useState(null);
 
   const normalizedRole = normalizeUserRole(currentUser);
   const normalizedJabatan = normalizeJabatanName(currentUser);
@@ -168,6 +171,8 @@ const DaftarPengajuanUserPage = () => {
         status: item.status || submission.status || "Menunggu",
         isLainnya: Boolean(item.isLainnya),
         tahunAkademik: submission.tahunAkademik || "-",
+        buktiFoto: item.buktiFoto || null,
+        alasan: item.alasan || "",
       })),
     );
 
@@ -193,7 +198,7 @@ const DaftarPengajuanUserPage = () => {
 
       <div className="bg-white rounded shadow-sm overflow-hidden">
         <div className="bg-[#4773da] text-white px-6 py-4">
-          <h1 className="text-xl font-semibold">Data Barang Pengajuan</h1>
+          <h1 className="text-xl font-semibold">Daftar Barang Pengajuan</h1>
         </div>
 
         <div className="p-6">
@@ -279,6 +284,8 @@ const DaftarPengajuanUserPage = () => {
                     { key: "jumlah", label: "Jumlah" },
                     { key: "jumlahDisetujui", label: "Jumlah Disetujui" },
                     { key: "status", label: "Status" },
+                    { key: "buktiFoto", label: "Bukti Foto" },
+                    { key: "alasan", label: "Alasan" },
                   ]}
                   rows={lainnyaRows}
                   renderRow={(item, index) => (
@@ -304,6 +311,33 @@ const DaftarPengajuanUserPage = () => {
                           {item.status}
                         </span>
                       </td>
+                      <td className="px-6 py-4 text-center">
+                        {item.buktiFoto ? (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setPreviewImage(
+                                `${BASE_STORAGE_URL}${item.buktiFoto}`,
+                              )
+                            }
+                            className="inline-flex items-center justify-center px-3 py-1 text-[11px] font-semibold text-[#4773da] bg-blue-50 border border-[#4773da] rounded-full hover:bg-[#4773da] hover:text-white transition-colors"
+                          >
+                            Lihat Foto
+                          </button>
+                        ) : (
+                          <span className="text-gray-400 text-xs italic">
+                            -
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 text-gray-600 max-w-[200px]">
+                        <div
+                          className="truncate text-sm"
+                          title={item.alasan}
+                        >
+                          {item.alasan || "-"}
+                        </div>
+                      </td>
                     </tr>
                   )}
                 />
@@ -312,6 +346,37 @@ const DaftarPengajuanUserPage = () => {
           )}
         </div>
       </div>
+      {previewImage && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+          onClick={() => setPreviewImage(null)}
+        >
+          <div
+            className="relative bg-white rounded-xl shadow-2xl max-w-2xl w-full mx-4 overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-5 py-3 border-b border-gray-100">
+              <h3 className="text-sm font-semibold text-gray-700">
+                Preview Bukti Foto
+              </h3>
+              <button
+                type="button"
+                onClick={() => setPreviewImage(null)}
+                className="p-1 rounded-full hover:bg-gray-100 transition-colors"
+              >
+                <XMarkIcon className="h-5 w-5 text-gray-500" />
+              </button>
+            </div>
+            <div className="p-4 flex items-center justify-center bg-gray-50 min-h-[300px]">
+              <img
+                src={previewImage}
+                alt="Bukti Foto"
+                className="max-w-full max-h-[70vh] object-contain rounded"
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };

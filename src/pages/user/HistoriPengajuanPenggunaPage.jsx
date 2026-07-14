@@ -26,7 +26,7 @@ const StatusBadge = ({ status }) => {
   );
 };
 
-const PaginatedTable = ({ title, rows }) => {
+const PaginatedTable = ({ title, rows, isLainnya = false }) => {
   const [page, setPage] = useState(1);
   const [prevRows, setPrevRows] = useState(rows);
 
@@ -38,18 +38,25 @@ const PaginatedTable = ({ title, rows }) => {
   const totalPages = Math.max(1, Math.ceil(rows.length / ITEMS_PER_PAGE));
   const sliced = rows.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
 
+  const columns = [
+    { key: "no", label: "No" },
+    { key: "nama", label: "Nama Barang" },
+    { key: "satuan", label: "Satuan" },
+    { key: "kategori", label: "Kategori" },
+    { key: "jumlah", label: "Jumlah" },
+    { key: "jumlah_disetujui", label: "Jumlah Disetujui" },
+    { key: "status", label: "Status" },
+  ];
+
+  if (isLainnya) {
+    columns.push({ key: "bukti_foto", label: "Bukti Foto" });
+    columns.push({ key: "alasan", label: "Alasan" });
+  }
+
   return (
     <Table
       title={title}
-      columns={[
-        { key: "no", label: "No" },
-        { key: "nama", label: "Nama Barang" },
-        { key: "satuan", label: "Satuan" },
-        { key: "kategori", label: "Kategori" },
-        { key: "jumlah", label: "Jumlah" },
-        { key: "jumlah_disetujui", label: "Jumlah Disetujui" },
-        { key: "status", label: "Status" },
-      ]}
+      columns={columns}
       rows={sliced}
       renderRow={(item, idx) => (
         <tr key={item._uid ?? idx} className="border-t border-gray-100">
@@ -63,11 +70,34 @@ const PaginatedTable = ({ title, rows }) => {
           <td className="px-6 py-4 text-gray-600">
             {formatKategori(item.kategori)}
           </td>
-          <td className="px-6 py-4 text-gray-600">{item.jumlah_diajukan}</td>
-          <td className="px-6 py-4 text-gray-600">{item.jumlah_disetujui}</td>
+          <td className="px-6 py-4 text-gray-600 text-center">{item.jumlah_diajukan}</td>
+          <td className="px-6 py-4 text-gray-600 text-center">{item.jumlah_disetujui}</td>
           <td className="px-6 py-4">
             <StatusBadge status={item.status} />
           </td>
+          {isLainnya && (
+            <>
+              <td className="px-6 py-4 text-center">
+                {item.bukti_foto ? (
+                  <a
+                    href={`${BASE_STORAGE_URL}${item.bukti_foto}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center justify-center px-3 py-1 text-[11px] font-semibold text-[#4773da] bg-blue-50 border border-[#4773da] rounded-full hover:bg-[#4773da] hover:text-white transition-colors"
+                  >
+                    Lihat Foto
+                  </a>
+                ) : (
+                  <span className="text-gray-400 text-xs italic">-</span>
+                )}
+              </td>
+              <td className="px-6 py-4 text-gray-600 max-w-[200px]">
+                <div className="truncate text-sm" title={item.alasan}>
+                  {item.alasan || "-"}
+                </div>
+              </td>
+            </>
+          )}
         </tr>
       )}
       footer={
@@ -593,6 +623,8 @@ const HistoriPengajuanPenggunaPage = () => {
           jumlah_diajukan: b.jumlah_diajukan,
           jumlah_disetujui: b.jumlah_disetujui,
           status: b.status,
+          bukti_foto: b.bukti_foto,
+          alasan: b.alasan,
         },
       ];
     }),
@@ -695,7 +727,7 @@ const HistoriPengajuanPenggunaPage = () => {
                 title={`Aktivasi : ${selectedAktivasiLabel}`}
                 rows={barangRows}
               />
-              <PaginatedTable title="Pengajuan Lainnya" rows={lainnyaRows} />
+              <PaginatedTable title="Pengajuan Lainnya" rows={lainnyaRows} isLainnya={true} />
             </>
           )}
         </div>

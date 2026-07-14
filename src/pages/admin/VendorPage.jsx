@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import PageHelmet from "../../components/SEO/PageHelmet";
+import PageHelmet from "../../components/Seo/PageHelmet";
 import {
   MagnifyingGlassIcon,
   PlusIcon,
@@ -43,6 +43,7 @@ const normalizeVendor = (item = {}) => ({
   id: Number(item.id),
   nama: String(item.nama ?? item.name ?? item.vendor ?? "-").trim() || "-",
   kontak: String(item.kontak ?? item.contact ?? "").trim(),
+  alamat: String(item.alamat ?? item.address ?? "").trim(),
 });
 
 const VendorPage = () => {
@@ -55,6 +56,7 @@ const VendorPage = () => {
   const [modalMode, setModalMode] = useState("create");
   const [vendorName, setVendorName] = useState("");
   const [vendorKontak, setVendorKontak] = useState("");
+  const [vendorAlamat, setVendorAlamat] = useState("");
   const [pageError, setPageError] = useState("");
   const [modalError, setModalError] = useState("");
   const [activeVendor, setActiveVendor] = useState(null);
@@ -83,6 +85,7 @@ const VendorPage = () => {
     setActiveVendor(null);
     setVendorName("");
     setVendorKontak("");
+    setVendorAlamat("");
     setModalError("");
     setIsModalOpen(true);
   };
@@ -92,6 +95,7 @@ const VendorPage = () => {
     setActiveVendor(vendor);
     setVendorName(vendor.nama || "");
     setVendorKontak(vendor.kontak || "");
+    setVendorAlamat(vendor.alamat || "");
     setModalError("");
     setIsModalOpen(true);
   };
@@ -106,6 +110,7 @@ const VendorPage = () => {
     setActiveVendor(null);
     setVendorName("");
     setVendorKontak("");
+    setVendorAlamat("");
     setModalError("");
   };
 
@@ -118,9 +123,10 @@ const VendorPage = () => {
         await updateVendor(activeVendor.id, {
           name: vendorName,
           kontak: vendorKontak,
+          alamat: vendorAlamat,
         });
       } else {
-        await createVendor({ name: vendorName, kontak: vendorKontak });
+        await createVendor({ name: vendorName, kontak: vendorKontak, alamat: vendorAlamat });
       }
 
       handleCloseModal();
@@ -235,6 +241,7 @@ const VendorPage = () => {
               { key: "no", label: "No" },
               { key: "nama", label: "Nama Vendor" },
               { key: "kontak", label: "Kontak Personal" },
+              { key: "alamat", label: "Alamat" },
               { key: "aksi", label: "Aksi" },
             ]}
             rows={tableRows}
@@ -253,6 +260,9 @@ const VendorPage = () => {
                 </td>
                 <td className="px-6 py-4 text-gray-600 text-center">
                   {item.kontak || "-"}
+                </td>
+                <td className="px-6 py-4 text-gray-600 text-center">
+                  {item.alamat || "-"}
                 </td>
                 <td className="px-6 py-4 text-center">
                   <div className="flex items-center justify-center gap-2">
@@ -291,6 +301,10 @@ const VendorPage = () => {
         secondaryValue={vendorKontak}
         onSecondaryValueChange={setVendorKontak}
         secondaryRequired
+        tertiaryLabel="Alamat"
+        tertiaryPlaceholder="Masukkan alamat vendor"
+        tertiaryValue={vendorAlamat}
+        onTertiaryValueChange={setVendorAlamat}
         onClose={handleCloseModal}
         onSubmit={handleSubmitVendor}
         isSubmitting={isSubmitting}

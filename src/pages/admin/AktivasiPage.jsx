@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import PageHelmet from "../../components/SEO/PageHelmet";
+import PageHelmet from "../../components/Seo/PageHelmet";
 import AktivasiCard from "../../components/Element/AktivasiCard";
 import ModalAktivasiPengajuan from "../../components/Element/ModalAktivasiPengajuan";
 import ModalKonfirmasiHapus from "../../components/Element/ModalKonfirmasiHapus";
@@ -481,34 +481,12 @@ const AktivasiPage = () => {
       ujian: payloadUjian || selectedCard.pendingUjian,
     });
 
-    if (pendingPengajuanList.length > 0 && !selectedPengajuan) {
-      setModalError(
-        isUjianRequired
-          ? "ID pengajuan belum ditemukan untuk kombinasi semester dan jenis ujian yang dipilih."
-          : isSemesterRequired
-            ? "ID pengajuan belum ditemukan untuk semester yang dipilih."
-            : "ID pengajuan belum ditemukan untuk jenis yang dipilih.",
-      );
-      return;
-    }
-
     const resolvedPengajuanId =
       payload.id_pengajuan ??
       selectedPengajuan?.id ??
       selectedCard.pendingPengajuanId ??
       selectedCard.idPengajuan ??
       null;
-
-    if (resolvedPengajuanId === null) {
-      setModalError(
-        isUjianRequired
-          ? "ID pengajuan belum ditemukan untuk jenis ujian/semester yang dipilih."
-          : isSemesterRequired
-            ? "ID pengajuan belum ditemukan untuk jenis/semester yang dipilih."
-            : "ID pengajuan belum ditemukan untuk jenis yang dipilih.",
-      );
-      return;
-    }
 
     setActivatingKategori(selectedCard.kategori);
     setModalError("");

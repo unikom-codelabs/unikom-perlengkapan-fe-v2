@@ -227,8 +227,8 @@ const PengumumanPage = () => {
         description="Kelola pengumuman yang tampil pada aplikasi UNIKOM Perlengkapan."
       />
 
-      <div className="bg-white rounded shadow-sm overflow-hidden mb-6">
-        <div className="bg-[#4773da] text-white px-6 py-4">
+      <div className="bg-white rounded shadow-sm mb-6">
+        <div className="bg-[#4773da] text-white px-6 py-4 rounded-t">
           <h1 className="text-xl font-semibold">Pengumuman</h1>
         </div>
 

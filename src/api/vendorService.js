@@ -29,11 +29,13 @@ export const fetchRekapVendor = async () => {
 const buildVendorPayload = (payload = {}) => {
     const nama = String(payload.nama ?? payload.name ?? "").trim();
     const kontak = String(payload.kontak ?? payload.contact ?? "").trim();
+    const alamat = String(payload.alamat ?? payload.address ?? "").trim();
 
     return {
         nama,
         name: nama,
         kontak,
+        alamat,
     };
 };
 
