@@ -316,7 +316,7 @@ const BagianPage = () => {
               onClick={handleOpenModalJabatan}
               className="flex items-center gap-2 bg-[#4279df] hover:bg-blue-600 text-white px-5 py-2.5 rounded-full transition-colors text-sm shadow-sm"
             >
-              <span>Tambah Jabatan</span>
+              <span>Tambah Bagian</span>
               <PlusIcon className="h-4 w-4 stroke-2" />
             </button>
           </div>
