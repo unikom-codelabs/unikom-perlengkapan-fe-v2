@@ -31,11 +31,11 @@ const FormLogin = () => {
     setIsLoading(true);
     setErrorMsg("");
 
-    const email = e.target.email.value;
+    const username = e.target.username.value;
     const password = e.target.password.value;
 
     try {
-      const response = await login(email, password);
+      const response = await login(username, password);
       const token =
         response?.token ||
         response?.access_token ||
@@ -54,7 +54,7 @@ const FormLogin = () => {
         error.response?.data?.message ||
         error.response?.data?.error ||
         error.message ||
-        "Email atau password salah.";
+        "Username atau password salah.";
       setErrorMsg(apiMessage);
     } finally {
       setIsLoading(false);
@@ -69,10 +69,10 @@ const FormLogin = () => {
         </div>
       )}
       <InputForm
-        label="Email"
-        type="email"
-        placeholder="Masukan Email"
-        name="email"
+        label="Username"
+        type="text"
+        placeholder="Masukan Username"
+        name="username"
       />
       <InputForm
         label="Password"
