@@ -9,6 +9,7 @@ import {
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
 import { getAktivasiPengajuanSummary } from "../../../api/aktivasiPengajuanService";
+import { listBarang } from "../../../api/barangService";
 import ActionIconButton from "../ActionIconButton";
 import Table from "../Table";
 
@@ -278,12 +279,13 @@ const exportToExcel = async (
       applyBorders(emptyRow);
     } else {
       items.forEach((item, itemIndex) => {
+        const unit = String(item.satuan || item.unit || item.barang?.satuan || "").trim();
         const itemRow = worksheet.addRow([
           itemIndex + 1,
           item.namaBarang || "-",
           item.vendor || "-",
-          item.qty ?? 0,
-          item.jumlahDisetujui ?? 0,
+          unit ? `${item.qty ?? 0} ${unit}` : (item.qty ?? 0),
+          unit ? `${item.jumlahDisetujui ?? 0} ${unit}` : (item.jumlahDisetujui ?? 0),
         ]);
         itemRow.alignment = { horizontal: "left" };
         itemRow.getCell(1).alignment = { horizontal: "center" };
@@ -377,11 +379,10 @@ const Pagination = ({ currentPage, totalPages, totalItems, onPageChange }) => {
               <button
                 type="button"
                 onClick={() => onPageChange(page)}
-                className={`rounded border px-3 py-1.5 text-sm font-medium ${
-                  currentPage === page
+                className={`rounded border px-3 py-1.5 text-sm font-medium ${currentPage === page
                     ? "border-[#4773da] bg-[#4773da] text-white"
                     : "border-gray-300 bg-white text-gray-500 hover:bg-gray-50"
-                }`}
+                  }`}
               >
                 {page}
               </button>
@@ -433,7 +434,30 @@ const DashboardDetailModal = ({ isOpen, onClose, title, summaryId }) => {
       setErrorMessage("");
 
       try {
-        const data = await getAktivasiPengajuanSummary(summaryId);
+        const [data, barangData] = await Promise.all([
+          getAktivasiPengajuanSummary(summaryId),
+          listBarang().catch(() => [])
+        ]);
+
+        const barangMap = new Map();
+        barangData.forEach((b) => {
+          if (b.nama) {
+            barangMap.set(b.nama.trim().toLowerCase(), String(b.satuan || "").trim());
+          }
+        });
+
+        if (Array.isArray(data?.detailPengajuan)) {
+          data.detailPengajuan.forEach((pengaju) => {
+            if (Array.isArray(pengaju.barang)) {
+              pengaju.barang.forEach((b) => {
+                if (!b.satuan || b.satuan === "-") {
+                  b.satuan = barangMap.get((b.namaBarang || "").trim().toLowerCase()) || "";
+                }
+              });
+            }
+          });
+        }
+
         setSummary(data);
       } catch (error) {
         setSummary(null);
@@ -502,17 +526,15 @@ const DashboardDetailModal = ({ isOpen, onClose, title, summaryId }) => {
   };
   return (
     <div
-      className={`fixed inset-0 z-50 flex items-center justify-center p-4 transition-all duration-150 ${
-        show
+      className={`fixed inset-0 z-50 flex items-center justify-center p-4 transition-all duration-150 ${show
           ? "bg-black/30 backdrop-blur-sm opacity-100"
           : "bg-transparent opacity-0"
-      }`}
+        }`}
       onClick={onClose}
     >
       <div
-        className={`bg-white rounded-lg shadow-lg w-full max-w-6xl overflow-hidden flex flex-col max-h-[90vh] transition-all duration-150 transform ${
-          show ? "scale-100 opacity-100" : "scale-95 opacity-0"
-        }`}
+        className={`bg-white rounded-lg shadow-lg w-full max-w-6xl overflow-hidden flex flex-col max-h-[90vh] transition-all duration-150 transform ${show ? "scale-100 opacity-100" : "scale-95 opacity-0"
+          }`}
         onClick={(event) => event.stopPropagation()}
       >
         <div className="bg-[#4a77e5] text-white px-6 py-4 flex justify-between items-center">
@@ -556,9 +578,8 @@ const DashboardDetailModal = ({ isOpen, onClose, title, summaryId }) => {
             <div className="grid grid-cols-[180px_1fr] items-center">
               <span className="text-gray-500">Status Pengajuan</span>
               <span
-                className={`${
-                  aktivasi.statusAktif ? "text-green-600" : "text-red-500"
-                }`}
+                className={`${aktivasi.statusAktif ? "text-green-600" : "text-red-500"
+                  }`}
               >
                 : {formatStatusAktivasi(aktivasi)}
               </span>
@@ -723,10 +744,10 @@ const DashboardDetailModal = ({ isOpen, onClose, title, summaryId }) => {
                     <td className="px-6 py-4 text-gray-600">{item.tipe}</td>
                     <td className="px-6 py-4 text-gray-600">{item.vendor}</td>
                     <td className="px-6 py-4 text-center text-gray-600">
-                      {item.qty}
+                      {item.qty} {String(item.satuan || item.unit || item.barang?.satuan || "").trim()}
                     </td>
                     <td className="px-6 py-4 text-center text-gray-600">
-                      {item.jumlahDisetujui}
+                      {item.jumlahDisetujui} {String(item.satuan || item.unit || item.barang?.satuan || "").trim()}
                     </td>
                     <td className="px-6 py-4 text-center">
                       <span

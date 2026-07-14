@@ -418,11 +418,12 @@ const normalizeAktivasiList = (payload, fallbackKategori = "") => {
 const normalizeSummaryBarang = (items = []) =>
     (Array.isArray(items) ? items : []).map((item, index) => ({
         id: pickValue(item.id, item.barang_id, item.id_barang, `barang-${index + 1}`),
-        namaBarang: String(pickValue(item.nama_barang, item.namaBarang, item.nama, "-")).trim(),
+        namaBarang: String(pickValue(item.nama_barang, item.namaBarang, item.nama, item.barang?.nama_barang, item.barang?.nama, "-")).trim(),
+        satuan: String(pickValue(item.satuan, item.unit, item.barang?.satuan, "")).trim(),
         qty: toNullableNumber(pickValue(item.qty, item.jumlah, item.jumlah_diajukan, 0)) ?? 0,
         jumlahDisetujui: toNullableNumber(pickValue(item.jumlah_disetujui, item.jumlahDisetujui, 0)) ?? 0,
         status: pickValue(item.status, 0),
-        vendor: String(pickValue(item.vendor, item.nama_vendor, item.vendor_nama, "-")).trim(),
+        vendor: String(pickValue(item.vendor, item.nama_vendor, item.vendor_nama, item.vendor?.nama, "-")).trim(),
     }));
 
 const normalizeAktivasiSummary = (payload = {}) => {

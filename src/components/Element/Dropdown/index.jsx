@@ -212,7 +212,7 @@ const Dropdown = React.forwardRef(
           ? createPortal(
               <div
                 ref={menuRef}
-                className="absolute z-1000 mt-2 overflow-hidden rounded-2xl border border-gray-200 bg-white py-1 shadow-lg"
+                className="absolute z-[9999] mt-2 overflow-hidden rounded-2xl border border-gray-200 bg-white py-1 shadow-lg"
                 style={menuStyles}
               >
                 {isSearchEnabled ? (
@@ -233,9 +233,9 @@ const Dropdown = React.forwardRef(
                       Tidak ada opsi
                     </li>
                   ) : (
-                    filteredOptions.map((option) => (
+                    filteredOptions.map((option, index) => (
                       <li
-                        key={option.value}
+                        key={`${option.value}-${index}`}
                         role="option"
                         aria-selected={value === option.value}
                       >

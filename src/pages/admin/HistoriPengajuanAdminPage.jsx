@@ -918,9 +918,9 @@ const HistoriPengajuanAdminPage = () => {
               <option value="">-- Pilih Jabatan --</option>
               {jabatanOptions.map((option) => (
                 <option
-                  key={option.unit_id ?? option.id ?? option.nama}
+                  key={option.unit_id ?? option.id ?? option.id_unit_type ?? option.unit_type_id ?? option.nama}
                   value={
-                    option.unit_id ?? option.id ?? option.id_unit_type ?? ""
+                    option.unit_id ?? option.id ?? option.id_unit_type ?? option.unit_type_id ?? ""
                   }
                 >
                   {option.name ?? option.nama}

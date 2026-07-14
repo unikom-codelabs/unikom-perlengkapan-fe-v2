@@ -170,7 +170,7 @@ const CetakBerkasPage = ({ tipe = "rutin" }) => {
   const [selectedRekapVendorId, setSelectedRekapVendorId] = useState("");
   const [isLoadingRekapVendor, setIsLoadingRekapVendor] = useState(false);
   const [rekapVendorError, setRekapVendorError] = useState("");
-  const normalizedTipe = String(tipe).trim().toLowerCase();
+  const normalizedTipe = String(tipe).replace(/[^a-z0-9]/gi, "").toLowerCase();
   const tipeLabel = normalizedTipe === "nonrutin" ? "Non Rutin" : "Rutin";
   const pageTitle = `Cetak Berkas ${tipeLabel}`;
   const kategoriAtk = KATEGORI_BY_TAB[activeTab] ?? "tahunan";
@@ -228,9 +228,8 @@ const CetakBerkasPage = ({ tipe = "rutin" }) => {
           : academicYearMatch
             ? `${academicYearMatch[1]}/${academicYearMatch[2]}`
             : getYearFromAktivasi(item);
-      const itemTipe = String(item?.tipe ?? normalizedTipe)
-        .trim()
-        .toLowerCase();
+      const itemTipeRaw = String(item?.tipe ?? "");
+      const itemTipe = itemTipeRaw.replace(/[^a-z0-9]/gi, "").toLowerCase();
       const itemTipeLabel = itemTipe === "nonrutin" ? "Non Rutin" : "Rutin";
       const fallbackLabel =
         item?.namaPeriode || item?.tahunAkademik || `Aktivasi #${item?.id}`;
@@ -239,7 +238,7 @@ const CetakBerkasPage = ({ tipe = "rutin" }) => {
         ? `${yearLabel} - ${itemTipeLabel}`
         : `${fallbackLabel} - ${itemTipeLabel}`;
     },
-    [getYearFromAktivasi, kategoriAtk, normalizedTipe],
+    [getYearFromAktivasi, kategoriAtk],
   );
 
   useEffect(() => {
@@ -277,7 +276,7 @@ const CetakBerkasPage = ({ tipe = "rutin" }) => {
           .trim()
           .toLowerCase();
         const itemTipe = String(item?.tipe ?? "")
-          .trim()
+          .replace(/[^a-z0-9]/gi, "")
           .toLowerCase();
 
         return itemTipe === normalizedTipe && kategori === kategoriAtk;
