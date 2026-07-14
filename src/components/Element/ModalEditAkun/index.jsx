@@ -9,7 +9,8 @@ const getInitialFormValues = (user) => {
 
   return {
     nip: String(safeUser.nip ?? "").trim(),
-    username: String(safeUser.username || safeUser.nama || "").trim(),
+    nama: String(safeUser.nama ?? "").trim(),
+    username: String(safeUser.username ?? "").trim(),
     email: String(safeUser.email ?? "").trim(),
     password: "",
     jenis_kelamin: String(
@@ -168,6 +169,21 @@ const ModalEditAkun = ({ isOpen, onClose, user, onSuccess }) => {
               </label>
               <input
                 type="text"
+                value={formValues.nama}
+                onChange={(event) =>
+                  updateField("nama", event.target.value)
+                }
+                required
+                className="w-full px-4 py-2 bg-white border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-[#4279df] text-gray-700 text-sm"
+              />
+            </div>
+            
+            <div className="flex flex-col gap-1.5">
+              <label className="text-gray-600 font-medium text-sm">
+                Username
+              </label>
+              <input
+                type="text"
                 value={formValues.username}
                 onChange={(event) =>
                   updateField("username", event.target.value)
@@ -203,6 +219,22 @@ const ModalEditAkun = ({ isOpen, onClose, user, onSuccess }) => {
                 placeholder="Kosongkan jika tidak ingin mengubah password"
                 className="w-full px-4 py-2 bg-white border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-[#4279df] text-gray-700 text-sm"
               />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-gray-600 font-medium text-sm">
+                Jenis Kelamin
+              </label>
+              <Dropdown
+                value={formValues.jenis_kelamin}
+                onChange={(event) =>
+                  updateField("jenis_kelamin", event.target.value)
+                }
+                required
+              >
+                <option value="Pria">Pria</option>
+                <option value="Wanita">Wanita</option>
+              </Dropdown>
             </div>
 
             <div className="flex flex-col gap-1.5">

@@ -6,6 +6,7 @@ import Dropdown from "../Dropdown";
 
 const initialFormValues = {
   nip: "",
+  nama: "",
   username: "",
   email: "",
   password: "",
@@ -165,15 +166,32 @@ const ModalTambahAkun = ({ isOpen, onClose, onSuccess }) => {
               </label>
               <input
                 type="text"
-                value={formValues.username}
+                value={formValues.nama}
                 onChange={(event) =>
-                  updateField("username", event.target.value)
+                  updateField("nama", event.target.value)
                 }
                 placeholder="Masukkan nama lengkap"
                 required
                 className={INPUT_CLASS}
               />
               <FieldHint>Gunakan nama lengkap sesuai data pegawai.</FieldHint>
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-gray-600 font-medium text-sm">
+                Username
+              </label>
+              <input
+                type="text"
+                value={formValues.username}
+                onChange={(event) =>
+                  updateField("username", event.target.value)
+                }
+                placeholder="Masukkan username login"
+                required
+                className={INPUT_CLASS}
+              />
+              <FieldHint>Digunakan untuk login ke sistem.</FieldHint>
             </div>
 
             <div className="flex flex-col gap-1.5">
@@ -204,6 +222,23 @@ const ModalTambahAkun = ({ isOpen, onClose, onSuccess }) => {
                 className={INPUT_CLASS}
               />
               <FieldHint>Password ini digunakan untuk login pertama kali.</FieldHint>
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-gray-600 font-medium text-sm">
+                Jenis Kelamin
+              </label>
+              <Dropdown
+                value={formValues.jenis_kelamin}
+                onChange={(event) =>
+                  updateField("jenis_kelamin", event.target.value)
+                }
+                required
+              >
+                <option value="Pria">Pria</option>
+                <option value="Wanita">Wanita</option>
+              </Dropdown>
+              <FieldHint>Pilih jenis kelamin pengguna.</FieldHint>
             </div>
 
             <div className="flex flex-col gap-1.5">

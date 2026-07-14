@@ -141,8 +141,11 @@ const normalizeUser = (item) => {
 
 const buildUserPayload = (payload = {}) => ({
   nip: String(pickValue(payload.nip, "")).trim(),
+  nama: String(
+    pickValue(payload.nama, payload.nama_lengkap, "")
+  ).trim(),
   username: String(
-    pickValue(payload.username, payload.nama, payload.name, payload.nama_lengkap, ""),
+    pickValue(payload.username, "")
   ).trim(),
   email: String(pickValue(payload.email, "")).trim(),
   password: pickValue(payload.password),
