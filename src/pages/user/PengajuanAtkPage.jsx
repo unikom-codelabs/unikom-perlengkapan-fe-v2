@@ -618,21 +618,19 @@ const PengajuanAtkPage = () => {
       jumlah: quantities[item.id] || 0,
     }));
 
-  const buildBarangLainnyaPayload = (formDataToAppend) => {
-    return pengajuanLainnya.map((item, index) => {
+  const appendBarangLainnyaToFormData = (formData) => {
+    pengajuanLainnya.forEach((item, index) => {
       const detail = lainnyaDetails[item.id] || {};
       
-      if (detail.bukti_foto && formDataToAppend) {
-        formDataToAppend.append(`bukti_foto[${index}]`, detail.bukti_foto);
+      formData.append(`barang_lainnya[${index}][nama]`, item.nama);
+      formData.append(`barang_lainnya[${index}][jumlah]`, item.jumlah);
+      formData.append(`barang_lainnya[${index}][kategori]`, item.kategori);
+      formData.append(`barang_lainnya[${index}][satuan]`, item.satuan);
+      formData.append(`barang_lainnya[${index}][alasan]`, detail.alasan || "");
+      
+      if (detail.bukti_foto) {
+        formData.append(`barang_lainnya[${index}][bukti_foto]`, detail.bukti_foto);
       }
-
-      return {
-        nama: item.nama,
-        jumlah: item.jumlah,
-        kategori: item.kategori,
-        satuan: item.satuan,
-        alasan: detail.alasan || "",
-      };
     });
   };
 
@@ -676,9 +674,8 @@ const PengajuanAtkPage = () => {
     formData.append("tipe", normalizedKategori);
     formData.append("barang", JSON.stringify(buildBarangPayload()));
 
-    const barangLainnyaPayload = buildBarangLainnyaPayload(formData);
-    if (barangLainnyaPayload.length > 0) {
-      formData.append("barang_lainnya", JSON.stringify(barangLainnyaPayload));
+    if (pengajuanLainnya.length > 0) {
+      appendBarangLainnyaToFormData(formData);
     }
 
     try {
