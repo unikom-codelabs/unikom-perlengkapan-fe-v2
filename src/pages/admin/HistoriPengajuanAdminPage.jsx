@@ -218,26 +218,26 @@ const getHistoriAktivasiLabel = (histori = {}) => {
   const aktivasi = histori?.aktivasi ?? {};
   const namaPeriode = String(
     aktivasi.nama_periode ??
-      aktivasi.namaPeriode ??
-      aktivasi.nama ??
-      aktivasi.title ??
-      histori.nama_periode ??
-      histori.namaPeriode ??
-      "",
+    aktivasi.namaPeriode ??
+    aktivasi.nama ??
+    aktivasi.title ??
+    histori.nama_periode ??
+    histori.namaPeriode ??
+    "",
   ).trim();
   const tahunAkademik = String(
     aktivasi.tahun_akademik ??
-      aktivasi.tahunAkademik ??
-      histori.tahun_akademik ??
-      histori.tahunAkademik ??
-      "",
+    aktivasi.tahunAkademik ??
+    histori.tahun_akademik ??
+    histori.tahunAkademik ??
+    "",
   ).trim();
   const tipeLabel = formatAktivasiTipe(
     aktivasi.tipe ??
-      aktivasi.tipe_pengajuan ??
-      aktivasi.tipePengajuan ??
-      histori.tipe ??
-      histori.tipe_pengajuan,
+    aktivasi.tipe_pengajuan ??
+    aktivasi.tipePengajuan ??
+    histori.tipe ??
+    histori.tipe_pengajuan,
   );
 
   if (namaPeriode && tahunAkademik && !namaPeriode.includes(tahunAkademik)) {
@@ -254,15 +254,15 @@ const getHistoriAktivasiLabel = (histori = {}) => {
 
   const tanggalMulai = formatDateLabel(
     aktivasi.tanggal_mulai ??
-      aktivasi.tanggalMulai ??
-      aktivasi.aktif_mulai ??
-      aktivasi.mulai,
+    aktivasi.tanggalMulai ??
+    aktivasi.aktif_mulai ??
+    aktivasi.mulai,
   );
   const tanggalSelesai = formatDateLabel(
     aktivasi.tanggal_selesai ??
-      aktivasi.tanggalSelesai ??
-      aktivasi.aktif_selesai ??
-      aktivasi.selesai,
+    aktivasi.tanggalSelesai ??
+    aktivasi.aktif_selesai ??
+    aktivasi.selesai,
   );
 
   if (tanggalMulai || tanggalSelesai) {
@@ -530,16 +530,16 @@ const HistoriPengajuanAdminPage = () => {
 
     const hasRequiredSelections = isUjianTab
       ? selectedBagianType &&
+      (selectedBagianType.toLowerCase() === "dekan"
+        ? selectedBagian
+        : selectedProdi) &&
+      selectedAktivasiUjian
+      : isKelasTab
+        ? selectedBagianType &&
         (selectedBagianType.toLowerCase() === "dekan"
           ? selectedBagian
           : selectedProdi) &&
-        selectedAktivasiUjian
-      : isKelasTab
-        ? selectedBagianType &&
-          (selectedBagianType.toLowerCase() === "dekan"
-            ? selectedBagian
-            : selectedProdi) &&
-          selectedAktivasiKelas
+        selectedAktivasiKelas
         : selectedJabatan && selectedBagian && selectedAktivasi;
 
     if (!hasRequiredSelections) {
@@ -555,7 +555,7 @@ const HistoriPengajuanAdminPage = () => {
         if (
           unitFilter &&
           normalizeUnitValue(item?.user?.unit) !==
-            normalizeUnitValue(unitFilter)
+          normalizeUnitValue(unitFilter)
         ) {
           return false;
         }
@@ -564,7 +564,7 @@ const HistoriPengajuanAdminPage = () => {
       if (
         selectedAktivasiUjian &&
         (getHistoriAktivasiKey(item) || getHistoriAktivasiLabel(item)) !==
-          selectedAktivasiUjian
+        selectedAktivasiUjian
       ) {
         return false;
       }
@@ -581,7 +581,7 @@ const HistoriPengajuanAdminPage = () => {
         if (
           unitFilter &&
           normalizeUnitValue(item?.user?.unit) !==
-            normalizeUnitValue(unitFilter)
+          normalizeUnitValue(unitFilter)
         ) {
           return false;
         }
@@ -590,7 +590,7 @@ const HistoriPengajuanAdminPage = () => {
       if (
         selectedAktivasiKelas &&
         (getHistoriAktivasiKey(item) || getHistoriAktivasiLabel(item)) !==
-          selectedAktivasiKelas
+        selectedAktivasiKelas
       ) {
         return false;
       }
@@ -601,7 +601,7 @@ const HistoriPengajuanAdminPage = () => {
     if (
       selectedBagian &&
       normalizeUnitValue(item?.user?.unit) !==
-        normalizeUnitValue(selectedBagian)
+      normalizeUnitValue(selectedBagian)
     ) {
       return false;
     }
@@ -609,7 +609,7 @@ const HistoriPengajuanAdminPage = () => {
     if (
       selectedAktivasi &&
       (getHistoriAktivasiKey(item) || getHistoriAktivasiLabel(item)) !==
-        selectedAktivasi
+      selectedAktivasi
     ) {
       return false;
     }
@@ -723,23 +723,23 @@ const HistoriPengajuanAdminPage = () => {
             )}
           </tr>
         )}
-      footer={
-        <div className="flex justify-end mt-4">
-          <div className="flex items-center space-x-1">
-            <button className="p-1.5 border border-gray-300 rounded text-gray-500 bg-white hover:bg-gray-50">
-              <ChevronLeftIcon className="h-4 w-4" />
-            </button>
-            <button className="px-3 py-1.5 border border-[#4773da] bg-[#4773da] text-white rounded text-sm font-medium">
-              1
-            </button>
-            <button className="p-1.5 border border-gray-300 rounded text-gray-500 bg-white hover:bg-gray-50">
-              <ChevronRightIcon className="h-4 w-4" />
-            </button>
+        footer={
+          <div className="flex justify-end mt-4">
+            <div className="flex items-center space-x-1">
+              <button className="p-1.5 border border-gray-300 rounded text-gray-500 bg-white hover:bg-gray-50">
+                <ChevronLeftIcon className="h-4 w-4" />
+              </button>
+              <button className="px-3 py-1.5 border border-[#4773da] bg-[#4773da] text-white rounded text-sm font-medium">
+                1
+              </button>
+              <button className="p-1.5 border border-gray-300 rounded text-gray-500 bg-white hover:bg-gray-50">
+                <ChevronRightIcon className="h-4 w-4" />
+              </button>
+            </div>
           </div>
-        </div>
-      }
-    />
-  );
+        }
+      />
+    );
   };
 
   const renderContent = () => (
@@ -762,7 +762,7 @@ const HistoriPengajuanAdminPage = () => {
             </Dropdown>
           </div>
           {selectedBagianType &&
-          selectedBagianType.toLowerCase() === "dekan" ? (
+            selectedBagianType.toLowerCase() === "dekan" ? (
             <div>
               <label className="block text-sm text-gray-500 mb-2">Bagian</label>
               <Dropdown
@@ -780,7 +780,7 @@ const HistoriPengajuanAdminPage = () => {
             </div>
           ) : null}
           {selectedBagianType &&
-          selectedBagianType.toLowerCase() === "kaprodi" ? (
+            selectedBagianType.toLowerCase() === "kaprodi" ? (
             <div>
               <label className="block text-sm text-gray-500 mb-2">
                 Program Studi
@@ -800,9 +800,9 @@ const HistoriPengajuanAdminPage = () => {
             </div>
           ) : null}
           {selectedBagianType &&
-          (selectedBagianType.toLowerCase() === "dekan"
-            ? selectedBagian
-            : selectedProdi) ? (
+            (selectedBagianType.toLowerCase() === "dekan"
+              ? selectedBagian
+              : selectedProdi) ? (
             <div>
               <label className="block text-sm text-gray-500 mb-2">
                 Aktivasi
@@ -843,7 +843,7 @@ const HistoriPengajuanAdminPage = () => {
             </Dropdown>
           </div>
           {selectedBagianType &&
-          selectedBagianType.toLowerCase() === "dekan" ? (
+            selectedBagianType.toLowerCase() === "dekan" ? (
             <div>
               <label className="block text-sm text-gray-500 mb-2">Bagian</label>
               <Dropdown
@@ -861,7 +861,7 @@ const HistoriPengajuanAdminPage = () => {
             </div>
           ) : null}
           {selectedBagianType &&
-          selectedBagianType.toLowerCase() === "kaprodi" ? (
+            selectedBagianType.toLowerCase() === "kaprodi" ? (
             <div>
               <label className="block text-sm text-gray-500 mb-2">
                 Program Studi
@@ -881,9 +881,9 @@ const HistoriPengajuanAdminPage = () => {
             </div>
           ) : null}
           {selectedBagianType &&
-          (selectedBagianType.toLowerCase() === "dekan"
-            ? selectedBagian
-            : selectedProdi) ? (
+            (selectedBagianType.toLowerCase() === "dekan"
+              ? selectedBagian
+              : selectedProdi) ? (
             <div>
               <label className="block text-sm text-gray-500 mb-2">
                 Aktivasi
@@ -1076,11 +1076,10 @@ const HistoriPengajuanAdminPage = () => {
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`pb-3 text-[15px] font-medium transition-colors relative ${
-                  activeTab === tab
+                className={`pb-3 text-[15px] font-medium transition-colors relative ${activeTab === tab
                     ? "text-[#4773da]"
                     : "text-gray-400 hover:text-gray-600"
-                }`}
+                  }`}
               >
                 {tab}
                 {activeTab === tab && (

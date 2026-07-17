@@ -422,27 +422,15 @@ const Sidebar = () => {
             <h2 className="text-sm text-primary uppercase mb-2">Bantuan</h2>
             <ul className="p-2">
               <li className="mb-4">
-                <NavLink
-                  to="/download-user-guide"
-                  className={({ isActive }) =>
-                    `flex gap-2 items-center ${
-                      isActive
-                        ? "text-primary"
-                        : "text-gray-700 hover:text-primary"
-                    }`
-                  }
+                <a
+                  href="/User_Guide.pdf"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex gap-2 items-center text-gray-700 hover:text-primary transition-colors"
                 >
-                  {({ isActive }) => (
-                    <>
-                      {isActive ? (
-                        <ArrowDownTraySolid className="w-5 h-5" />
-                      ) : (
-                        <ArrowDownTrayOutline className="w-5 h-5" />
-                      )}
-                      <span>Download User Guide</span>
-                    </>
-                  )}
-                </NavLink>
+                  <ArrowDownTrayOutline className="w-5 h-5" />
+                  <span>Download User Guide</span>
+                </a>
               </li>
             </ul>
 
@@ -809,27 +797,15 @@ const Sidebar = () => {
             <h2 className="text-sm text-primary uppercase mb-2">Bantuan</h2>
             <ul className="p-2">
               <li className="mb-4">
-                <NavLink
-                  to="/download-user-guide"
-                  className={({ isActive }) =>
-                    `flex gap-2 items-center ${
-                      isActive
-                        ? "text-primary"
-                        : "text-gray-700 hover:text-primary"
-                    }`
-                  }
+                <a
+                  href="/Admin_Guide.pdf"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex gap-2 items-center text-gray-700 hover:text-primary transition-colors"
                 >
-                  {({ isActive }) => (
-                    <>
-                      {isActive ? (
-                        <ArrowDownTraySolid className="w-5 h-5" />
-                      ) : (
-                        <ArrowDownTrayOutline className="w-5 h-5" />
-                      )}
-                      <span>Download User Guide</span>
-                    </>
-                  )}
-                </NavLink>
+                  <ArrowDownTrayOutline className="w-5 h-5" />
+                  <span>Download User Guide</span>
+                </a>
               </li>
             </ul>
 
