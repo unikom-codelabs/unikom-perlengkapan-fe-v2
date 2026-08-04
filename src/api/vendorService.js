@@ -21,8 +21,8 @@ export const listVendor = async () => {
     return extractListData(response.data);
 };
 
-export const fetchRekapVendor = async () => {
-    const response = await apiClient.get("/rekap-vendor");
+export const fetchRekapVendor = async (params = {}) => {
+    const response = await apiClient.get("/rekap-vendor", { params });
     return extractListData(response.data);
 };
 

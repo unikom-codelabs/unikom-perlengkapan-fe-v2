@@ -545,6 +545,7 @@ const normalizeAdminSubmission = (submission = {}, barangMasterById = new Map())
             tanggal: pickValue(submission.date, submission.tanggal, submission.created_at, ""),
             aktivasiKey,
             aktivasiLabel,
+            aktivasiId: pickValue(submission.id_aktivasi, submission.aktivasi_pengajuan_id, submission.aktivasi?.id),
             tipe,
             kategori: normalizeKategori(
                 pickValue(item.kategori, master?.kategori, submission.kategori, kategori),
@@ -575,6 +576,7 @@ const normalizeAdminSubmission = (submission = {}, barangMasterById = new Map())
         tanggal: pickValue(submission.date, submission.tanggal, submission.created_at, ""),
         aktivasiKey,
         aktivasiLabel,
+        aktivasiId: pickValue(submission.id_aktivasi, submission.aktivasi_pengajuan_id, submission.aktivasi?.id),
         tipe,
         kategori: normalizeKategori(
             pickValue(submission.kategori, item.tipe, item.jenis, kategori),

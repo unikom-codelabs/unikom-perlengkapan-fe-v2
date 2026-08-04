@@ -12,6 +12,7 @@ import { fetchCetakBerkasAdmin } from "../../api/cetakBerkasService";
 import Dropdown from "../../components/Element/Dropdown";
 import VendorAtkDownloadModal from "../../components/Fragments/VendorAtkDownloadModal";
 import { fetchRekapVendor } from "../../api/vendorService";
+import { listDaftarPengajuanAdmin } from "../../api/pengajuanService";
 
 const ITEMS_PER_PAGE = 10;
 const TABS = ["ATK Tahunan", "ATK Ujian", "ATK Kelas"];
@@ -155,6 +156,7 @@ const CetakBerkasPage = ({ tipe = "rutin" }) => {
   const [activeTab, setActiveTab] = useState("ATK Tahunan");
   const [aktivasiList, setAktivasiList] = useState([]);
   const [isLoadingAktivasi, setIsLoadingAktivasi] = useState(false);
+  const [validAktivasiIds, setValidAktivasiIds] = useState(null);
   const [selectedYear, setSelectedYear] = useState("");
   const [selectedAktivasiId, setSelectedAktivasiId] = useState("");
   const [cetakData, setCetakData] = useState(null);
@@ -264,14 +266,33 @@ const CetakBerkasPage = ({ tipe = "rutin" }) => {
         }
       });
 
+    listDaftarPengajuanAdmin()
+      .then((data) => {
+        if (isMounted) {
+          const ids = (Array.isArray(data) ? data : [])
+            .map((item) => String(item.aktivasiId || ""))
+            .filter(Boolean);
+          setValidAktivasiIds(new Set(ids));
+        }
+      })
+      .catch(() => {
+        if (isMounted) {
+          setValidAktivasiIds(new Set());
+        }
+      });
+
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [normalizedTipe]);
 
   const filteredAktivasi = useMemo(
     () =>
       aktivasiList.filter((item) => {
+        if (validAktivasiIds !== null && !validAktivasiIds.has(String(item.id))) {
+          return false;
+        }
+
         const kategori = String(item?.kategori ?? "")
           .trim()
           .toLowerCase();
@@ -281,7 +302,7 @@ const CetakBerkasPage = ({ tipe = "rutin" }) => {
 
         return itemTipe === normalizedTipe && kategori === kategoriAtk;
       }),
-    [aktivasiList, kategoriAtk, normalizedTipe],
+    [aktivasiList, kategoriAtk, normalizedTipe, validAktivasiIds],
   );
 
   const availableYears = useMemo(() => {
@@ -335,6 +356,8 @@ const CetakBerkasPage = ({ tipe = "rutin" }) => {
     setCetakData(null);
     setIsLoadingData(false);
     setOtherPrices({});
+    setRekapVendorList([]);
+    setRekapVendorError("");
   }, [activeTab, selectedAktivasiId, selectedYear]);
 
   useEffect(() => {
@@ -513,7 +536,7 @@ const CetakBerkasPage = ({ tipe = "rutin" }) => {
 
     setIsLoadingRekapVendor(true);
 
-    fetchRekapVendor()
+    fetchRekapVendor({ id_aktivasi: selectedAktivasiId })
       .then((data) => {
         setRekapVendorList(Array.isArray(data) ? data : []);
       })
@@ -524,7 +547,7 @@ const CetakBerkasPage = ({ tipe = "rutin" }) => {
       .finally(() => {
         setIsLoadingRekapVendor(false);
       });
-  }, [rekapVendorList.length]);
+  }, [rekapVendorList.length, selectedAktivasiId]);
 
   const closeVendorAtkModal = () => {
     setIsVendorAtkModalOpen(false);

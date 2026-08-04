@@ -275,25 +275,27 @@ const AdminDaftarPengajuanPage = ({ tipe = "rutin" }) => {
   );
 
   const aktivasiOptions = useMemo(
-    () =>
-      buildAktivasiOptions(
-        rowsByTipe.filter((row) => row.kategori === "tahunan"),
-      ),
-    [rowsByTipe],
+    () => {
+      const filteredByUnit = rowsByTipe.filter(row => row.kategori === "tahunan" && shouldIncludeByUnit(row, selectedBagian));
+      return buildAktivasiOptions(filteredByUnit);
+    },
+    [rowsByTipe, selectedBagian],
   );
   const aktivasiOptionsUjian = useMemo(
-    () =>
-      buildAktivasiOptions(
-        rowsByTipe.filter((row) => row.kategori === "ujian"),
-      ),
-    [rowsByTipe],
+    () => {
+      const selectedUnit = selectedBagianType.toLowerCase() === "dekan" ? selectedBagian : selectedProdi;
+      const filteredByUnit = rowsByTipe.filter(row => row.kategori === "ujian" && shouldIncludeByUnit(row, selectedUnit));
+      return buildAktivasiOptions(filteredByUnit);
+    },
+    [rowsByTipe, selectedBagianType, selectedBagian, selectedProdi],
   );
   const aktivasiOptionsKelas = useMemo(
-    () =>
-      buildAktivasiOptions(
-        rowsByTipe.filter((row) => row.kategori === "kelas"),
-      ),
-    [rowsByTipe],
+    () => {
+      const selectedUnit = selectedBagianType.toLowerCase() === "dekan" ? selectedBagian : selectedProdi;
+      const filteredByUnit = rowsByTipe.filter(row => row.kategori === "kelas" && shouldIncludeByUnit(row, selectedUnit));
+      return buildAktivasiOptions(filteredByUnit);
+    },
+    [rowsByTipe, selectedBagianType, selectedBagian, selectedProdi],
   );
 
   const selectedAktivasiLabel =
