@@ -12,6 +12,7 @@ import { fetchCetakBerkasAdmin } from "../../api/cetakBerkasService";
 import Dropdown from "../../components/Element/Dropdown";
 import VendorAtkDownloadModal from "../../components/Fragments/VendorAtkDownloadModal";
 import { fetchRekapVendor } from "../../api/vendorService";
+import { listDaftarPengajuanAdmin } from "../../api/pengajuanService";
 
 const ITEMS_PER_PAGE = 10;
 const TABS = ["ATK Tahunan", "ATK Ujian", "ATK Kelas"];
@@ -155,6 +156,7 @@ const CetakBerkasPage = ({ tipe = "rutin" }) => {
   const [activeTab, setActiveTab] = useState("ATK Tahunan");
   const [aktivasiList, setAktivasiList] = useState([]);
   const [isLoadingAktivasi, setIsLoadingAktivasi] = useState(false);
+  const [validAktivasiIds, setValidAktivasiIds] = useState(null);
   const [selectedYear, setSelectedYear] = useState("");
   const [selectedAktivasiId, setSelectedAktivasiId] = useState("");
   const [cetakData, setCetakData] = useState(null);
@@ -170,7 +172,7 @@ const CetakBerkasPage = ({ tipe = "rutin" }) => {
   const [selectedRekapVendorId, setSelectedRekapVendorId] = useState("");
   const [isLoadingRekapVendor, setIsLoadingRekapVendor] = useState(false);
   const [rekapVendorError, setRekapVendorError] = useState("");
-  const normalizedTipe = String(tipe).trim().toLowerCase();
+  const normalizedTipe = String(tipe).replace(/[^a-z0-9]/gi, "").toLowerCase();
   const tipeLabel = normalizedTipe === "nonrutin" ? "Non Rutin" : "Rutin";
   const pageTitle = `Cetak Berkas ${tipeLabel}`;
   const kategoriAtk = KATEGORI_BY_TAB[activeTab] ?? "tahunan";
@@ -228,9 +230,8 @@ const CetakBerkasPage = ({ tipe = "rutin" }) => {
           : academicYearMatch
             ? `${academicYearMatch[1]}/${academicYearMatch[2]}`
             : getYearFromAktivasi(item);
-      const itemTipe = String(item?.tipe ?? normalizedTipe)
-        .trim()
-        .toLowerCase();
+      const itemTipeRaw = String(item?.tipe ?? "");
+      const itemTipe = itemTipeRaw.replace(/[^a-z0-9]/gi, "").toLowerCase();
       const itemTipeLabel = itemTipe === "nonrutin" ? "Non Rutin" : "Rutin";
       const fallbackLabel =
         item?.namaPeriode || item?.tahunAkademik || `Aktivasi #${item?.id}`;
@@ -239,7 +240,7 @@ const CetakBerkasPage = ({ tipe = "rutin" }) => {
         ? `${yearLabel} - ${itemTipeLabel}`
         : `${fallbackLabel} - ${itemTipeLabel}`;
     },
-    [getYearFromAktivasi, kategoriAtk, normalizedTipe],
+    [getYearFromAktivasi, kategoriAtk],
   );
 
   useEffect(() => {
@@ -265,24 +266,43 @@ const CetakBerkasPage = ({ tipe = "rutin" }) => {
         }
       });
 
+    listDaftarPengajuanAdmin()
+      .then((data) => {
+        if (isMounted) {
+          const ids = (Array.isArray(data) ? data : [])
+            .map((item) => String(item.aktivasiId || ""))
+            .filter(Boolean);
+          setValidAktivasiIds(new Set(ids));
+        }
+      })
+      .catch(() => {
+        if (isMounted) {
+          setValidAktivasiIds(new Set());
+        }
+      });
+
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [normalizedTipe]);
 
   const filteredAktivasi = useMemo(
     () =>
       aktivasiList.filter((item) => {
+        if (validAktivasiIds !== null && !validAktivasiIds.has(String(item.id))) {
+          return false;
+        }
+
         const kategori = String(item?.kategori ?? "")
           .trim()
           .toLowerCase();
         const itemTipe = String(item?.tipe ?? "")
-          .trim()
+          .replace(/[^a-z0-9]/gi, "")
           .toLowerCase();
 
         return itemTipe === normalizedTipe && kategori === kategoriAtk;
       }),
-    [aktivasiList, kategoriAtk, normalizedTipe],
+    [aktivasiList, kategoriAtk, normalizedTipe, validAktivasiIds],
   );
 
   const availableYears = useMemo(() => {
@@ -336,6 +356,8 @@ const CetakBerkasPage = ({ tipe = "rutin" }) => {
     setCetakData(null);
     setIsLoadingData(false);
     setOtherPrices({});
+    setRekapVendorList([]);
+    setRekapVendorError("");
   }, [activeTab, selectedAktivasiId, selectedYear]);
 
   useEffect(() => {
@@ -514,7 +536,7 @@ const CetakBerkasPage = ({ tipe = "rutin" }) => {
 
     setIsLoadingRekapVendor(true);
 
-    fetchRekapVendor()
+    fetchRekapVendor({ id_aktivasi: selectedAktivasiId })
       .then((data) => {
         setRekapVendorList(Array.isArray(data) ? data : []);
       })
@@ -525,7 +547,7 @@ const CetakBerkasPage = ({ tipe = "rutin" }) => {
       .finally(() => {
         setIsLoadingRekapVendor(false);
       });
-  }, [rekapVendorList.length]);
+  }, [rekapVendorList.length, selectedAktivasiId]);
 
   const closeVendorAtkModal = () => {
     setIsVendorAtkModalOpen(false);
@@ -601,26 +623,26 @@ const CetakBerkasPage = ({ tipe = "rutin" }) => {
   };
 
   const mainColumns = [
-    { key: "no", label: "No" },
-    { key: "nama_barang", label: "Nama Barang" },
-    { key: "satuan", label: "Satuan" },
-    { key: "jumlah", label: "Jumlah" },
-    { key: "sisa", label: "Sisa Pengajuan" },
-    { key: "jumlahBeli", label: "Jumlah Beli" },
-    { key: "harga", label: "Harga" },
-    { key: "subtotal", label: "Subtotal" },
-    { key: "vendor", label: "Vendor" },
+    { key: "no", label: "No", align: "center" },
+    { key: "nama_barang", label: "Nama Barang", align: "left" },
+    { key: "satuan", label: "Satuan", align: "center" },
+    { key: "jumlah", label: "Jumlah", align: "center" },
+    { key: "sisa", label: "Sisa Pengajuan", align: "center" },
+    { key: "jumlahBeli", label: "Jumlah Beli", align: "center" },
+    { key: "harga", label: "Harga", align: "center" },
+    { key: "subtotal", label: "Subtotal", align: "center" },
+    { key: "vendor", label: "Vendor", align: "left" },
   ];
   const otherColumns = [
-    { key: "no", label: "No" },
-    { key: "nama_barang", label: "Nama Barang" },
-    { key: "satuan", label: "Satuan" },
-    { key: "jumlah", label: "Jumlah" },
-    { key: "sisa", label: "Sisa Pengajuan" },
-    { key: "jumlahBeli", label: "Jumlah Beli" },
-    { key: "harga", label: "Harga" },
-    { key: "subtotal", label: "Subtotal" },
-    { key: "vendor", label: "Vendor" },
+    { key: "no", label: "No", align: "center" },
+    { key: "nama_barang", label: "Nama Barang", align: "left" },
+    { key: "satuan", label: "Satuan", align: "center" },
+    { key: "jumlah", label: "Jumlah", align: "center" },
+    { key: "sisa", label: "Sisa Pengajuan", align: "center" },
+    { key: "jumlahBeli", label: "Jumlah Beli", align: "center" },
+    { key: "harga", label: "Harga", align: "center" },
+    { key: "subtotal", label: "Subtotal", align: "center" },
+    { key: "vendor", label: "Vendor", align: "left" },
   ];
 
   const renderMainRow = (row, index) => (
@@ -631,7 +653,7 @@ const CetakBerkasPage = ({ tipe = "rutin" }) => {
       <td className="px-6 py-3 border-r border-gray-200 text-center text-gray-500">
         {(safeMainPage - 1) * ITEMS_PER_PAGE + index + 1}
       </td>
-      <td className="px-6 py-3 border-r border-gray-200 text-gray-500">
+      <td className="px-6 py-3 border-r border-gray-200 text-gray-500 text-left">
         {row.nama_barang}
       </td>
       <td className="px-6 py-3 border-r border-gray-200 text-center text-gray-500">
@@ -652,7 +674,7 @@ const CetakBerkasPage = ({ tipe = "rutin" }) => {
       <td className="px-6 py-3 border-r border-gray-200 text-center text-gray-500">
         {formatCurrency(row.subtotalValue)}
       </td>
-      <td className="px-6 py-3 text-center text-gray-500">{row.vendor}</td>
+      <td className="px-6 py-3 text-left text-gray-500">{row.vendor}</td>
     </tr>
   );
 
@@ -664,7 +686,7 @@ const CetakBerkasPage = ({ tipe = "rutin" }) => {
       <td className="px-6 py-3 border-r border-gray-200 text-center text-gray-500">
         {(safeOtherPage - 1) * ITEMS_PER_PAGE + index + 1}
       </td>
-      <td className="px-6 py-3 border-r border-gray-200 text-gray-500">
+      <td className="px-6 py-3 border-r border-gray-200 text-gray-500 text-left">
         {row.nama_barang}
       </td>
       <td className="px-6 py-3 border-r border-gray-200 text-center text-gray-500">
@@ -701,7 +723,7 @@ const CetakBerkasPage = ({ tipe = "rutin" }) => {
       <td className="px-6 py-3 border-r border-gray-200 text-center text-gray-500">
         {formatCurrency(row.subtotalValue)}
       </td>
-      <td className="px-6 py-3 text-center text-gray-500">{row.vendor}</td>
+      <td className="px-6 py-3 text-left text-gray-500">{row.vendor}</td>
     </tr>
   );
 

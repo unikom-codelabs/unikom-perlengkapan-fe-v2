@@ -1,4 +1,5 @@
 import apiClient from "./ApiClient";
+import { listAktivasiPengajuan } from "./aktivasiPengajuanService";
 
 const pickValue = (...values) =>
     values.find((value) => value !== undefined && value !== null);
@@ -172,6 +173,8 @@ const normalizeSubmissionItems = (submission = {}, submissionKategori = "tahunan
                 ) ?? null,
             status: normalizeStatus(pickValue(item.status, submission.status, submission.status_pengajuan)),
             isLainnya,
+            buktiFoto: pickValue(item.bukti_foto, item.buktiFoto, null),
+            alasan: String(pickValue(item.alasan, item.keterangan_lainnya, item.keteranganLainnya, "")).trim(),
         };
     });
 };
@@ -363,7 +366,9 @@ const inferAdminSubmissionKategori = (submission = {}, barangMasterById = new Ma
 };
 
 const getAdminAktivasiKey = (submission = {}, tipe = "rutin") => {
-    const aktivasi = submission.aktivasi || {};
+    const aktivasi =
+        [submission.aktivasi, submission.aktivasi_pengajuan, submission.aktivasiPengajuan]
+            .find((item) => item && typeof item === "object") || {};
 
     return String(
         pickValue(
@@ -427,7 +432,9 @@ const extractYearLabel = (value) => {
 };
 
 const getAdminAktivasiLabel = (submission = {}, tipe = "rutin", kategori = "") => {
-    const aktivasi = submission.aktivasi || {};
+    const aktivasi =
+        [submission.aktivasi, submission.aktivasi_pengajuan, submission.aktivasiPengajuan]
+            .find((item) => item && typeof item === "object") || {};
     const isTahunan = kategori === "tahunan";
     const namaPeriode = String(
         pickValue(
@@ -499,7 +506,9 @@ const normalizeAdminSubmission = (submission = {}, barangMasterById = new Map())
             submission.aktivasi?.tipe,
         ),
     );
-    const aktivasi = submission.aktivasi || {};
+    const aktivasi =
+        [submission.aktivasi, submission.aktivasi_pengajuan, submission.aktivasiPengajuan]
+            .find((item) => item && typeof item === "object") || {};
     const explicitKategori = normalizeKnownKategori(
         pickValue(
             submission.kategori,
@@ -536,6 +545,7 @@ const normalizeAdminSubmission = (submission = {}, barangMasterById = new Map())
             tanggal: pickValue(submission.date, submission.tanggal, submission.created_at, ""),
             aktivasiKey,
             aktivasiLabel,
+            aktivasiId: pickValue(submission.id_aktivasi, submission.aktivasi_pengajuan_id, submission.aktivasi?.id),
             tipe,
             kategori: normalizeKategori(
                 pickValue(item.kategori, master?.kategori, submission.kategori, kategori),
@@ -566,6 +576,7 @@ const normalizeAdminSubmission = (submission = {}, barangMasterById = new Map())
         tanggal: pickValue(submission.date, submission.tanggal, submission.created_at, ""),
         aktivasiKey,
         aktivasiLabel,
+        aktivasiId: pickValue(submission.id_aktivasi, submission.aktivasi_pengajuan_id, submission.aktivasi?.id),
         tipe,
         kategori: normalizeKategori(
             pickValue(submission.kategori, item.tipe, item.jenis, kategori),
@@ -606,21 +617,52 @@ export const listPengajuan = async () => {
     return normalizeSubmissionList(response.data);
 };
 
+
+
 export const listDaftarPengajuanAdmin = async (params = {}) => {
     const cleanParams = Object.fromEntries(
         Object.entries(params).filter(([, value]) => value !== "" && value !== null && value !== undefined),
     );
-    const [response, barangResponse] = await Promise.all([
+    const [response, barangResponse, aktivasiList] = await Promise.all([
         apiClient.get("/admin/daftar-pengajuan", {
             params: Object.keys(cleanParams).length > 0 ? cleanParams : undefined,
         }),
         apiClient.get("/barang").catch(() => null),
+        listAktivasiPengajuan().catch(() => []),
     ]);
     const barangMasterById = barangResponse
         ? extractBarangMasterMap(barangResponse.data)
         : new Map();
 
-    return normalizeAdminSubmissionRows(response.data, barangMasterById);
+    const aktivasiMap = new Map();
+    aktivasiList.forEach(a => {
+        if (a.id) aktivasiMap.set(a.id, a);
+    });
+
+    const rows = extractListData(response.data);
+    const enrichedRows = rows.map(row => {
+        const s = row.pengajuan && typeof row.pengajuan === "object" ? { ...row, ...row.pengajuan } : row;
+        const aId = pickValue(
+            s.aktivasi_pengajuan_id,
+            s.aktivasiPengajuanId,
+            s.id_aktivasi_pengajuan,
+            s.idAktivasiPengajuan,
+            s.id_aktivasi,
+            s.idAktivasi,
+            s.aktivasi_id,
+            s.aktivasiId
+        );
+        
+        if (aId && aktivasiMap.has(aId)) {
+            row.aktivasi_pengajuan = aktivasiMap.get(aId);
+            if (row.pengajuan && typeof row.pengajuan === "object") {
+                row.pengajuan.aktivasi_pengajuan = aktivasiMap.get(aId);
+            }
+        }
+        return row;
+    });
+
+    return normalizeAdminSubmissionRows(enrichedRows, barangMasterById);
 };
 
 export const approveBarangPengajuanAdmin = async ({

@@ -334,11 +334,11 @@ const BarangPengajuanPage = () => {
           <Table
             title={null}
             columns={[
-              { key: "no", label: "No" },
-              { key: "nama", label: "Nama Barang" },
-              { key: "vendor", label: "Vendor" },
-              { key: "satuan", label: "Satuan" },
-              { key: "aksi", label: "Aksi" },
+              { key: "no", label: "No", align: "center" },
+              { key: "nama", label: "Nama Barang", align: "left" },
+              { key: "vendor", label: "Vendor", align: "left" },
+              { key: "satuan", label: "Satuan", align: "center" },
+              { key: "aksi", label: "Aksi", align: "center" },
             ]}
             rows={tableRows}
             emptyMessage={emptyMessage}
@@ -348,10 +348,10 @@ const BarangPengajuanPage = () => {
                 <td className="px-6 py-4 text-gray-600 text-center">
                   {(currentPage - 1) * itemsPerPage + index + 1}
                 </td>
-                <td className="px-6 py-4 text-gray-800 text-center">
+                <td className="px-6 py-4 text-gray-800 text-left">
                   {item.nama}
                 </td>
-                <td className="px-6 py-4 text-gray-600 text-center">
+                <td className="px-6 py-4 text-gray-600 text-left">
                   {getVendorLabel(item.vendor)}
                 </td>
                 <td className="px-6 py-4 text-gray-600 text-center">

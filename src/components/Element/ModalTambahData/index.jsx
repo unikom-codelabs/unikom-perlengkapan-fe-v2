@@ -14,6 +14,11 @@ const ModalTambahData = ({
   onSecondaryValueChange,
   secondaryRequired = false,
   secondaryInputType = "text",
+  tertiaryLabel = "",
+  tertiaryPlaceholder = "",
+  tertiaryValue = "",
+  onTertiaryValueChange,
+  tertiaryRequired = false,
   onClose,
   onSubmit,
   isSubmitting = false,
@@ -61,8 +66,11 @@ const ModalTambahData = ({
     const secondaryValid = secondaryRequired
       ? String(secondaryValue).trim()
       : true;
+    const tertiaryValid = tertiaryRequired
+      ? String(tertiaryValue).trim()
+      : true;
 
-    if (!onSubmit || isSubmitting || !primaryValid || !secondaryValid) {
+    if (!onSubmit || isSubmitting || !primaryValid || !secondaryValid || !tertiaryValid) {
       return;
     }
 
@@ -119,6 +127,24 @@ const ModalTambahData = ({
             </div>
           ) : null}
 
+          {tertiaryLabel ? (
+            <div className="mt-4 flex flex-col gap-1.5">
+              <label className="text-gray-600 font-medium text-sm">
+                {tertiaryLabel}
+              </label>
+              <textarea
+                rows={3}
+                placeholder={tertiaryPlaceholder}
+                value={tertiaryValue}
+                onChange={(event) =>
+                  onTertiaryValueChange?.(event.target.value)
+                }
+                className="w-full px-4 py-2 bg-white border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#4279df] focus:border-transparent text-gray-700 text-sm resize-none"
+                required={tertiaryRequired}
+              />
+            </div>
+          ) : null}
+
           {errorMessage ? (
             <p className="mt-3 text-sm text-red-600 whitespace-pre-line">
               {errorMessage}
@@ -140,7 +166,8 @@ const ModalTambahData = ({
               disabled={
                 isSubmitting ||
                 !String(value).trim() ||
-                (secondaryRequired && !String(secondaryValue).trim())
+                (secondaryRequired && !String(secondaryValue).trim()) ||
+                (tertiaryRequired && !String(tertiaryValue).trim())
               }
             >
               {isSubmitting ? "Menyimpan..." : submitLabel}

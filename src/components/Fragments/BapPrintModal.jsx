@@ -99,6 +99,13 @@ const BapPrintModal = ({
             onChange={(value) => onFieldChange("bapNumber", value)}
           />
 
+          <TextField
+            label="Nama Penerima (Pihak Kedua)"
+            value={form.secondPartyName}
+            onChange={(value) => onFieldChange("secondPartyName", value)}
+            placeholder="Contoh: Prof. Dr. Budi, M.Si."
+          />
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <TextField label="Tanda Tangan 1" value={form.ttd1Role} readOnly />
             <TextField label="Tanda Tangan 2" value={form.ttd2Role} readOnly />

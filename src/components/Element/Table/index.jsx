@@ -28,7 +28,7 @@ const Table = ({
                 {columns.map((column) => (
                   <th
                     key={column.key ?? column.label}
-                    className="px-6 py-4 text-center"
+                    className={`px-6 py-4 ${column.align ? `text-${column.align}` : 'text-center'}`}
                   >
                     {column.label}
                   </th>

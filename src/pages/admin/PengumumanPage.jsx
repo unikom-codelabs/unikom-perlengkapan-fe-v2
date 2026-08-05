@@ -227,8 +227,8 @@ const PengumumanPage = () => {
         description="Kelola pengumuman yang tampil pada aplikasi UNIKOM Perlengkapan."
       />
 
-      <div className="bg-white rounded shadow-sm overflow-hidden mb-6">
-        <div className="bg-[#4773da] text-white px-6 py-4">
+      <div className="bg-white rounded shadow-sm mb-6">
+        <div className="bg-[#4773da] text-white px-6 py-4 rounded-t">
           <h1 className="text-xl font-semibold">Pengumuman</h1>
         </div>
 
@@ -261,7 +261,7 @@ const PengumumanPage = () => {
             </p>
           ) : null}
 
-          <div className="flex flex-col gap-8">
+          <div className="flex flex-col gap-6">
             {isLoading ? (
               <div className="py-10 text-center text-gray-500">
                 Memuat pengumuman...
@@ -285,35 +285,12 @@ const PengumumanPage = () => {
                   : undefined;
 
                 return (
-                  <div key={item.id} className="bg-white">
-                    <div className="bg-[#3e64ca] px-6 py-4 flex justify-between items-center text-white">
-                      <h2 className="font-semibold tracking-wide">
-                        {item.judul}
-                      </h2>
-                      <div className="flex items-center gap-2">
-                        <ActionIconButton
-                          label="Edit"
-                          icon={PencilSquareIcon}
-                          onClick={() => handleOpenEdit(item)}
-                          disabled={isSubmitting || isDeleting}
-                          variant="neutral"
-                          className="bg-white text-[#4773da] hover:text-[#2f57b9] hover:bg-[#f0f5ff] shadow-sm"
-                        />
-                        <ActionIconButton
-                          label="Hapus"
-                          icon={TrashIcon}
-                          onClick={() => handleOpenDelete(item)}
-                          disabled={isSubmitting || isDeleting}
-                          variant="neutral"
-                          className="bg-red-50 text-red-600 hover:text-red-700 hover:bg-red-100"
-                        />
-                      </div>
-                    </div>
-                    <div className="p-6 flex flex-col md:flex-row gap-6 border-x border-b border-gray-200">
-                      <div className="w-full md:w-62.5 shrink-0">
+                  <div key={item.id} className="bg-white border border-gray-200 rounded-xl hover:shadow-md transition-shadow duration-300">
+                    <div className="p-4 md:p-6 flex flex-col md:flex-row gap-6">
+                      <div className="w-full md:w-48 shrink-0">
                         <button
                           type="button"
-                          className="w-full aspect-3/4 border border-gray-200 bg-gray-50 flex items-center justify-center overflow-hidden cursor-zoom-in"
+                          className="w-full aspect-4/3 md:aspect-3/4 rounded-lg border border-gray-100 bg-gray-50 flex items-center justify-center overflow-hidden cursor-zoom-in group"
                           onClick={handleOpenDetailFromCard}
                           title="Lihat gambar"
                         >
@@ -321,7 +298,7 @@ const PengumumanPage = () => {
                             <img
                               src={item.gambarUrl}
                               alt={item.judul}
-                              className="w-full h-full object-cover"
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                             />
                           ) : (
                             <span className="text-gray-400 text-sm">
@@ -331,13 +308,43 @@ const PengumumanPage = () => {
                         </button>
                       </div>
                       <div className="flex flex-col grow">
-                        <h3 className="font-bold text-gray-800 text-[16px] mb-1">
-                          Dibuat Oleh {item.author}
-                        </h3>
-                        <p className="text-sm text-gray-400 mb-4">
-                          {formatDateTime(item.createdAt)}
-                        </p>
-                        <div className="pengumuman-richtext mb-4 text-[15px] leading-relaxed text-gray-600">
+                        <div className="flex justify-between items-start gap-4">
+                          <div>
+                            <h2 
+                              className="text-xl font-bold text-gray-800 mb-2 hover:text-[#4773da] transition-colors cursor-pointer"
+                              onClick={handleOpenDetailFromCard}
+                            >
+                              {item.judul}
+                            </h2>
+                            <div className="flex flex-wrap items-center text-sm text-gray-500 mb-4 gap-2 md:gap-3">
+                              <span className="font-medium text-gray-700">Oleh: {item.author}</span>
+                              <span className="hidden md:inline text-gray-300">&bull;</span>
+                              <span>{formatDateTime(item.createdAt)}</span>
+                            </div>
+                          </div>
+                          
+                          {/* Admin Action Buttons */}
+                          <div className="flex items-center gap-2 shrink-0">
+                            <ActionIconButton
+                              label="Edit"
+                              icon={PencilSquareIcon}
+                              onClick={() => handleOpenEdit(item)}
+                              disabled={isSubmitting || isDeleting}
+                              variant="neutral"
+                              className="bg-gray-50 text-[#4773da] hover:text-[#2f57b9] hover:bg-[#f0f5ff] shadow-sm border border-gray-200"
+                            />
+                            <ActionIconButton
+                              label="Hapus"
+                              icon={TrashIcon}
+                              onClick={() => handleOpenDelete(item)}
+                              disabled={isSubmitting || isDeleting}
+                              variant="neutral"
+                              className="bg-red-50 text-red-600 hover:text-red-700 hover:bg-red-100 border border-red-100"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="pengumuman-richtext mb-6 text-[15px] leading-relaxed text-gray-600">
                           <div
                             style={previewClampStyle}
                             dangerouslySetInnerHTML={{
@@ -345,15 +352,20 @@ const PengumumanPage = () => {
                             }}
                           />
                         </div>
-                        <div className="mt-auto flex justify-end">
-                          {isLongContent ? (
+
+                        <div className="mt-auto flex justify-start">
+                          {isLongContent && (
                             <button
-                              className="text-[#4773da] text-sm hover:underline font-medium"
+                              type="button"
+                              className="inline-flex items-center text-[#4773da] text-sm font-semibold hover:text-[#3e64ca] transition-colors group cursor-pointer bg-transparent border-none p-0"
                               onClick={handleOpenDetailFromCard}
                             >
                               Baca Selengkapnya
+                              <svg className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                              </svg>
                             </button>
-                          ) : null}
+                          )}
                         </div>
                       </div>
                     </div>

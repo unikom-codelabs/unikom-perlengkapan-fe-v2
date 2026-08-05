@@ -335,6 +335,7 @@ const BapTable = ({ rows = [] }) => {
         <View
           key={row.id ?? `${row.namaBarang}-${index}`}
           style={styles.tableRow}
+          wrap={false}
         >
           <View style={[styles.tableCell, { width: widths[0] }]}>
             <Text style={styles.centerText}>
@@ -387,6 +388,7 @@ const ReceiptTable = ({ rows = [] }) => {
         <View
           key={row.id ?? `${row.namaBarang}-${index}`}
           style={styles.tableRow}
+          wrap={false}
         >
           <View style={[styles.receiptCell, { width: widths[0] }]}>
             <Text style={styles.centerText}>

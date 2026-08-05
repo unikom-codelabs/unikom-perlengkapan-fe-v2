@@ -344,6 +344,19 @@ const normalizeAktivasiPengajuan = (item = {}, fallbackKategori = "") => {
         inferKategoriFromPeriodFields(item) ||
         normalizeKategoriValue(fallbackKategori) ||
         (tipe === "rutin" ? "tahunan" : "nonrutin");
+    const rawNamaPeriode = String(
+        pickValue(item.nama_periode, item.namaPeriode, item.nama, item.title, ""),
+    ).trim();
+
+    const tahunAkademik = String(
+        pickValue(item.tahun_akademik, item.tahunAkademik, item.tahun, ""),
+    ).trim();
+
+    const namaPeriode = rawNamaPeriode || [
+        "Periode",
+        kategori === "ujian" ? "Ujian" : kategori === "kelas" ? "Kelas" : "Tahunan",
+        tahunAkademik,
+    ].filter(Boolean).join(" ");
 
     return {
         id,
@@ -359,17 +372,13 @@ const normalizeAktivasiPengajuan = (item = {}, fallbackKategori = "") => {
                 id,
             ),
         ),
-        namaPeriode: String(
-            pickValue(item.nama_periode, item.namaPeriode, item.nama, item.title, ""),
-        ).trim(),
+        namaPeriode,
         aktifMulai,
         aktifSelesai,
         tanggalMulai: aktifMulai,
         tanggalSelesai: aktifSelesai,
         tipe,
-        tahunAkademik: String(
-            pickValue(item.tahun_akademik, item.tahunAkademik, item.tahun, ""),
-        ).trim(),
+        tahunAkademik,
         semester: normalizeSemester(
             pickValue(
                 item.semester,
@@ -418,11 +427,12 @@ const normalizeAktivasiList = (payload, fallbackKategori = "") => {
 const normalizeSummaryBarang = (items = []) =>
     (Array.isArray(items) ? items : []).map((item, index) => ({
         id: pickValue(item.id, item.barang_id, item.id_barang, `barang-${index + 1}`),
-        namaBarang: String(pickValue(item.nama_barang, item.namaBarang, item.nama, "-")).trim(),
+        namaBarang: String(pickValue(item.nama_barang, item.namaBarang, item.nama, item.barang?.nama_barang, item.barang?.nama, "-")).trim(),
+        satuan: String(pickValue(item.satuan, item.unit, item.barang?.satuan, "")).trim(),
         qty: toNullableNumber(pickValue(item.qty, item.jumlah, item.jumlah_diajukan, 0)) ?? 0,
         jumlahDisetujui: toNullableNumber(pickValue(item.jumlah_disetujui, item.jumlahDisetujui, 0)) ?? 0,
         status: pickValue(item.status, 0),
-        vendor: String(pickValue(item.vendor, item.nama_vendor, item.vendor_nama, "-")).trim(),
+        vendor: String(pickValue(item.vendor, item.nama_vendor, item.vendor_nama, item.vendor?.nama, "-")).trim(),
     }));
 
 const normalizeAktivasiSummary = (payload = {}) => {
@@ -656,48 +666,56 @@ export const listPengajuanBelumAktivasi = async () => {
 };
 
 export const listAktivasiPengajuan = async () => {
-    const byKategoriSettled = await Promise.allSettled(
-        AKTIVASI_KATEGORI.map((kategori) => fetchAktivasiByKategori(kategori)),
-    );
+    const response = await apiClient.get("/aktivasi-pengajuan");
+    const allItems = normalizeAktivasiList(response.data);
 
-    const byKategori = byKategoriSettled.flatMap((result) =>
-        result.status === "fulfilled" ? result.value : [],
-    );
-
-    if (byKategori.length > 0) {
-        const kategoriTersedia = new Set(byKategori.map((item) => item.kategori).filter(Boolean));
-        const kategoriBelumAda = AKTIVASI_KATEGORI.filter(
-            (kategori) => !kategoriTersedia.has(kategori),
-        );
-
-        if (kategoriBelumAda.length === 0) {
-            return enrichAktivasiKategoriFromPengajuan(byKategori);
+    // Assign kategori to items that are missing it, based on their fields
+    const enriched = allItems.map((item) => {
+        if (item.kategori) {
+            return item;
         }
 
-        const currentSettled = await Promise.allSettled(
-            kategoriBelumAda.map((kategori) => fetchCurrentAktivasiByKategori(kategori)),
-        );
+        const inferred = inferKategoriFromPeriodFields(item);
+        if (inferred) {
+            return { ...item, kategori: inferred };
+        }
 
-        const fromCurrent = currentSettled.flatMap((result) =>
-            result.status === "fulfilled" ? result.value : [],
-        );
+        // Default rutin items to "tahunan"
+        if (item.tipe === "rutin") {
+            return { ...item, kategori: "tahunan" };
+        }
 
-        return enrichAktivasiKategoriFromPengajuan([...byKategori, ...fromCurrent]);
-    }
+        return item;
+    });
 
-    const currentSettled = await Promise.allSettled(
-        AKTIVASI_KATEGORI.map((kategori) => fetchCurrentAktivasiByKategori(kategori)),
+    return enriched;
+};
+
+export const listAdminAktivasiPengajuan = async (params = {}) => {
+    const cleanParams = Object.fromEntries(
+        Object.entries(params).filter(([, value]) => value !== "" && value !== null && value !== undefined),
     );
-    const fromCurrent = currentSettled.flatMap((result) =>
-        result.status === "fulfilled" ? result.value : [],
-    );
+    const response = await apiClient.get("/admin/aktivasi-pengajuan", {
+        params: Object.keys(cleanParams).length > 0 ? cleanParams : undefined,
+    });
+    const allItems = normalizeAktivasiList(response.data);
 
-    if (fromCurrent.length > 0) {
-        return enrichAktivasiKategoriFromPengajuan(fromCurrent);
-    }
+    return allItems.map((item) => {
+        if (item.kategori) {
+            return item;
+        }
 
-    const response = await apiClient.get("/aktivasi-pengajuan");
-    return enrichAktivasiKategoriFromPengajuan(normalizeAktivasiList(response.data));
+        const inferred = inferKategoriFromPeriodFields(item);
+        if (inferred) {
+            return { ...item, kategori: inferred };
+        }
+
+        if (item.tipe === "rutin") {
+            return { ...item, kategori: "tahunan" };
+        }
+
+        return item;
+    });
 };
 
 export const getAktivasiPengajuanSummary = async (id) => {

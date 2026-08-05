@@ -218,26 +218,26 @@ const getHistoriAktivasiLabel = (histori = {}) => {
   const aktivasi = histori?.aktivasi ?? {};
   const namaPeriode = String(
     aktivasi.nama_periode ??
-      aktivasi.namaPeriode ??
-      aktivasi.nama ??
-      aktivasi.title ??
-      histori.nama_periode ??
-      histori.namaPeriode ??
-      "",
+    aktivasi.namaPeriode ??
+    aktivasi.nama ??
+    aktivasi.title ??
+    histori.nama_periode ??
+    histori.namaPeriode ??
+    "",
   ).trim();
   const tahunAkademik = String(
     aktivasi.tahun_akademik ??
-      aktivasi.tahunAkademik ??
-      histori.tahun_akademik ??
-      histori.tahunAkademik ??
-      "",
+    aktivasi.tahunAkademik ??
+    histori.tahun_akademik ??
+    histori.tahunAkademik ??
+    "",
   ).trim();
   const tipeLabel = formatAktivasiTipe(
     aktivasi.tipe ??
-      aktivasi.tipe_pengajuan ??
-      aktivasi.tipePengajuan ??
-      histori.tipe ??
-      histori.tipe_pengajuan,
+    aktivasi.tipe_pengajuan ??
+    aktivasi.tipePengajuan ??
+    histori.tipe ??
+    histori.tipe_pengajuan,
   );
 
   if (namaPeriode && tahunAkademik && !namaPeriode.includes(tahunAkademik)) {
@@ -254,15 +254,15 @@ const getHistoriAktivasiLabel = (histori = {}) => {
 
   const tanggalMulai = formatDateLabel(
     aktivasi.tanggal_mulai ??
-      aktivasi.tanggalMulai ??
-      aktivasi.aktif_mulai ??
-      aktivasi.mulai,
+    aktivasi.tanggalMulai ??
+    aktivasi.aktif_mulai ??
+    aktivasi.mulai,
   );
   const tanggalSelesai = formatDateLabel(
     aktivasi.tanggal_selesai ??
-      aktivasi.tanggalSelesai ??
-      aktivasi.aktif_selesai ??
-      aktivasi.selesai,
+    aktivasi.tanggalSelesai ??
+    aktivasi.aktif_selesai ??
+    aktivasi.selesai,
   );
 
   if (tanggalMulai || tanggalSelesai) {
@@ -530,16 +530,16 @@ const HistoriPengajuanAdminPage = () => {
 
     const hasRequiredSelections = isUjianTab
       ? selectedBagianType &&
+      (selectedBagianType.toLowerCase() === "dekan"
+        ? selectedBagian
+        : selectedProdi) &&
+      selectedAktivasiUjian
+      : isKelasTab
+        ? selectedBagianType &&
         (selectedBagianType.toLowerCase() === "dekan"
           ? selectedBagian
           : selectedProdi) &&
-        selectedAktivasiUjian
-      : isKelasTab
-        ? selectedBagianType &&
-          (selectedBagianType.toLowerCase() === "dekan"
-            ? selectedBagian
-            : selectedProdi) &&
-          selectedAktivasiKelas
+        selectedAktivasiKelas
         : selectedJabatan && selectedBagian && selectedAktivasi;
 
     if (!hasRequiredSelections) {
@@ -555,7 +555,7 @@ const HistoriPengajuanAdminPage = () => {
         if (
           unitFilter &&
           normalizeUnitValue(item?.user?.unit) !==
-            normalizeUnitValue(unitFilter)
+          normalizeUnitValue(unitFilter)
         ) {
           return false;
         }
@@ -564,7 +564,7 @@ const HistoriPengajuanAdminPage = () => {
       if (
         selectedAktivasiUjian &&
         (getHistoriAktivasiKey(item) || getHistoriAktivasiLabel(item)) !==
-          selectedAktivasiUjian
+        selectedAktivasiUjian
       ) {
         return false;
       }
@@ -581,7 +581,7 @@ const HistoriPengajuanAdminPage = () => {
         if (
           unitFilter &&
           normalizeUnitValue(item?.user?.unit) !==
-            normalizeUnitValue(unitFilter)
+          normalizeUnitValue(unitFilter)
         ) {
           return false;
         }
@@ -590,7 +590,7 @@ const HistoriPengajuanAdminPage = () => {
       if (
         selectedAktivasiKelas &&
         (getHistoriAktivasiKey(item) || getHistoriAktivasiLabel(item)) !==
-          selectedAktivasiKelas
+        selectedAktivasiKelas
       ) {
         return false;
       }
@@ -601,7 +601,7 @@ const HistoriPengajuanAdminPage = () => {
     if (
       selectedBagian &&
       normalizeUnitValue(item?.user?.unit) !==
-        normalizeUnitValue(selectedBagian)
+      normalizeUnitValue(selectedBagian)
     ) {
       return false;
     }
@@ -609,7 +609,7 @@ const HistoriPengajuanAdminPage = () => {
     if (
       selectedAktivasi &&
       (getHistoriAktivasiKey(item) || getHistoriAktivasiLabel(item)) !==
-        selectedAktivasi
+      selectedAktivasi
     ) {
       return false;
     }
@@ -656,57 +656,91 @@ const HistoriPengajuanAdminPage = () => {
       jumlah: item?.jumlah_diajukan ?? 0,
       jumlah_disetujui: item?.jumlah_disetujui ?? 0,
       status: formatStatus(item?.status),
+      bukti_foto: item?.bukti_foto,
+      alasan: item?.alasan,
     }));
   });
 
-  const renderTableSection = (title, rows, emptyMessage) => (
-    <Table
-      title={title}
-      columns={[
-        { key: "no", label: "No" },
-        { key: "nama", label: "Nama Barang" },
-        { key: "satuan", label: "Satuan" },
-        { key: "kategori", label: "Kategori" },
-        { key: "jumlah", label: "Jumlah" },
-        { key: "jumlah_disetujui", label: "Jumlah Disetujui" },
-        { key: "status", label: "Status" },
-      ]}
-      rows={rows}
-      emptyMessage={emptyMessage}
-      renderRow={(row, index) => (
-        <tr key={row.id}>
-          <td className="px-6 py-4">{index + 1}</td>
-          <td className="px-6 py-4">{row.nama}</td>
-          <td className="px-6 py-4">{row.satuan}</td>
-          <td className="px-6 py-4">{row.kategori}</td>
-          <td className="px-6 py-4">{row.jumlah}</td>
-          <td className="px-6 py-4">{row.jumlah_disetujui}</td>
-          <td className="px-6 py-4">
-            <span
-              className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${getStatusBadgeClass(row.status)}`}
-            >
-              {row.status}
-            </span>
-          </td>
-        </tr>
-      )}
-      footer={
-        <div className="flex justify-end mt-4">
-          <div className="flex items-center space-x-1">
-            <button className="p-1.5 border border-gray-300 rounded text-gray-500 bg-white hover:bg-gray-50">
-              <ChevronLeftIcon className="h-4 w-4" />
-            </button>
-            <button className="px-3 py-1.5 border border-[#4773da] bg-[#4773da] text-white rounded text-sm font-medium">
-              1
-            </button>
-            <button className="p-1.5 border border-gray-300 rounded text-gray-500 bg-white hover:bg-gray-50">
-              <ChevronRightIcon className="h-4 w-4" />
-            </button>
+  const renderTableSection = (title, rows, emptyMessage, isLainnya = false) => {
+    const columns = [
+      { key: "no", label: "No", align: "center" },
+      { key: "nama", label: "Nama Barang", align: "left" },
+      { key: "satuan", label: "Satuan", align: "center" },
+      { key: "kategori", label: "Kategori", align: "center" },
+      { key: "jumlah", label: "Jumlah", align: "center" },
+      { key: "jumlah_disetujui", label: "Jumlah Disetujui", align: "center" },
+      { key: "status", label: "Status", align: "center" },
+    ];
+
+    if (isLainnya) {
+      columns.push({ key: "bukti_foto", label: "Bukti Foto", align: "center" });
+      columns.push({ key: "alasan", label: "Alasan", align: "left" });
+    }
+
+    return (
+      <Table
+        title={title}
+        columns={columns}
+        rows={rows}
+        emptyMessage={emptyMessage}
+        renderRow={(row, index) => (
+          <tr key={row.id}>
+            <td className="px-6 py-4 text-center">{index + 1}</td>
+            <td className="px-6 py-4 text-left">{row.nama}</td>
+            <td className="px-6 py-4 text-center">{row.satuan}</td>
+            <td className="px-6 py-4 text-center">{row.kategori}</td>
+            <td className="px-6 py-4 text-center">{row.jumlah}</td>
+            <td className="px-6 py-4 text-center">{row.jumlah_disetujui}</td>
+            <td className="px-6 py-4 text-center">
+              <span
+                className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${getStatusBadgeClass(row.status)}`}
+              >
+                {row.status}
+              </span>
+            </td>
+            {isLainnya && (
+              <>
+                <td className="px-6 py-4 text-center">
+                  {row.bukti_foto ? (
+                    <a
+                      href={`${BASE_STORAGE_URL}${row.bukti_foto}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center justify-center px-3 py-1 text-[11px] font-semibold text-[#4773da] bg-blue-50 border border-[#4773da] rounded-full hover:bg-[#4773da] hover:text-white transition-colors"
+                    >
+                      Lihat Foto
+                    </a>
+                  ) : (
+                    <span className="text-gray-400 text-xs italic">-</span>
+                  )}
+                </td>
+                <td className="px-6 py-4 text-gray-600 max-w-[200px] text-left">
+                  <div className="truncate text-sm" title={row.alasan}>
+                    {row.alasan || "-"}
+                  </div>
+                </td>
+              </>
+            )}
+          </tr>
+        )}
+        footer={
+          <div className="flex justify-end mt-4">
+            <div className="flex items-center space-x-1">
+              <button className="p-1.5 border border-gray-300 rounded text-gray-500 bg-white hover:bg-gray-50">
+                <ChevronLeftIcon className="h-4 w-4" />
+              </button>
+              <button className="px-3 py-1.5 border border-[#4773da] bg-[#4773da] text-white rounded text-sm font-medium">
+                1
+              </button>
+              <button className="p-1.5 border border-gray-300 rounded text-gray-500 bg-white hover:bg-gray-50">
+                <ChevronRightIcon className="h-4 w-4" />
+              </button>
+            </div>
           </div>
-        </div>
-      }
-    />
-  );
+        }
+      />
+    );
+  };
 
   const renderContent = () => (
     <>
@@ -728,7 +762,7 @@ const HistoriPengajuanAdminPage = () => {
             </Dropdown>
           </div>
           {selectedBagianType &&
-          selectedBagianType.toLowerCase() === "dekan" ? (
+            selectedBagianType.toLowerCase() === "dekan" ? (
             <div>
               <label className="block text-sm text-gray-500 mb-2">Bagian</label>
               <Dropdown
@@ -746,7 +780,7 @@ const HistoriPengajuanAdminPage = () => {
             </div>
           ) : null}
           {selectedBagianType &&
-          selectedBagianType.toLowerCase() === "kaprodi" ? (
+            selectedBagianType.toLowerCase() === "kaprodi" ? (
             <div>
               <label className="block text-sm text-gray-500 mb-2">
                 Program Studi
@@ -766,9 +800,9 @@ const HistoriPengajuanAdminPage = () => {
             </div>
           ) : null}
           {selectedBagianType &&
-          (selectedBagianType.toLowerCase() === "dekan"
-            ? selectedBagian
-            : selectedProdi) ? (
+            (selectedBagianType.toLowerCase() === "dekan"
+              ? selectedBagian
+              : selectedProdi) ? (
             <div>
               <label className="block text-sm text-gray-500 mb-2">
                 Aktivasi
@@ -809,7 +843,7 @@ const HistoriPengajuanAdminPage = () => {
             </Dropdown>
           </div>
           {selectedBagianType &&
-          selectedBagianType.toLowerCase() === "dekan" ? (
+            selectedBagianType.toLowerCase() === "dekan" ? (
             <div>
               <label className="block text-sm text-gray-500 mb-2">Bagian</label>
               <Dropdown
@@ -827,7 +861,7 @@ const HistoriPengajuanAdminPage = () => {
             </div>
           ) : null}
           {selectedBagianType &&
-          selectedBagianType.toLowerCase() === "kaprodi" ? (
+            selectedBagianType.toLowerCase() === "kaprodi" ? (
             <div>
               <label className="block text-sm text-gray-500 mb-2">
                 Program Studi
@@ -847,9 +881,9 @@ const HistoriPengajuanAdminPage = () => {
             </div>
           ) : null}
           {selectedBagianType &&
-          (selectedBagianType.toLowerCase() === "dekan"
-            ? selectedBagian
-            : selectedProdi) ? (
+            (selectedBagianType.toLowerCase() === "dekan"
+              ? selectedBagian
+              : selectedProdi) ? (
             <div>
               <label className="block text-sm text-gray-500 mb-2">
                 Aktivasi
@@ -884,9 +918,9 @@ const HistoriPengajuanAdminPage = () => {
               <option value="">-- Pilih Jabatan --</option>
               {jabatanOptions.map((option) => (
                 <option
-                  key={option.unit_id ?? option.id ?? option.nama}
+                  key={option.unit_id ?? option.id ?? option.id_unit_type ?? option.unit_type_id ?? option.nama}
                   value={
-                    option.unit_id ?? option.id ?? option.id_unit_type ?? ""
+                    option.unit_id ?? option.id ?? option.id_unit_type ?? option.unit_type_id ?? ""
                   }
                 >
                   {option.name ?? option.nama}
@@ -1019,6 +1053,7 @@ const HistoriPengajuanAdminPage = () => {
               : selectedJabatan && selectedBagian && selectedAktivasi
                 ? "Data tidak ditemukan"
                 : "Pilih jabatan, bagian, dan aktivasi untuk melihat data",
+        true
       )}
     </>
   );
@@ -1041,11 +1076,10 @@ const HistoriPengajuanAdminPage = () => {
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`pb-3 text-[15px] font-medium transition-colors relative ${
-                  activeTab === tab
+                className={`pb-3 text-[15px] font-medium transition-colors relative ${activeTab === tab
                     ? "text-[#4773da]"
                     : "text-gray-400 hover:text-gray-600"
-                }`}
+                  }`}
               >
                 {tab}
                 {activeTab === tab && (

@@ -244,6 +244,10 @@ const VendorAtkDocument = ({ vendor = {}, generatedAt = new Date() }) => {
             <Text style={styles.summaryValue}>{cleanText(vendor?.kontak)}</Text>
           </View>
           <View style={styles.summaryBox}>
+            <Text style={styles.summaryLabel}>Alamat</Text>
+            <Text style={styles.summaryValue}>{cleanText(vendor?.alamat)}</Text>
+          </View>
+          <View style={styles.summaryBox}>
             <Text style={styles.summaryLabel}>Jumlah Barang</Text>
             <Text style={styles.summaryValue}>{rows.length} item</Text>
           </View>
