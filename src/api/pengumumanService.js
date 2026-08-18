@@ -1,4 +1,5 @@
 import apiClient from "./ApiClient";
+import { sanitizeRichText } from "../utils/sanitizeHtml";
 
 let API_ORIGIN = "";
 try {
@@ -204,10 +205,11 @@ const normalizePengumuman = (item = {}) => ({
 
 const buildPengumumanFormData = (payload = {}) => {
     const formData = new FormData();
-    const judul = String(payload.judul ?? "").trim();
-    const teks = String(
+    const judul = String(payload.judul ?? "").replace(/<[^>]*>/g, "").trim();
+    const rawTeks = String(
         pickValue(payload.teks, payload.deskripsi, payload.content, ""),
     ).trim();
+    const teks = sanitizeRichText(rawTeks);
     const gambar = pickValue(payload.gambar, payload.image, null);
     const isFileLike =
         gambar &&

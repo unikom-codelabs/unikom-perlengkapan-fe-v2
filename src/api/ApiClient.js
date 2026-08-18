@@ -14,7 +14,7 @@ apiClient.interceptors.request.use(
     (config) => {
         const token = loadToken();
 
-        // Cek expiry sebelum mengirim request — hindari request sia-sia.
+        
         if (token && isTokenExpired(token)) {
             clearToken();
             if (window.location.pathname !== "/login") {

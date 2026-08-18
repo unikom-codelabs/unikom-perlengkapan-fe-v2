@@ -66,7 +66,7 @@ const FileUploadDropzone = ({
   onFileSelect,
   onFileRemove,
   accept = "*",
-  maxSize = 0, // in bytes
+  maxSize = 0, 
   label = "Surat Permohonan",
   description = "Drag your file(s) atau browse",
   subDescription = "jpg, png, svg, atau pdf",

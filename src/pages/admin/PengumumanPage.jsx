@@ -233,7 +233,7 @@ const PengumumanPage = () => {
         </div>
 
         <div className="p-6">
-          {/* Toolbar */}
+          {}
           <div className="flex flex-col sm:flex-row justify-end items-center gap-4 mb-6">
             <div className="relative w-full sm:w-80">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -323,7 +323,7 @@ const PengumumanPage = () => {
                             </div>
                           </div>
                           
-                          {/* Admin Action Buttons */}
+                          {}
                           <div className="flex items-center gap-2 shrink-0">
                             <ActionIconButton
                               label="Edit"
