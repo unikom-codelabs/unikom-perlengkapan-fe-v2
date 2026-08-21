@@ -335,6 +335,13 @@ const HistoriPengajuanAdminPage = () => {
           return map;
         }
 
+        if (
+          selectedBagian &&
+          normalizeUnitValue(item?.user?.unit) !== normalizeUnitValue(selectedBagian)
+        ) {
+          return map;
+        }
+
         const label = getHistoriAktivasiLabel(item);
         const value = getHistoriAktivasiKey(item) || label;
 
@@ -361,6 +368,19 @@ const HistoriPengajuanAdminPage = () => {
       .reduce((map, item) => {
         if (normalizeHistoriJenis(item) !== "ujian") {
           return map;
+        }
+
+        if (selectedBagianType) {
+          const unitFilter =
+            selectedBagianType.toLowerCase() === "dekan"
+              ? selectedBagian
+              : selectedProdi;
+          if (
+            unitFilter &&
+            normalizeUnitValue(item?.user?.unit) !== normalizeUnitValue(unitFilter)
+          ) {
+            return map;
+          }
         }
 
         const label = getHistoriAktivasiLabel(item);
@@ -391,6 +411,19 @@ const HistoriPengajuanAdminPage = () => {
       .reduce((map, item) => {
         if (normalizeHistoriJenis(item) !== "kelas") {
           return map;
+        }
+
+        if (selectedBagianType) {
+          const unitFilter =
+            selectedBagianType.toLowerCase() === "dekan"
+              ? selectedBagian
+              : selectedProdi;
+          if (
+            unitFilter &&
+            normalizeUnitValue(item?.user?.unit) !== normalizeUnitValue(unitFilter)
+          ) {
+            return map;
+          }
         }
 
         const label = getHistoriAktivasiLabel(item);
