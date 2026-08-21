@@ -3,6 +3,7 @@ import PageHelmet from "../../components/Seo/PageHelmet";
 import { listPengajuanSaya } from "../../api/pengajuanService";
 import { useAuth } from "../../context/useAuth";
 import Table from "../../components/Element/Table";
+import Pagination from "../../components/Element/Pagination";
 import { STORAGE_BASE_URL as BASE_STORAGE_URL } from "../../config/env";
 import { XMarkIcon } from "@heroicons/react/24/outline";
 
@@ -107,6 +108,9 @@ const DaftarPengajuanUserPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [pageError, setPageError] = useState("");
   const [previewImage, setPreviewImage] = useState(null);
+  const [mainPage, setMainPage] = useState(1);
+  const [lainnyaPage, setLainnyaPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
 
   const normalizedRole = normalizeUserRole(currentUser);
   const normalizedJabatan = normalizeJabatanName(currentUser);
@@ -189,6 +193,29 @@ const DaftarPengajuanUserPage = () => {
     [rowsByTab],
   );
 
+  const mainTotalPages = Math.ceil(mainRows.length / ITEMS_PER_PAGE);
+  const lainnyaTotalPages = Math.ceil(lainnyaRows.length / ITEMS_PER_PAGE);
+
+  // Jumlah baris berubah tiap ganti tab, jadi halaman aktif dijepit ke rentang
+  // yang masih ada supaya tabel tidak tampil kosong.
+  const mainActualPage =
+    mainTotalPages === 0 ? 1 : Math.min(mainPage, mainTotalPages);
+  const lainnyaActualPage =
+    lainnyaTotalPages === 0 ? 1 : Math.min(lainnyaPage, lainnyaTotalPages);
+
+  const mainOffset = (mainActualPage - 1) * ITEMS_PER_PAGE;
+  const lainnyaOffset = (lainnyaActualPage - 1) * ITEMS_PER_PAGE;
+
+  const paginatedMainRows = useMemo(
+    () => mainRows.slice(mainOffset, mainOffset + ITEMS_PER_PAGE),
+    [mainRows, mainOffset],
+  );
+
+  const paginatedLainnyaRows = useMemo(
+    () => lainnyaRows.slice(lainnyaOffset, lainnyaOffset + ITEMS_PER_PAGE),
+    [lainnyaRows, lainnyaOffset],
+  );
+
   return (
     <>
       <PageHelmet
@@ -206,7 +233,11 @@ const DaftarPengajuanUserPage = () => {
             {availableTabs.map((tab) => (
               <button
                 key={tab.value}
-                onClick={() => setActiveTab(tab.value)}
+                onClick={() => {
+                  setActiveTab(tab.value);
+                  setMainPage(1);
+                  setLainnyaPage(1);
+                }}
                 className={`pb-3 text-[15px] font-medium transition-colors relative ${
                   activeTab === tab.value
                     ? "text-[#4773da]"
@@ -244,10 +275,12 @@ const DaftarPengajuanUserPage = () => {
                   { key: "jumlahDisetujui", label: "Jumlah Disetujui", align: "center" },
                   { key: "status", label: "Status", align: "center" },
                 ]}
-                rows={mainRows}
+                rows={paginatedMainRows}
                 renderRow={(item, index) => (
                   <tr key={item.id}>
-                    <td className="px-6 py-4 text-gray-500 text-center">{index + 1}</td>
+                    <td className="px-6 py-4 text-gray-500 text-center">
+                      {mainOffset + index + 1}
+                    </td>
                     <td className="px-6 py-4 text-gray-600 text-left">
                       {item.namaBarang}
                     </td>
@@ -270,6 +303,12 @@ const DaftarPengajuanUserPage = () => {
                 )}
               />
 
+              <Pagination
+                currentPage={mainActualPage}
+                totalPages={mainTotalPages}
+                onPageChange={setMainPage}
+              />
+
               <div>
                 <h2 className="text-[17px] font-bold text-gray-700 mb-4">
                   Pengajuan Lainnya
@@ -287,10 +326,12 @@ const DaftarPengajuanUserPage = () => {
                     { key: "buktiFoto", label: "Bukti Foto", align: "center" },
                     { key: "alasan", label: "Alasan", align: "left" },
                   ]}
-                  rows={lainnyaRows}
+                  rows={paginatedLainnyaRows}
                   renderRow={(item, index) => (
                     <tr key={item.id}>
-                      <td className="px-6 py-4 text-gray-500 text-center">{index + 1}</td>
+                      <td className="px-6 py-4 text-gray-500 text-center">
+                        {lainnyaOffset + index + 1}
+                      </td>
                       <td className="px-6 py-4 text-gray-600 text-left">
                         {item.namaBarang}
                       </td>
@@ -340,6 +381,12 @@ const DaftarPengajuanUserPage = () => {
                       </td>
                     </tr>
                   )}
+                />
+
+                <Pagination
+                  currentPage={lainnyaActualPage}
+                  totalPages={lainnyaTotalPages}
+                  onPageChange={setLainnyaPage}
                 />
               </div>
             </>
