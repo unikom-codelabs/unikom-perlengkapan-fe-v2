@@ -1,4 +1,5 @@
 import apiClient from "./ApiClient";
+import { cachedGet } from "./apiCache";
 
 const normalizeOption = (item, index = 0) => {
   if (item && typeof item === "object") {
@@ -72,8 +73,9 @@ const extractDropdownData = (payload) => {
 };
 
 export const getDropdown = async () => {
-  const response = await apiClient.get("/dropdown");
-  const data = extractDropdownData(response.data);
+  return cachedGet("/dropdown", async () => {
+    const response = await apiClient.get("/dropdown");
+    const data = extractDropdownData(response.data);
 
   if (Array.isArray(data)) {
     return {
@@ -101,6 +103,7 @@ export const getDropdown = async () => {
     success: Boolean(response.data?.success ?? true),
     message: String(response.data?.message ?? "").trim(),
   };
+  }, { ttl: 10 * 60 * 1000 }); // 10 minutes cache
 };
 
 export const listDropdownBagian = async () => {

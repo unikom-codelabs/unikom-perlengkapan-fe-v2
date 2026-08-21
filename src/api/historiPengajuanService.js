@@ -1,11 +1,6 @@
-import apiClient from "../api/ApiClient"; // sesuaikan path import
+import apiClient from "../api/ApiClient"; 
 
-/**
- * Mengambil histori pengajuan pengguna dari API.
- * @param {Object} params - Query parameter opsional
- * @param {string|number} [params.tahun] - Filter berdasarkan tahun (contoh: "2025")
- * @returns {Promise<Array>} Array data histori pengajuan
- */
+
 export const getHistoriPengajuan = async (params = {}) => {
   const cleanParams = Object.fromEntries(
     Object.entries(params).filter(([, v]) => v !== "" && v !== null && v !== undefined)
@@ -15,11 +10,7 @@ export const getHistoriPengajuan = async (params = {}) => {
   return response.data?.data ?? [];
 };
 
-/**
- * Mengambil histori pengajuan untuk admin dari API.
- * @param {Object} params - Query parameter opsional
- * @returns {Promise<Array>} Array data histori pengajuan
- */
+
 export const getHistoriPengajuanAdmin = async (params = {}) => {
   const cleanParams = Object.fromEntries(
     Object.entries(params).filter(([, v]) => v !== "" && v !== null && v !== undefined)

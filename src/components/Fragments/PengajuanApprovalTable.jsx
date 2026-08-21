@@ -178,6 +178,7 @@ const PengajuanApprovalTable = ({
                   <input
                     type="number"
                     min="0"
+                    max="2147483647"
                     value={row.jumlahDisetujui}
                     onKeyDown={(e) => {
                       if (['.', 'e', 'E', '+', '-'].includes(e.key)) e.preventDefault();

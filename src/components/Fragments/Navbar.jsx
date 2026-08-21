@@ -40,7 +40,10 @@ const Navbar = () => {
         </Link>
         {pathnames.length > 0 &&
           pathnames.map((value, index) => {
-            const to = `/${pathnames.slice(0, index + 1).join("/")}`;
+            let to = `/${pathnames.slice(0, index + 1).join("/")}`;
+            if (value === "pengajuan-rutin") {
+              to = "/daftar-pengajuan";
+            }
             const isLast = index === pathnames.length - 1;
             return (
               <span key={to} className="flex gap-1">

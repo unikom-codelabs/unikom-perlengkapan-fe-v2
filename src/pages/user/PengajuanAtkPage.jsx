@@ -50,6 +50,8 @@ const getApiErrorMessage = (error, fallbackMessage) => {
 const CELL_PLACEHOLDER_CLASS =
   "px-3 py-2 border border-gray-200 text-center text-sm text-gray-500";
 
+const MAX_JUMLAH = 2147483647;
+
 const KATEGORI_LABELS = {
   tahunan: "Tahunan",
   ujian: "Ujian",
@@ -160,6 +162,7 @@ const PengajuanAtkPage = () => {
   const [quantities, setQuantities] = useState({});
   const [currentPage, setCurrentPage] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingLainnyaId, setEditingLainnyaId] = useState(null);
   const [shouldRenderModal, setShouldRenderModal] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
@@ -425,7 +428,7 @@ const PengajuanAtkPage = () => {
 
   const updateQuantity = (itemId, delta) => {
     setQuantities((prev) => {
-      const nextValue = Math.max(0, (prev[itemId] || 0) + delta);
+      const nextValue = Math.min(MAX_JUMLAH, Math.max(0, (prev[itemId] || 0) + delta));
       return {
         ...prev,
         [itemId]: nextValue,
@@ -440,7 +443,7 @@ const PengajuanAtkPage = () => {
     }
     const num = parseInt(value, 10);
     if (!isNaN(num) && num >= 0) {
-      setQuantities((prev) => ({ ...prev, [itemId]: num }));
+      setQuantities((prev) => ({ ...prev, [itemId]: Math.min(num, MAX_JUMLAH) }));
     }
   };
 
@@ -506,15 +509,41 @@ const PengajuanAtkPage = () => {
     setStep(1);
   };
 
+  const handleOpenAddLainnya = () => {
+    setEditingLainnyaId(null);
+    setFormLainnya({
+      nama: "",
+      jumlah: "",
+      kategori: "habis_pakai",
+      satuan: "",
+    });
+    setModalError("");
+    setIsModalOpen(true);
+  };
+
+  const handleEditLainnya = (item) => {
+    setEditingLainnyaId(item.id);
+    setFormLainnya({
+      nama: item.nama,
+      jumlah: item.jumlah,
+      kategori: item.kategori,
+      satuan: item.satuan,
+    });
+    setModalError("");
+    setIsModalOpen(true);
+  };
+
+  const handleDeleteLainnya = (id) => {
+    setPengajuanLainnya((prev) => prev.filter((item) => item.id !== id));
+    setLainnyaDetails((prev) => {
+      const newDetails = { ...prev };
+      delete newDetails[id];
+      return newDetails;
+    });
+  };
+
   useEffect(() => {
     if (isModalOpen) {
-      setFormLainnya({
-        nama: "",
-        jumlah: "",
-        kategori: "habis_pakai",
-        satuan: "",
-      });
-      setModalError("");
       setShouldRenderModal(true);
       const timer = setTimeout(() => setShowModal(true), 10);
       return () => clearTimeout(timer);
@@ -555,6 +584,9 @@ const PengajuanAtkPage = () => {
     }
 
     setIsModalOpen(false);
+    setTimeout(() => {
+      setEditingLainnyaId(null);
+    }, 150);
   };
 
   const handleCloseActivationModal = () => {
@@ -583,7 +615,7 @@ const PengajuanAtkPage = () => {
 
     const payload = {
       nama: formLainnya.nama.trim(),
-      jumlah: Number(formLainnya.jumlah),
+      jumlah: parseInt(formLainnya.jumlah, 10),
       kategori: formLainnya.kategori,
       satuan: formLainnya.satuan.trim(),
     };
@@ -600,14 +632,32 @@ const PengajuanAtkPage = () => {
       return;
     }
 
-    const newItem = {
-      id: `lainnya-${Date.now()}`,
-      nama: payload.nama,
-      jumlah: payload.jumlah,
-      kategori: payload.kategori,
-      satuan: payload.satuan,
-    };
-    setPengajuanLainnya((prev) => [newItem, ...prev]);
+    if (payload.jumlah > MAX_JUMLAH) {
+      setModalError(`Jumlah barang maksimal ${MAX_JUMLAH.toLocaleString("id-ID")}.`);
+      setIsSubmittingLainnya(false);
+      return;
+    }
+
+    if (editingLainnyaId) {
+      setPengajuanLainnya((prev) =>
+        prev.map((item) =>
+          item.id === editingLainnyaId
+            ? { ...item, nama: payload.nama, jumlah: payload.jumlah, kategori: payload.kategori, satuan: payload.satuan }
+            : item
+        )
+      );
+      setEditingLainnyaId(null);
+    } else {
+      const newItem = {
+        id: `lainnya-${Date.now()}`,
+        nama: payload.nama,
+        jumlah: payload.jumlah,
+        kategori: payload.kategori,
+        satuan: payload.satuan,
+      };
+      setPengajuanLainnya((prev) => [newItem, ...prev]);
+    }
+    
     setIsModalOpen(false);
     setIsSubmittingLainnya(false);
   };
@@ -652,6 +702,15 @@ const PengajuanAtkPage = () => {
 
     if (!uploadedFile) {
       setSubmitError("Surat pengajuan wajib diunggah.");
+      return;
+    }
+
+    const missingBukti = pengajuanLainnya.find(
+      (item) => item.kategori === "tidak_habis_pakai" && (!lainnyaDetails[item.id] || !lainnyaDetails[item.id].bukti_foto)
+    );
+
+    if (missingBukti) {
+      setSubmitError(`Bukti foto wajib diunggah untuk barang tidak habis pakai (${missingBukti.nama}).`);
       return;
     }
 
@@ -759,10 +818,12 @@ const PengajuanAtkPage = () => {
             selectedFile={uploadedFile}
             onFileSelect={handleFileSelect}
             onFileRemove={handleFileRemove}
-            accept=".jpg,.jpeg,.png,.svg,.pdf"
+            accept=".pdf,application/pdf"
+            maxSize={2 * 1024 * 1024}
+            allowedTypes={["application/pdf"]}
             label="Surat Permohonan"
             description="Drag your file(s) or browse"
-            subDescription="jpg, png, svg, atau pdf"
+            subDescription="Hanya file PDF (Maks. 2MB)"
             disabled={isActivationBlocked}
           />
 
@@ -870,9 +931,13 @@ const PengajuanAtkPage = () => {
                           <input
                             type="number"
                             min="0"
+                            max={MAX_JUMLAH}
                             value={quantities[item.id] === undefined ? 0 : quantities[item.id]}
                             onChange={(e) => handleQuantityChange(item.id, e.target.value)}
                             onBlur={() => handleQuantityBlur(item.id)}
+                            onKeyDown={(e) => {
+                              if (['.', 'e', 'E', '+', '-'].includes(e.key)) e.preventDefault();
+                            }}
                             disabled={isActivationBlocked}
                             className="h-6 w-12 px-1 rounded bg-white border border-gray-300 text-center text-xs text-gray-700 focus:outline-none focus:ring-1 focus:ring-[#4773da] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                           />
@@ -950,7 +1015,7 @@ const PengajuanAtkPage = () => {
                   </h2>
                   <button
                     type="button"
-                    onClick={() => setIsModalOpen(true)}
+                    onClick={handleOpenAddLainnya}
                     disabled={isActivationBlocked}
                     className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
                       isActivationBlocked
@@ -969,6 +1034,7 @@ const PengajuanAtkPage = () => {
                     { key: "satuan", label: "Satuan", align: "center" },
                     { key: "kategori", label: "Kategori", align: "center" },
                     { key: "jumlah", label: "Jumlah", align: "center" },
+                    { key: "aksi", label: "Aksi", align: "center" },
                   ]}
                   rows={pengajuanLainnya}
                   emptyMessage={lainnyaTableEmptyMessage}
@@ -985,6 +1051,26 @@ const PengajuanAtkPage = () => {
                       </td>
                       <td className="px-6 py-4 text-gray-600 text-center">
                         {item.jumlah}
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <div className="flex items-center justify-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handleEditLainnya(item)}
+                            className="text-blue-500 hover:text-blue-700"
+                            title="Edit"
+                          >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteLainnya(item.id)}
+                            className="text-red-500 hover:text-red-700"
+                            title="Hapus"
+                          >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   )}
@@ -1061,7 +1147,8 @@ const PengajuanAtkPage = () => {
                         <th className="px-4 py-3 text-center border-r border-gray-200 w-32">Kategori</th>
                         <th className="px-4 py-3 text-center border-r border-gray-200 w-24">Jumlah</th>
                         <th className="px-4 py-3 text-center border-r border-gray-200 w-40">Bukti Foto</th>
-                        <th className="px-4 py-3 text-left w-64">Alasan</th>
+                        <th className="px-4 py-3 text-left border-r border-gray-200 w-64">Alasan</th>
+                        <th className="px-4 py-3 text-center w-16">Aksi</th>
                       </tr>
                     </thead>
                   )}
@@ -1133,12 +1220,29 @@ const PengajuanAtkPage = () => {
                             <div>
                               <input
                                 type="file"
-                                accept="image/*,.pdf"
+                                accept=".jpg,.jpeg,.png,image/jpeg,image/png"
                                 id={`file-lainnya-${item.id}`}
                                 className="hidden"
                                 onChange={(e) => {
                                   if (e.target.files && e.target.files[0]) {
-                                    handleLainnyaDetailChange(item.id, "bukti_foto", e.target.files[0]);
+                                    const file = e.target.files[0];
+                                    const allowedMimes = ["image/jpeg", "image/png", "image/jpg"];
+                                    const maxFileSize = 2 * 1024 * 1024;
+
+                                    if (!allowedMimes.includes(file.type)) {
+                                      setSubmitError(`Bukti foto "${item.nama}" harus berformat JPG, JPEG, atau PNG.`);
+                                      e.target.value = "";
+                                      return;
+                                    }
+
+                                    if (file.size > maxFileSize) {
+                                      setSubmitError(`Ukuran bukti foto "${item.nama}" terlalu besar. Maksimal 2MB.`);
+                                      e.target.value = "";
+                                      return;
+                                    }
+
+                                    setSubmitError("");
+                                    handleLainnyaDetailChange(item.id, "bukti_foto", file);
                                   }
                                 }}
                               />
@@ -1151,7 +1255,7 @@ const PengajuanAtkPage = () => {
                             </div>
                           )}
                         </td>
-                        <td className="px-4 py-3">
+                        <td className="px-4 py-3 border-r border-gray-200">
                           <textarea
                             rows={2}
                             placeholder="Ketikan Alasan"
@@ -1159,6 +1263,16 @@ const PengajuanAtkPage = () => {
                             onChange={(e) => handleLainnyaDetailChange(item.id, "alasan", e.target.value)}
                             className="w-full px-3 py-2 border border-gray-300 rounded-md text-[13px] text-gray-600 focus:outline-none focus:ring-1 focus:ring-[#4773da] focus:border-[#4773da]"
                           ></textarea>
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteLainnya(item.id)}
+                            className="text-red-500 hover:text-red-700 flex justify-center w-full"
+                            title="Hapus"
+                          >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                          </button>
                         </td>
                       </tr>
                     );
@@ -1272,6 +1386,7 @@ const PengajuanAtkPage = () => {
                   <input
                     type="number"
                     min="1"
+                    max={MAX_JUMLAH}
                     placeholder="Contoh: 2"
                     value={formLainnya.jumlah}
                     disabled={isActivationBlocked}
@@ -1282,6 +1397,10 @@ const PengajuanAtkPage = () => {
                       let val = event.target.value;
                       if (val !== "") {
                         val = val.replace(/^0+/, "") || "0";
+                        const num = parseInt(val, 10);
+                        if (!isNaN(num) && num > MAX_JUMLAH) {
+                          val = String(MAX_JUMLAH);
+                        }
                       }
                       setFormLainnya((prev) => ({
                         ...prev,

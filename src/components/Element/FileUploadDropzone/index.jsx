@@ -66,7 +66,8 @@ const FileUploadDropzone = ({
   onFileSelect,
   onFileRemove,
   accept = "*",
-  maxSize = 0, // in bytes
+  maxSize = 0, 
+  allowedTypes = [],
   label = "Surat Permohonan",
   description = "Drag your file(s) atau browse",
   subDescription = "jpg, png, svg, atau pdf",
@@ -112,8 +113,26 @@ const FileUploadDropzone = ({
     setIsDragging(false);
   };
 
+  const getExtensionLabel = (mimeType) => {
+    const map = {
+      "application/pdf": "PDF",
+      "image/jpeg": "JPG/JPEG",
+      "image/jpg": "JPG",
+      "image/png": "PNG",
+      "image/webp": "WEBP",
+      "image/svg+xml": "SVG",
+    };
+    return map[mimeType] || mimeType;
+  };
+
   const validateAndProcessFile = (file) => {
     if (!file) return;
+
+    if (allowedTypes.length > 0 && !allowedTypes.includes(file.type)) {
+      const allowed = allowedTypes.map(getExtensionLabel).join(", ");
+      onFileSelect(null, `Tipe file tidak diizinkan. File harus berformat: ${allowed}.`);
+      return;
+    }
 
     if (maxSize > 0 && file.size > maxSize) {
       onFileSelect(null, `Ukuran file terlalu besar. Maksimal ${formatSize(maxSize)}.`);

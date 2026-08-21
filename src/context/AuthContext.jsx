@@ -107,7 +107,7 @@ const enrichUserJabatan = (user, jabatanList = []) => {
 export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(() => {
     const stored = loadToken();
-    // Buang token yang sudah expired saat pertama kali load.
+    
     if (stored && isTokenExpired(stored)) {
       clearToken();
       return null;
@@ -131,7 +131,7 @@ export const AuthProvider = ({ children }) => {
         return;
       }
 
-      // Jangan simpan token yang sudah expired.
+      
       if (isTokenExpired(nextToken)) {
         clearSession();
         setAuthLoading(false);
@@ -155,7 +155,7 @@ export const AuthProvider = ({ children }) => {
         return null;
       }
 
-      // Cek expiry sebelum mengirim request ke API.
+      
       if (isTokenExpired(activeToken)) {
         clearSession();
         setAuthLoading(false);
@@ -194,7 +194,7 @@ export const AuthProvider = ({ children }) => {
     try {
       await logout();
     } catch {
-      // Ignore API logout failure and clear local session anyway.
+      
     } finally {
       clearSession();
       setAuthLoading(false);

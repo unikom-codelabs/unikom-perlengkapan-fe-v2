@@ -366,7 +366,7 @@ const ModalAktivasiPengajuan = ({
                 <label className="text-gray-600 font-medium text-sm">
                   Aktif Selesai
                 </label>
-                {/* Legacy min prop: min={formValues.aktif_mulai || undefined} */}
+                {}
                 <input
                   type="date"
                   name="aktif_selesai"

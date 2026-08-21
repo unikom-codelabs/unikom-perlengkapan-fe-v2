@@ -12,12 +12,24 @@ const ALLOWED_TAGS = new Set([
   "LI",
   "A",
   "BLOCKQUOTE",
+  "H1",
+  "H2",
+  "H3",
+  "H4",
+  "H5",
+  "H6",
+  "IMG",
+  "SPAN",
+  "SUB",
+  "SUP",
+  "PRE",
+  "CODE",
 ]);
 
 const DANGEROUS_SELECTORS =
-  "script,style,iframe,object,embed,link,meta,base,form";
+  "script,style,iframe,object,embed,link,meta,base,form,input,button,select,textarea,svg,math";
 
-const SAFE_HREF_PATTERN = /^(https?:|mailto:|tel:|#|\/)/i;
+const SAFE_HREF_PATTERN = /^(https?:|mailto:|tel:|#|\/|data:image\/)/i;
 
 const decodeHtmlEntities = (text = "") => {
   const parser = new DOMParser();
@@ -30,6 +42,15 @@ export const stripHtml = (htmlText = "") =>
     .replace(/\u00a0/g, " ")
     .replace(/\s+/g, " ")
     .trim();
+
+// Attributes allowed per tag.  Only these survive sanitisation.
+const ALLOWED_ATTRS = {
+  A:   new Set(["href", "title"]),
+  IMG: new Set(["src", "alt", "width", "height"]),
+};
+
+
+const URL_ATTRS = new Set(["href", "src"]);
 
 export const sanitizeRichText = (htmlText = "") => {
   const parser = new DOMParser();
@@ -45,8 +66,12 @@ export const sanitizeRichText = (htmlText = "") => {
       return;
     }
 
+    const allowedSet = ALLOWED_ATTRS[tagName];
+
     [...element.attributes].forEach((attribute) => {
       const attrName = attribute.name.toLowerCase();
+
+      
       if (
         attrName.startsWith("on") ||
         attrName === "style" ||
@@ -57,18 +82,22 @@ export const sanitizeRichText = (htmlText = "") => {
         return;
       }
 
-      if (tagName === "A" && attrName === "href") {
-        const value = attribute.value.trim();
-        if (!SAFE_HREF_PATTERN.test(value)) {
-          element.removeAttribute("href");
-        }
+      
+      if (!allowedSet || !allowedSet.has(attrName)) {
+        element.removeAttribute(attribute.name);
         return;
       }
 
-      if (!(tagName === "A" && attrName === "href")) {
-        element.removeAttribute(attribute.name);
+      
+      if (URL_ATTRS.has(attrName)) {
+        const value = attribute.value.trim();
+        if (!SAFE_HREF_PATTERN.test(value)) {
+          element.removeAttribute(attribute.name);
+        }
       }
     });
+
+    
     if (tagName === "A") {
       element.setAttribute("target", "_blank");
       element.setAttribute("rel", "noopener noreferrer");

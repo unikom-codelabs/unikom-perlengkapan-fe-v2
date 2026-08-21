@@ -1,4 +1,6 @@
 import apiClient from "./ApiClient";
+import { cachedGet, invalidateCache } from "./apiCache";
+import { sanitizeRichText } from "../utils/sanitizeHtml";
 
 let API_ORIGIN = "";
 try {
@@ -204,10 +206,11 @@ const normalizePengumuman = (item = {}) => ({
 
 const buildPengumumanFormData = (payload = {}) => {
     const formData = new FormData();
-    const judul = String(payload.judul ?? "").trim();
-    const teks = String(
+    const judul = String(payload.judul ?? "").replace(/<[^>]*>/g, "").trim();
+    const rawTeks = String(
         pickValue(payload.teks, payload.deskripsi, payload.content, ""),
     ).trim();
+    const teks = sanitizeRichText(rawTeks);
     const gambar = pickValue(payload.gambar, payload.image, null);
     const isFileLike =
         gambar &&
@@ -226,8 +229,10 @@ const buildPengumumanFormData = (payload = {}) => {
 };
 
 export const listPengumuman = async () => {
-    const response = await apiClient.get("/pengumuman");
-    return extractListData(response.data).map(normalizePengumuman);
+    return cachedGet("/pengumuman", async () => {
+        const response = await apiClient.get("/pengumuman");
+        return extractListData(response.data).map(normalizePengumuman);
+    });
 };
 
 export const getPengumumanDetail = async (id) => {
@@ -245,6 +250,7 @@ export const createPengumuman = async (payload) => {
             },
         },
     );
+    invalidateCache("/pengumuman");
     return normalizePengumuman(extractItemData(response.data));
 };
 
@@ -260,6 +266,7 @@ export const updatePengumuman = async (id, payload) => {
             },
         );
 
+        invalidateCache("/pengumuman");
         return normalizePengumuman(extractItemData(response.data));
     } catch (error) {
         if (error?.response?.status !== 405) {
@@ -276,11 +283,13 @@ export const updatePengumuman = async (id, payload) => {
             },
         );
 
+        invalidateCache("/pengumuman");
         return normalizePengumuman(extractItemData(response.data));
     }
 };
 
 export const deletePengumuman = async (id) => {
     const response = await apiClient.delete(`/pengumuman/${id}`);
+    invalidateCache("/pengumuman");
     return response.data;
 };

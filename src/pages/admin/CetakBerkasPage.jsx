@@ -1,4 +1,4 @@
-/* eslint-disable react-hooks/set-state-in-effect */
+
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import PageHelmet from "../../components/Seo/PageHelmet";
 import {
