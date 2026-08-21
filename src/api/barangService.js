@@ -1,4 +1,5 @@
 import apiClient from "./ApiClient";
+import { cachedGet, invalidateCache } from "./apiCache";
 
 const pickValue = (...values) => values.find((value) => value !== undefined && value !== null);
 
@@ -114,8 +115,10 @@ const toFormData = (payload = {}) => {
 };
 
 export const listBarang = async (params = {}) => {
-    const response = await apiClient.get("/barang", { params });
-    return extractListData(response.data).map(normalizeBarang);
+    return cachedGet("/barang", async () => {
+        const response = await apiClient.get("/barang", { params });
+        return extractListData(response.data).map(normalizeBarang);
+    }, { params });
 };
 
 export const getBarangDetail = async (id) => {
@@ -128,6 +131,7 @@ export const createBarang = async (payload) => {
 
     try {
         const response = await apiClient.post("/barang", normalizedPayload);
+        invalidateCache("/barang");
         return normalizeBarang(extractItemData(response.data));
     } catch (error) {
         if (error?.response?.status !== 422) {
@@ -135,16 +139,19 @@ export const createBarang = async (payload) => {
         }
 
         const response = await apiClient.post("/barang", toFormData(normalizedPayload));
+        invalidateCache("/barang");
         return normalizeBarang(extractItemData(response.data));
     }
 };
 
 export const updateBarang = async (id, payload) => {
     const response = await apiClient.put(`/barang/${id}`, buildBarangPayload(payload));
+    invalidateCache("/barang");
     return normalizeBarang(extractItemData(response.data));
 };
 
 export const deleteBarang = async (id) => {
     const response = await apiClient.delete(`/barang/${id}`);
+    invalidateCache("/barang");
     return response.data;
 };

@@ -1,4 +1,5 @@
 import apiClient from "./ApiClient";
+import { cachedGet, invalidateCache } from "./apiCache";
 import { sanitizeRichText } from "../utils/sanitizeHtml";
 
 let API_ORIGIN = "";
@@ -228,8 +229,10 @@ const buildPengumumanFormData = (payload = {}) => {
 };
 
 export const listPengumuman = async () => {
-    const response = await apiClient.get("/pengumuman");
-    return extractListData(response.data).map(normalizePengumuman);
+    return cachedGet("/pengumuman", async () => {
+        const response = await apiClient.get("/pengumuman");
+        return extractListData(response.data).map(normalizePengumuman);
+    });
 };
 
 export const getPengumumanDetail = async (id) => {
@@ -247,6 +250,7 @@ export const createPengumuman = async (payload) => {
             },
         },
     );
+    invalidateCache("/pengumuman");
     return normalizePengumuman(extractItemData(response.data));
 };
 
@@ -262,6 +266,7 @@ export const updatePengumuman = async (id, payload) => {
             },
         );
 
+        invalidateCache("/pengumuman");
         return normalizePengumuman(extractItemData(response.data));
     } catch (error) {
         if (error?.response?.status !== 405) {
@@ -278,11 +283,13 @@ export const updatePengumuman = async (id, payload) => {
             },
         );
 
+        invalidateCache("/pengumuman");
         return normalizePengumuman(extractItemData(response.data));
     }
 };
 
 export const deletePengumuman = async (id) => {
     const response = await apiClient.delete(`/pengumuman/${id}`);
+    invalidateCache("/pengumuman");
     return response.data;
 };

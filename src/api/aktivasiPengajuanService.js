@@ -1,4 +1,5 @@
 import apiClient from "./ApiClient";
+import { cachedGet, invalidateCache } from "./apiCache";
 
 const AKTIVASI_KATEGORI = ["tahunan", "ujian", "kelas"];
 
@@ -666,29 +667,31 @@ export const listPengajuanBelumAktivasi = async () => {
 };
 
 export const listAktivasiPengajuan = async () => {
-    const response = await apiClient.get("/aktivasi-pengajuan");
-    const allItems = normalizeAktivasiList(response.data);
+    return cachedGet("/aktivasi-pengajuan", async () => {
+        const response = await apiClient.get("/aktivasi-pengajuan");
+        const allItems = normalizeAktivasiList(response.data);
 
-    // Assign kategori to items that are missing it, based on their fields
-    const enriched = allItems.map((item) => {
-        if (item.kategori) {
+        // Assign kategori to items that are missing it, based on their fields
+        const enriched = allItems.map((item) => {
+            if (item.kategori) {
+                return item;
+            }
+
+            const inferred = inferKategoriFromPeriodFields(item);
+            if (inferred) {
+                return { ...item, kategori: inferred };
+            }
+
+            // Default rutin items to "tahunan"
+            if (item.tipe === "rutin") {
+                return { ...item, kategori: "tahunan" };
+            }
+
             return item;
-        }
+        });
 
-        const inferred = inferKategoriFromPeriodFields(item);
-        if (inferred) {
-            return { ...item, kategori: inferred };
-        }
-
-        // Default rutin items to "tahunan"
-        if (item.tipe === "rutin") {
-            return { ...item, kategori: "tahunan" };
-        }
-
-        return item;
+        return enriched;
     });
-
-    return enriched;
 };
 
 export const listAdminAktivasiPengajuan = async (params = {}) => {
@@ -726,6 +729,7 @@ export const getAktivasiPengajuanSummary = async (id) => {
 export const createAktivasiPengajuan = async (payload = {}) => {
     const body = buildPeriodePayload(payload);
     const response = await apiClient.post("/aktivasi-pengajuan", body);
+    invalidateCache("/aktivasi-pengajuan");
     return normalizeAktivasiPengajuan(extractItemData(response.data));
 };
 
@@ -734,11 +738,13 @@ export const updateAktivasiPengajuan = async (id, payload = {}) => {
         `/aktivasi-pengajuan/${id}`,
         buildPeriodePayload(payload),
     );
+    invalidateCache("/aktivasi-pengajuan");
     return normalizeAktivasiPengajuan(extractItemData(response.data));
 };
 
 export const deleteAktivasiPengajuan = async (id) => {
     const response = await apiClient.delete(`/aktivasi-pengajuan/${id}`);
+    invalidateCache("/aktivasi-pengajuan");
     return response.data;
 };
 
