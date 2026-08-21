@@ -277,6 +277,13 @@ const getHistoriAktivasiLabel = (histori = {}) => {
     : "";
 };
 
+const getHistoriTahun = (histori = {}) => {
+  const dateValue = histori?.tanggal ?? histori?.created_at ?? histori?.aktivasi?.tanggal_selesai ?? histori?.aktivasi?.mulai ?? "";
+  if (!dateValue) return "";
+  const year = new Date(dateValue).getFullYear();
+  return Number.isNaN(year) ? "" : String(year);
+};
+
 const getHistoriAktivasiSortValue = (histori = {}) => {
   const aktivasi = histori?.aktivasi ?? {};
   const dateValue =
@@ -342,8 +349,9 @@ const HistoriPengajuanAdminPage = () => {
           return map;
         }
 
-        const label = getHistoriAktivasiLabel(item);
-        const value = getHistoriAktivasiKey(item) || label;
+        const label = getHistoriTahun(item);
+        if (!label) return map;
+        const value = label;
 
         if (!value || map.has(value)) {
           return map;
@@ -383,8 +391,9 @@ const HistoriPengajuanAdminPage = () => {
           }
         }
 
-        const label = getHistoriAktivasiLabel(item);
-        const value = getHistoriAktivasiKey(item) || label;
+        const label = getHistoriTahun(item);
+        if (!label) return map;
+        const value = label;
 
         if (!value || map.has(value)) {
           return map;
@@ -426,8 +435,9 @@ const HistoriPengajuanAdminPage = () => {
           }
         }
 
-        const label = getHistoriAktivasiLabel(item);
-        const value = getHistoriAktivasiKey(item) || label;
+        const label = getHistoriTahun(item);
+        if (!label) return map;
+        const value = label;
 
         if (!value || map.has(value)) {
           return map;
@@ -596,8 +606,7 @@ const HistoriPengajuanAdminPage = () => {
 
       if (
         selectedAktivasiUjian &&
-        (getHistoriAktivasiKey(item) || getHistoriAktivasiLabel(item)) !==
-        selectedAktivasiUjian
+        getHistoriTahun(item) !== selectedAktivasiUjian
       ) {
         return false;
       }
@@ -622,8 +631,7 @@ const HistoriPengajuanAdminPage = () => {
 
       if (
         selectedAktivasiKelas &&
-        (getHistoriAktivasiKey(item) || getHistoriAktivasiLabel(item)) !==
-        selectedAktivasiKelas
+        getHistoriTahun(item) !== selectedAktivasiKelas
       ) {
         return false;
       }
@@ -641,8 +649,7 @@ const HistoriPengajuanAdminPage = () => {
 
     if (
       selectedAktivasi &&
-      (getHistoriAktivasiKey(item) || getHistoriAktivasiLabel(item)) !==
-      selectedAktivasi
+      getHistoriTahun(item) !== selectedAktivasi
     ) {
       return false;
     }
@@ -838,7 +845,7 @@ const HistoriPengajuanAdminPage = () => {
               : selectedProdi) ? (
             <div>
               <label className="block text-sm text-gray-500 mb-2">
-                Aktivasi
+                Tahun
               </label>
               <Dropdown
                 value={selectedAktivasiUjian}
@@ -848,7 +855,7 @@ const HistoriPengajuanAdminPage = () => {
                 className="w-full border border-gray-300 rounded-full px-4 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 appearance-none bg-white text-gray-500"
                 disabled={isLoadingFilters}
               >
-                <option value="">-- Pilih Aktivasi --</option>
+                <option value="">-- Pilih Tahun --</option>
                 {aktivasiOptionsUjian.map((option) => (
                   <option key={option.value} value={option.value}>
                     {option.label}
@@ -919,7 +926,7 @@ const HistoriPengajuanAdminPage = () => {
               : selectedProdi) ? (
             <div>
               <label className="block text-sm text-gray-500 mb-2">
-                Aktivasi
+                Tahun
               </label>
               <Dropdown
                 value={selectedAktivasiKelas}
@@ -929,7 +936,7 @@ const HistoriPengajuanAdminPage = () => {
                 className="w-full border border-gray-300 rounded-full px-4 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 appearance-none bg-white text-gray-500"
                 disabled={isLoadingFilters}
               >
-                <option value="">-- Pilih Aktivasi --</option>
+                <option value="">-- Pilih Tahun --</option>
                 {aktivasiOptionsKelas.map((option) => (
                   <option key={option.value} value={option.value}>
                     {option.label}
@@ -981,7 +988,7 @@ const HistoriPengajuanAdminPage = () => {
           {selectedJabatan && selectedBagian ? (
             <div>
               <label className="block text-sm text-gray-500 mb-2">
-                Aktivasi
+                Tahun
               </label>
               <Dropdown
                 value={selectedAktivasi}
@@ -989,7 +996,7 @@ const HistoriPengajuanAdminPage = () => {
                 className="w-full border border-gray-300 rounded-full px-4 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 appearance-none bg-white text-gray-500"
                 disabled={isLoadingFilters}
               >
-                <option value="">-- Pilih Aktivasi --</option>
+                <option value="">-- Pilih Tahun --</option>
                 {aktivasiOptions.map((option) => (
                   <option key={option.value} value={option.value}>
                     {option.label}
@@ -1035,10 +1042,10 @@ const HistoriPengajuanAdminPage = () => {
 
       {renderTableSection(
         isTahunanTab
-          ? `Aktivasi : ${selectedAktivasiLabel || "-"}`
+          ? `Tahun : ${selectedAktivasiLabel || "-"}`
           : isUjianTab
-            ? `Aktivasi : ${selectedAktivasiUjianLabel || "-"}`
-            : `Aktivasi : ${selectedAktivasiKelasLabel || "-"}`,
+            ? `Tahun : ${selectedAktivasiUjianLabel || "-"}`
+            : `Tahun : ${selectedAktivasiKelasLabel || "-"}`,
         barangRows,
         isLoadingHistori
           ? "Memuat data..."
@@ -1049,7 +1056,7 @@ const HistoriPengajuanAdminPage = () => {
                 : selectedProdi) &&
               selectedAktivasiUjian
               ? "Data tidak ditemukan"
-              : "Pilih jabatan, bagian atau program studi, dan aktivasi untuk melihat data"
+              : "Pilih jabatan, bagian atau program studi, dan tahun untuk melihat data"
             : isKelasTab
               ? selectedBagianType &&
                 (selectedBagianType.toLowerCase() === "dekan"
@@ -1057,10 +1064,10 @@ const HistoriPengajuanAdminPage = () => {
                   : selectedProdi) &&
                 selectedAktivasiKelas
                 ? "Data tidak ditemukan"
-                : "Pilih jabatan, bagian atau program studi, dan aktivasi untuk melihat data"
+                : "Pilih jabatan, bagian atau program studi, dan tahun untuk melihat data"
               : selectedJabatan && selectedBagian && selectedAktivasi
                 ? "Data tidak ditemukan"
-                : "Pilih jabatan, bagian, dan aktivasi untuk melihat data",
+                : "Pilih jabatan, bagian, dan tahun untuk melihat data",
       )}
       {renderTableSection(
         "Pengajuan Lainnya",
@@ -1074,7 +1081,7 @@ const HistoriPengajuanAdminPage = () => {
                 : selectedProdi) &&
               selectedAktivasiUjian
               ? "Data tidak ditemukan"
-              : "Pilih jabatan, bagian atau program studi, dan aktivasi untuk melihat data"
+              : "Pilih jabatan, bagian atau program studi, dan tahun untuk melihat data"
             : isKelasTab
               ? selectedBagianType &&
                 (selectedBagianType.toLowerCase() === "dekan"
@@ -1082,10 +1089,10 @@ const HistoriPengajuanAdminPage = () => {
                   : selectedProdi) &&
                 selectedAktivasiKelas
                 ? "Data tidak ditemukan"
-                : "Pilih jabatan, bagian atau program studi, dan aktivasi untuk melihat data"
+                : "Pilih jabatan, bagian atau program studi, dan tahun untuk melihat data"
               : selectedJabatan && selectedBagian && selectedAktivasi
                 ? "Data tidak ditemukan"
-                : "Pilih jabatan, bagian, dan aktivasi untuk melihat data",
+                : "Pilih jabatan, bagian, dan tahun untuk melihat data",
         true
       )}
     </>
