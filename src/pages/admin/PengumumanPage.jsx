@@ -10,6 +10,7 @@ import ActionIconButton from "../../components/Element/ActionIconButton";
 import ModalBuatPengumuman from "../../components/Element/ModalBuatPengumuman";
 import ModalKonfirmasiHapus from "../../components/Element/ModalKonfirmasiHapus";
 import ModalDetailPengumuman from "../../components/Element/ModalDetailPengumuman";
+import Pagination from "../../components/Element/Pagination";
 import {
   createPengumuman,
   deletePengumuman,
@@ -86,6 +87,8 @@ const PengumumanPage = () => {
   const [activePengumuman, setActivePengumuman] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [detailPengumuman, setDetailPengumuman] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 5;
 
   const fetchPengumuman = async () => {
     setIsLoading(true);
@@ -129,6 +132,18 @@ const PengumumanPage = () => {
       );
     });
   }, [pengumumanData, searchQuery]);
+
+  const totalPages = Math.ceil(filteredPengumuman.length / ITEMS_PER_PAGE);
+
+  // Daftar bisa menyusut setelah pencarian atau penghapusan, jadi halaman aktif
+  // dijepit ke rentang yang masih ada supaya tidak menampilkan halaman kosong.
+  const actualPage =
+    totalPages === 0 ? 1 : Math.min(currentPage, totalPages);
+
+  const paginatedPengumuman = useMemo(() => {
+    const start = (actualPage - 1) * ITEMS_PER_PAGE;
+    return filteredPengumuman.slice(start, start + ITEMS_PER_PAGE);
+  }, [filteredPengumuman, actualPage]);
 
   const handleOpenTambah = () => {
     setActivePengumuman(null);
@@ -244,7 +259,10 @@ const PengumumanPage = () => {
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-full text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white"
                 placeholder="Cari"
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setCurrentPage(1);
+                }}
               />
             </div>
             <button
@@ -267,7 +285,7 @@ const PengumumanPage = () => {
                 Memuat pengumuman...
               </div>
             ) : filteredPengumuman.length > 0 ? (
-              filteredPengumuman.map((item) => {
+              paginatedPengumuman.map((item) => {
                 const sanitizedHtml = sanitizeRichText(
                   item.teks || item.deskripsi || "",
                 );
@@ -378,6 +396,12 @@ const PengumumanPage = () => {
               </div>
             )}
           </div>
+
+          <Pagination
+            currentPage={actualPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+          />
         </div>
       </div>
 

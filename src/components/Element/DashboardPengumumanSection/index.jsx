@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import ModalDetailPengumuman from "../ModalDetailPengumuman";
+import Pagination from "../Pagination";
 
 const decodeHtmlEntities = (text = "") => {
   const parser = new DOMParser();
@@ -164,29 +165,11 @@ const DashboardPengumumanSection = ({
               </div>
             ))}
             
-            {totalPages > 1 && (
-              <div className="flex justify-center items-center mt-2 space-x-3">
-                <button
-                  type="button"
-                  onClick={() => setCurrentPage(actualPage - 1)}
-                  disabled={actualPage === 1}
-                  className="px-4 py-1.5 rounded-full border border-[#4773da] text-[#4773da] text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed hover:bg-blue-50 transition-colors"
-                >
-                  Sebelumnya
-                </button>
-                <span className="text-sm font-medium text-gray-600 bg-gray-100 px-4 py-1.5 rounded-full">
-                  {actualPage} / {totalPages}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setCurrentPage(actualPage + 1)}
-                  disabled={actualPage === totalPages}
-                  className="px-4 py-1.5 rounded-full border border-[#4773da] text-[#4773da] text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed hover:bg-blue-50 transition-colors"
-                >
-                  Selanjutnya
-                </button>
-              </div>
-            )}
+            <Pagination
+              currentPage={actualPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+            />
           </div>
         ) : (
           <div className="py-10 text-center text-gray-500 border border-gray-200 rounded">
