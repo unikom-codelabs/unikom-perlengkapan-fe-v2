@@ -818,10 +818,12 @@ const PengajuanAtkPage = () => {
             selectedFile={uploadedFile}
             onFileSelect={handleFileSelect}
             onFileRemove={handleFileRemove}
-            accept=".jpg,.jpeg,.png,.svg,.pdf"
+            accept=".pdf,application/pdf"
+            maxSize={2 * 1024 * 1024}
+            allowedTypes={["application/pdf"]}
             label="Surat Permohonan"
             description="Drag your file(s) or browse"
-            subDescription="jpg, png, svg, atau pdf"
+            subDescription="Hanya file PDF (Maks. 2MB)"
             disabled={isActivationBlocked}
           />
 
@@ -1218,12 +1220,29 @@ const PengajuanAtkPage = () => {
                             <div>
                               <input
                                 type="file"
-                                accept="image/*,.pdf"
+                                accept=".jpg,.jpeg,.png,image/jpeg,image/png"
                                 id={`file-lainnya-${item.id}`}
                                 className="hidden"
                                 onChange={(e) => {
                                   if (e.target.files && e.target.files[0]) {
-                                    handleLainnyaDetailChange(item.id, "bukti_foto", e.target.files[0]);
+                                    const file = e.target.files[0];
+                                    const allowedMimes = ["image/jpeg", "image/png", "image/jpg"];
+                                    const maxFileSize = 2 * 1024 * 1024;
+
+                                    if (!allowedMimes.includes(file.type)) {
+                                      setSubmitError(`Bukti foto "${item.nama}" harus berformat JPG, JPEG, atau PNG.`);
+                                      e.target.value = "";
+                                      return;
+                                    }
+
+                                    if (file.size > maxFileSize) {
+                                      setSubmitError(`Ukuran bukti foto "${item.nama}" terlalu besar. Maksimal 2MB.`);
+                                      e.target.value = "";
+                                      return;
+                                    }
+
+                                    setSubmitError("");
+                                    handleLainnyaDetailChange(item.id, "bukti_foto", file);
                                   }
                                 }}
                               />

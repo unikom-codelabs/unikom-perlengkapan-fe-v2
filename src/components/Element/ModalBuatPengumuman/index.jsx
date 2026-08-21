@@ -12,7 +12,7 @@ const ALLOWED_IMAGE_TYPES = [
   "image/png",
   "image/webp",
 ];
-const MAX_IMAGE_SIZE_BYTES = 900 * 1024;
+const MAX_IMAGE_SIZE_BYTES = 2 * 1024 * 1024;
 
 const stripHtml = (htmlText = "") =>
   String(htmlText)
@@ -30,7 +30,7 @@ const getImageValidationError = (file) => {
   }
 
   if (file.size > MAX_IMAGE_SIZE_BYTES) {
-    return "Ukuran gambar terlalu besar. Maksimal 900KB.";
+    return "Ukuran gambar terlalu besar. Maksimal 2MB.";
   }
 
   return "";
@@ -218,9 +218,10 @@ const ModalBuatPengumuman = ({
               onFileRemove={handleRemoveFile}
               accept=".jpg,.jpeg,.png,.webp,image/png,image/jpeg,image/jpg,image/webp"
               maxSize={MAX_IMAGE_SIZE_BYTES}
+              allowedTypes={ALLOWED_IMAGE_TYPES}
               label=""
               description="Drag your file(s) or browse"
-              subDescription="jpg, jpeg, png, atau webp (Max 900KB)"
+              subDescription="jpg, jpeg, png, atau webp (Maks. 2MB)"
               disabled={isSubmitting}
               error={fileError}
               className="mb-0"
