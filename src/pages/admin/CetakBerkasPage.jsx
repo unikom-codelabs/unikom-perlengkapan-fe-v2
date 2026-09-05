@@ -774,18 +774,6 @@ const CetakBerkasPage = ({ tipe = "rutin" }) => {
             <>
               <button
                 type="button"
-                className="bg-[#4773da] hover:bg-blue-700 text-white px-5 py-2.5 rounded-full text-sm font-medium transition-colors"
-              >
-                Download Daftar ATK
-              </button>
-              <button
-                type="button"
-                className="bg-[#4773da] hover:bg-blue-700 text-white px-5 py-2.5 rounded-full text-sm font-medium transition-colors"
-              >
-                Download Daftar ATK UNIKOM
-              </button>
-              <button
-                type="button"
                 onClick={openVendorAtkModal}
                 className="bg-[#4773da] hover:bg-blue-700 text-white px-5 py-2.5 rounded-full text-sm font-medium transition-colors"
               >

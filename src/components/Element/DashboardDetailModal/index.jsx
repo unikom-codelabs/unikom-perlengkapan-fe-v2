@@ -489,9 +489,22 @@ const DashboardDetailModal = ({ isOpen, onClose, title, summaryId }) => {
     () => rows.filter((row) => isSubmittedPengajuan(row)),
     [rows],
   );
-  const totalPages = getTotalPages(rows);
+  const sortedRows = useMemo(
+    () =>
+      rows
+        .map((row, index) => ({ row, index }))
+        .sort((a, b) => {
+          const aSubmitted = isSubmittedPengajuan(a.row) ? 0 : 1;
+          const bSubmitted = isSubmittedPengajuan(b.row) ? 0 : 1;
+
+          return aSubmitted - bSubmitted || a.index - b.index;
+        })
+        .map(({ row }) => row),
+    [rows],
+  );
+  const totalPages = getTotalPages(sortedRows);
   const safeCurrentPage = Math.min(currentPage, totalPages);
-  const paginatedRows = paginateRows(rows, safeCurrentPage);
+  const paginatedRows = paginateRows(sortedRows, safeCurrentPage);
   const exportFilename = `${sanitizeFilenameSegment(title) || "ringkasan-pengajuan"}.xlsx`;
   const selectedDetailItems = getDetailItems(selectedDetail);
   const detailTotalPages = getTotalPages(selectedDetailItems);
