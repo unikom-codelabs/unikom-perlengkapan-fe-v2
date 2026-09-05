@@ -26,24 +26,26 @@ const cleanText = (value, fallback = "-") => {
 };
 
 const normalizeItems = (items = []) =>
-  items.map((item, index) => {
-    const hargaValue = Number(item?.harga);
-    const jumlahValue = Number(item?.jumlah);
-    const subtotalValue = Number(item?.sub_total ?? item?.subtotal);
-    const safeHarga = Number.isFinite(hargaValue) ? hargaValue : 0;
-    const safeJumlah = Number.isFinite(jumlahValue) ? jumlahValue : 0;
+  items
+    .map((item, index) => {
+      const hargaValue = Number(item?.harga);
+      const jumlahValue = Number(item?.jumlah);
+      const subtotalValue = Number(item?.sub_total ?? item?.subtotal);
+      const safeHarga = Number.isFinite(hargaValue) ? hargaValue : 0;
+      const safeJumlah = Number.isFinite(jumlahValue) ? jumlahValue : 0;
 
-    return {
-      id: item?.id ?? `${item?.nama ?? "barang"}-${index}`,
-      nama: cleanText(item?.nama),
-      unit: cleanText(item?.unit ?? item?.satuan),
-      hargaValue: safeHarga,
-      jumlah: safeJumlah,
-      subtotalValue: Number.isFinite(subtotalValue)
-        ? subtotalValue
-        : safeHarga * safeJumlah,
-    };
-  });
+      return {
+        id: item?.id ?? `${item?.nama ?? "barang"}-${index}`,
+        nama: cleanText(item?.nama),
+        unit: cleanText(item?.unit ?? item?.satuan),
+        hargaValue: safeHarga,
+        jumlah: safeJumlah,
+        subtotalValue: Number.isFinite(subtotalValue)
+          ? subtotalValue
+          : safeHarga * safeJumlah,
+      };
+    })
+    .filter((row) => row.jumlah > 0);
 
 const styles = StyleSheet.create({
   page: {
@@ -164,7 +166,9 @@ const VendorAtkTable = ({ rows = [] }) => {
 
   if (rows.length === 0) {
     return (
-      <Text style={styles.emptyState}>Tidak ada barang untuk vendor ini.</Text>
+      <Text style={styles.emptyState}>
+      Tidak ada barang disetujui untuk vendor ini.
+    </Text>
     );
   }
 

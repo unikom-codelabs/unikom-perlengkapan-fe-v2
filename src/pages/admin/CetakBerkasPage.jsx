@@ -1,5 +1,6 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { pdf } from "@react-pdf/renderer";
 import PageHelmet from "../../components/Seo/PageHelmet";
 import {
   ChevronLeftIcon,
@@ -11,6 +12,7 @@ import { listAktivasiPengajuan } from "../../api/aktivasiPengajuanService";
 import { fetchCetakBerkasAdmin } from "../../api/cetakBerkasService";
 import Dropdown from "../../components/Element/Dropdown";
 import VendorAtkDownloadModal from "../../components/Fragments/VendorAtkDownloadModal";
+import BapRekapDocument from "../../components/Pdf/BapRekapDocument";
 import { fetchRekapVendor } from "../../api/vendorService";
 import { listDaftarPengajuanAdmin } from "../../api/pengajuanService";
 
@@ -75,7 +77,7 @@ const normalizeRow = (item = {}, index, kind = "barang") => {
       (jumlahBeli || jumlah) * hargaValue,
     0,
   );
-  const sisa = Math.max(0, jumlah - jumlah);
+  const sisa = Math.max(0, jumlah - jumlahBeli);
 
   return {
     id:
@@ -99,6 +101,20 @@ const normalizeRow = (item = {}, index, kind = "barang") => {
     jumlahBeli,
     hargaValue,
     subtotalValue,
+    bagian: String(
+      item.bagian ??
+        item.nama_bagian ??
+        item.namaBagian ??
+        item.bagian?.nama ??
+        item.jurusan ??
+        item.prodi ??
+        item.program_studi ??
+        item.programStudi ??
+        item.unit ??
+        item.pengaju?.bagian ??
+        item.user?.bagian ??
+        "",
+    ).trim(),
     vendor: String(
       item.vendor ??
         item.nama_vendor ??
@@ -152,6 +168,34 @@ const getVisiblePages = (currentPage, totalPages) => {
     .sort((a, b) => a - b);
 };
 
+const buildBapRekap = (rows = []) => {
+  const approvedRows = rows.filter((row) => row.jumlahBeli > 0);
+  const itemNames = [];
+  const unitMap = new Map();
+
+  approvedRows.forEach((row) => {
+    const itemName = row.nama_barang || "-";
+    const unit = row.bagian || "Tanpa Bagian";
+
+    if (!itemNames.includes(itemName)) {
+      itemNames.push(itemName);
+    }
+
+    if (!unitMap.has(unit)) {
+      unitMap.set(unit, {});
+    }
+
+    const quantities = unitMap.get(unit);
+    quantities[itemName] = (quantities[itemName] ?? 0) + row.jumlahBeli;
+  });
+
+  const unitRows = Array.from(unitMap.entries())
+    .map(([unit, quantities]) => ({ unit, quantities }))
+    .sort((a, b) => a.unit.localeCompare(b.unit, "id-ID"));
+
+  return { itemNames, unitRows };
+};
+
 const CetakBerkasPage = ({ tipe = "rutin" }) => {
   const [activeTab, setActiveTab] = useState("ATK Tahunan");
   const [aktivasiList, setAktivasiList] = useState([]);
@@ -168,6 +212,7 @@ const CetakBerkasPage = ({ tipe = "rutin" }) => {
   const [otherPage, setOtherPage] = useState(1);
   const [otherPrices, setOtherPrices] = useState({});
   const [isVendorAtkModalOpen, setIsVendorAtkModalOpen] = useState(false);
+  const [isPreparingBap, setIsPreparingBap] = useState(false);
   const [rekapVendorList, setRekapVendorList] = useState([]);
   const [selectedRekapVendorId, setSelectedRekapVendorId] = useState("");
   const [isLoadingRekapVendor, setIsLoadingRekapVendor] = useState(false);
@@ -553,6 +598,48 @@ const CetakBerkasPage = ({ tipe = "rutin" }) => {
     setIsVendorAtkModalOpen(false);
   };
 
+  const bapRekap = useMemo(
+    () => buildBapRekap([...mainRows, ...otherRowsWithManualPrice]),
+    [mainRows, otherRowsWithManualPrice],
+  );
+
+  const bapTitle =
+    kategoriAtk === "kelas"
+      ? "Daftar Penerimaan ATK Spidol Tinta & Penghapus Whiteboard"
+      : "Daftar Permintaan ATK Ujian";
+
+  const handleCetakBap = async () => {
+    if (isPreparingBap || bapRekap.unitRows.length === 0) {
+      return;
+    }
+
+    setIsPreparingBap(true);
+    setErrorMessage("");
+
+    try {
+      const blob = await pdf(
+        <BapRekapDocument
+          title={bapTitle}
+          periodeLabel={`Semester TA. ${selectedAktivasiLabel || tahunLabel}`}
+          itemNames={bapRekap.itemNames}
+          unitRows={bapRekap.unitRows}
+        />,
+      ).toBlob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `bap-${kategoriAtk}-${tahunLabel}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      setErrorMessage(error?.message ?? "Gagal menyiapkan PDF BAP.");
+    } finally {
+      setIsPreparingBap(false);
+    }
+  };
+
   const renderSearchInput = (value, onChange) => (
     <div className="relative w-full md:w-80">
       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -666,7 +753,7 @@ const CetakBerkasPage = ({ tipe = "rutin" }) => {
         {row.sisa}
       </td>
       <td className="px-6 py-3 border-r border-gray-200 text-center text-gray-500">
-        {row.jumlah}
+        {row.jumlahBeli}
       </td>
       <td className="px-6 py-3 border-r border-gray-200 text-center text-gray-500">
         {formatCurrency(row.hargaValue)}
@@ -781,8 +868,13 @@ const CetakBerkasPage = ({ tipe = "rutin" }) => {
               </button>
             </>
           ) : showActions ? (
-            <button className="bg-[#4773da] hover:bg-blue-700 text-white px-6 py-2.5 rounded-full text-sm font-medium transition-colors">
-              Cetak BAP
+            <button
+              type="button"
+              onClick={handleCetakBap}
+              disabled={isPreparingBap || bapRekap.unitRows.length === 0}
+              className="bg-[#4773da] hover:bg-blue-700 text-white px-6 py-2.5 rounded-full text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isPreparingBap ? "Menyiapkan PDF..." : "Cetak BAP"}
             </button>
           ) : null}
         </div>
