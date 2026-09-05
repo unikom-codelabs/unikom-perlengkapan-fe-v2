@@ -125,6 +125,38 @@ const normalizeRow = (item = {}, index, kind = "barang") => {
   };
 };
 
+const aggregateRows = (rows = []) => {
+  const grouped = new Map();
+
+  rows.forEach((row) => {
+    const key = `${row.nama_barang.toLowerCase()}|${row.satuan.toLowerCase()}`;
+    const existing = grouped.get(key);
+
+    if (!existing) {
+      grouped.set(key, { ...row, id: key, vendors: new Set([row.vendor]) });
+      return;
+    }
+
+    existing.jumlah += row.jumlah;
+    existing.jumlahBeli += row.jumlahBeli;
+    existing.subtotalValue += row.subtotalValue;
+    existing.sisa = Math.max(0, existing.jumlah - existing.jumlahBeli);
+    existing.hargaValue = existing.hargaValue || row.hargaValue;
+    existing.vendors.add(row.vendor);
+  });
+
+  return Array.from(grouped.values()).map(({ vendors, ...row }) => {
+    const vendorList = Array.from(vendors).filter(
+      (vendor) => vendor && vendor !== "-",
+    );
+
+    return {
+      ...row,
+      vendor: vendorList.length > 0 ? vendorList.join(", ") : "-",
+    };
+  });
+};
+
 const filterRows = (rows = [], query = "") => {
   const normalizedQuery = query.trim().toLowerCase();
   if (!normalizedQuery) {
@@ -166,28 +198,6 @@ const getVisiblePages = (currentPage, totalPages) => {
   return Array.from(pages)
     .filter((page) => page >= 1 && page <= totalPages)
     .sort((a, b) => a - b);
-};
-
-const getSemesterLabel = (aktivasi) => {
-  const periode = String(aktivasi?.namaPeriode ?? "").toLowerCase();
-
-  if (periode.includes("genap")) {
-    return "Genap";
-  }
-
-  return periode.includes("ganjil") ? "Ganjil" : "";
-};
-
-const getUjianLabel = (aktivasi) => {
-  const periode = String(aktivasi?.namaPeriode ?? "").toLowerCase();
-
-  if (periode.includes("uas") || periode.includes("akhir")) {
-    return "Ujian Akhir Semester";
-  }
-
-  return periode.includes("uts") || periode.includes("tengah")
-    ? "Ujian Tengah Semester"
-    : "Ujian";
 };
 
 // Sementara semua baris ikut dicetak supaya fitur bisa diuji sebelum ada data
@@ -540,11 +550,11 @@ const CetakBerkasPage = ({ tipe = "rutin" }) => {
         : explicitMainRows.filter((item) => isOtherItem(item));
 
     return {
-      mainRows: mainSource.map((item, index) =>
-        normalizeRow(item, index, "barang"),
+      mainRows: aggregateRows(
+        mainSource.map((item, index) => normalizeRow(item, index, "barang")),
       ),
-      otherRows: otherSource.map((item, index) =>
-        normalizeRow(item, index, "lainnya"),
+      otherRows: aggregateRows(
+        otherSource.map((item, index) => normalizeRow(item, index, "lainnya")),
       ),
     };
   }, [cetakData]);
@@ -671,18 +681,14 @@ const CetakBerkasPage = ({ tipe = "rutin" }) => {
     [bapSourceRows, bapUnits],
   );
 
-  const tahunAkademikLabel = String(
-    selectedAktivasi?.tahunAkademik ?? tahunLabel,
-  ).trim();
-  const semesterLabel = getSemesterLabel(selectedAktivasi);
   const bapTitleLine1 =
     kategoriAtk === "kelas"
-      ? "Daftar Penerimaan ATK Spidol Tinta & Penghapus Whiteboard"
-      : `Daftar Permintaan ATK ${getUjianLabel(selectedAktivasi)}`;
+      ? "Daftar Penerimaan ATK Kelas"
+      : "Daftar Permintaan ATK Ujian Akhir Semester";
   const bapTitleLine2 = [
     "Semester",
-    kategoriAtk === "kelas" ? "" : semesterLabel,
-    `TA. ${tahunAkademikLabel}`,
+    String(selectedAktivasi?.semester ?? "").trim(),
+    `TA. ${String(selectedAktivasi?.tahunAkademik ?? tahunLabel).trim()}`,
   ]
     .filter(Boolean)
     .join(" ");
