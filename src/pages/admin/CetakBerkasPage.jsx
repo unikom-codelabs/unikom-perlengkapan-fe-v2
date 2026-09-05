@@ -200,8 +200,10 @@ const getVisiblePages = (currentPage, totalPages) => {
     .sort((a, b) => a - b);
 };
 
+// Filter jumlah disetujui dimatikan sementara untuk keperluan testing.
+// Aktifkan lagi baris "if (row.jumlahBeli <= 0) return;" sebelum dipakai user.
 const buildBapRekap = (rows = [], allUnits = []) => {
-  const itemNames = [];
+  const items = [];
   const unitMap = new Map();
 
   allUnits.forEach((unit) => {
@@ -211,15 +213,13 @@ const buildBapRekap = (rows = [], allUnits = []) => {
   });
 
   rows.forEach((row) => {
-    if (row.jumlahBeli <= 0) {
-      return;
-    }
-
-    const itemName = row.nama_barang || "-";
+    const name = row.nama_barang || "-";
+    const satuan = row.satuan || "-";
+    const key = `${name}|${satuan}`;
     const unit = row.bagian || "Tanpa Bagian";
 
-    if (!itemNames.includes(itemName)) {
-      itemNames.push(itemName);
+    if (!items.some((item) => item.key === key)) {
+      items.push({ key, name, satuan });
     }
 
     if (!unitMap.has(unit)) {
@@ -227,7 +227,7 @@ const buildBapRekap = (rows = [], allUnits = []) => {
     }
 
     const quantities = unitMap.get(unit);
-    quantities[itemName] = (quantities[itemName] ?? 0) + row.jumlahBeli;
+    quantities[key] = (quantities[key] ?? 0) + (row.jumlahBeli || row.jumlah);
   });
 
   const unitRows = Array.from(unitMap.entries()).map(([unit, quantities]) => ({
@@ -235,7 +235,7 @@ const buildBapRekap = (rows = [], allUnits = []) => {
     quantities,
   }));
 
-  return { itemNames, unitRows };
+  return { items, unitRows };
 };
 
 const CetakBerkasPage = ({ tipe = "rutin" }) => {
@@ -671,6 +671,7 @@ const CetakBerkasPage = ({ tipe = "rutin" }) => {
         .map((row) => ({
           bagian: String(row.userUnit ?? "").trim(),
           nama_barang: String(row.namaBarang ?? "").trim(),
+          satuan: String(row.satuan ?? "").trim(),
           jumlah: toNumber(row.jumlah, 0),
           jumlahBeli: toNumber(row.jumlahDisetujui, 0),
         })),
@@ -695,7 +696,7 @@ const CetakBerkasPage = ({ tipe = "rutin" }) => {
     .join(" ");
 
   const handleCetakBap = async () => {
-    if (isPreparingBap || bapRekap.itemNames.length === 0) {
+    if (isPreparingBap || bapRekap.items.length === 0) {
       return;
     }
 
@@ -707,7 +708,7 @@ const CetakBerkasPage = ({ tipe = "rutin" }) => {
         <BapRekapDocument
           titleLine1={bapTitleLine1}
           titleLine2={bapTitleLine2}
-          itemNames={bapRekap.itemNames}
+          items={bapRekap.items}
           unitRows={bapRekap.unitRows}
         />,
       ).toBlob();
@@ -957,7 +958,7 @@ const CetakBerkasPage = ({ tipe = "rutin" }) => {
             <button
               type="button"
               onClick={handleCetakBap}
-              disabled={isPreparingBap || bapRekap.itemNames.length === 0}
+              disabled={isPreparingBap || bapRekap.items.length === 0}
               className="bg-[#4773da] hover:bg-blue-700 text-white px-6 py-2.5 rounded-full text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isPreparingBap ? "Menyiapkan PDF..." : "Cetak BAP"}

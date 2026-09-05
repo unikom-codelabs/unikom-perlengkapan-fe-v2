@@ -46,6 +46,12 @@ const styles = StyleSheet.create({
     fontFamily: "Helvetica-Bold",
     textAlign: "center",
   },
+  headerUnitText: {
+    fontFamily: "Helvetica",
+    fontSize: 7,
+    textAlign: "center",
+    color: "#4b5563",
+  },
   centerText: {
     textAlign: "center",
   },
@@ -63,7 +69,8 @@ const UNIT_WIDTH = 120;
 const NAME_WIDTH = 70;
 const SIGNATURE_WIDTH = 85;
 const MIN_ITEM_WIDTH = 44;
-const HEADER_BAND_HEIGHT = 22;
+const TOP_BAND_HEIGHT = 20;
+const ITEM_BAND_HEIGHT = 30;
 const PORTRAIT_CONTENT = 535;
 const LANDSCAPE_CONTENT = 782;
 
@@ -91,13 +98,13 @@ const getLayout = (itemCount) => {
 const BapRekapDocument = ({
   titleLine1 = "Daftar Permintaan ATK",
   titleLine2 = "",
-  itemNames = [],
+  items = [],
   unitRows = [],
 }) => {
-  const { orientation, itemWidth } = getLayout(itemNames.length);
-  const itemsWidth = itemWidth * Math.max(1, itemNames.length);
-  const headerHeight = HEADER_BAND_HEIGHT * 2;
-  const hasData = unitRows.length > 0 && itemNames.length > 0;
+  const { orientation, itemWidth } = getLayout(items.length);
+  const itemsWidth = itemWidth * Math.max(1, items.length);
+  const headerHeight = TOP_BAND_HEIGHT + ITEM_BAND_HEIGHT;
+  const hasData = unitRows.length > 0 && items.length > 0;
 
   return (
     <Document
@@ -128,21 +135,24 @@ const BapRekapDocument = ({
                 <View
                   style={[
                     styles.cell,
-                    { width: itemsWidth, height: HEADER_BAND_HEIGHT },
+                    { width: itemsWidth, height: TOP_BAND_HEIGHT },
                   ]}
                 >
                   <Text style={styles.headerText}>Nama Barang</Text>
                 </View>
                 <View style={styles.row}>
-                  {itemNames.map((name) => (
+                  {items.map((item) => (
                     <View
-                      key={name}
+                      key={item.key}
                       style={[
                         styles.cell,
-                        { width: itemWidth, height: HEADER_BAND_HEIGHT },
+                        { width: itemWidth, height: ITEM_BAND_HEIGHT },
                       ]}
                     >
-                      <Text style={styles.headerText}>{name}</Text>
+                      <Text style={styles.headerText}>{item.name}</Text>
+                      <Text style={styles.headerUnitText}>
+                        {`(${cleanText(item.satuan)})`}
+                      </Text>
                     </View>
                   ))}
                 </View>
@@ -171,11 +181,14 @@ const BapRekapDocument = ({
                 <View style={[styles.cell, { width: UNIT_WIDTH }]}>
                   <Text>{cleanText(unitRow.unit)}</Text>
                 </View>
-                {itemNames.map((name) => {
-                  const value = unitRow.quantities?.[name];
+                {items.map((item) => {
+                  const value = unitRow.quantities?.[item.key];
 
                   return (
-                    <View key={name} style={[styles.cell, { width: itemWidth }]}>
+                    <View
+                      key={item.key}
+                      style={[styles.cell, { width: itemWidth }]}
+                    >
                       <Text style={styles.centerText}>{value || "-"}</Text>
                     </View>
                   );
