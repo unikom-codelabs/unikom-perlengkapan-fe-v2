@@ -8,26 +8,20 @@ const cleanText = (value, fallback = "-") => {
 const styles = StyleSheet.create({
   page: {
     paddingHorizontal: 30,
-    paddingVertical: 30,
+    paddingVertical: 34,
     fontFamily: "Helvetica",
     fontSize: 8,
-    color: "#1f2937",
+    color: "#111827",
   },
-  title: {
+  titleLine: {
     fontFamily: "Helvetica-Bold",
     fontSize: 11,
-    color: "#111827",
     textAlign: "center",
   },
-  subtitle: {
-    fontFamily: "Helvetica-Bold",
-    fontSize: 10,
-    color: "#111827",
-    textAlign: "center",
-    marginBottom: 16,
+  titleGap: {
+    marginBottom: 18,
   },
   table: {
-    width: "100%",
     borderLeftWidth: 1,
     borderTopWidth: 1,
     borderColor: "#9ca3af",
@@ -36,21 +30,20 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: "row",
   },
-  headerCell: {
-    backgroundColor: "#f3f4f6",
+  column: {
+    flexDirection: "column",
   },
   cell: {
     borderRightWidth: 1,
     borderBottomWidth: 1,
     borderColor: "#9ca3af",
     borderStyle: "solid",
-    paddingHorizontal: 4,
+    paddingHorizontal: 5,
     paddingVertical: 5,
     justifyContent: "center",
   },
   headerText: {
     fontFamily: "Helvetica-Bold",
-    color: "#111827",
     textAlign: "center",
   },
   centerText: {
@@ -64,80 +57,109 @@ const styles = StyleSheet.create({
     color: "#6b7280",
     textAlign: "center",
   },
-  footer: {
-    position: "absolute",
-    left: 30,
-    right: 30,
-    bottom: 18,
-    fontSize: 7,
-    color: "#6b7280",
-    textAlign: "right",
-  },
 });
 
-const UNIT_WIDTH = 150;
-const SIGNATURE_WIDTH = 100;
-const NAME_WIDTH = 90;
-const MIN_ITEM_WIDTH = 46;
-const CONTENT_WIDTH = 782;
+const UNIT_WIDTH = 120;
+const NAME_WIDTH = 70;
+const SIGNATURE_WIDTH = 85;
+const MIN_ITEM_WIDTH = 44;
+const HEADER_BAND_HEIGHT = 22;
+const PORTRAIT_CONTENT = 535;
+const LANDSCAPE_CONTENT = 782;
 
-const getItemWidth = (itemCount) => {
-  const trailingWidth = NAME_WIDTH + SIGNATURE_WIDTH;
-  const available = CONTENT_WIDTH - UNIT_WIDTH - trailingWidth;
+const getLayout = (itemCount) => {
+  const fixedWidth = UNIT_WIDTH + NAME_WIDTH + SIGNATURE_WIDTH;
+  const safeCount = Math.max(1, itemCount);
+  const portraitItemWidth = (PORTRAIT_CONTENT - fixedWidth) / safeCount;
 
-  if (itemCount <= 0) {
-    return MIN_ITEM_WIDTH;
+  if (portraitItemWidth >= MIN_ITEM_WIDTH) {
+    return {
+      orientation: "portrait",
+      itemWidth: Math.floor(portraitItemWidth),
+    };
   }
 
-  return Math.max(MIN_ITEM_WIDTH, Math.floor(available / itemCount));
+  return {
+    orientation: "landscape",
+    itemWidth: Math.max(
+      MIN_ITEM_WIDTH,
+      Math.floor((LANDSCAPE_CONTENT - fixedWidth) / safeCount),
+    ),
+  };
 };
 
 const BapRekapDocument = ({
-  title = "Daftar Permintaan ATK",
-  periodeLabel = "",
+  titleLine1 = "Daftar Permintaan ATK",
+  titleLine2 = "",
   itemNames = [],
   unitRows = [],
 }) => {
-  const itemWidth = getItemWidth(itemNames.length);
+  const { orientation, itemWidth } = getLayout(itemNames.length);
+  const itemsWidth = itemWidth * Math.max(1, itemNames.length);
+  const headerHeight = HEADER_BAND_HEIGHT * 2;
   const hasData = unitRows.length > 0 && itemNames.length > 0;
 
   return (
     <Document
-      title={title}
-      subject="Rekap BAP pengajuan ATK"
+      title={titleLine1}
+      subject="Rekap pengajuan ATK"
       author="UNIKOM Perlengkapan"
       keywords="perlengkapan UNIKOM ATK BAP"
     >
-      <Page size="A4" orientation="landscape" style={styles.page}>
-        <Text style={styles.title}>{title.toUpperCase()}</Text>
-        <Text style={styles.subtitle}>{cleanText(periodeLabel, " ")}</Text>
+      <Page size="A4" orientation={orientation} style={styles.page}>
+        <Text style={styles.titleLine}>{titleLine1.toUpperCase()}</Text>
+        <Text style={[styles.titleLine, styles.titleGap]}>
+          {titleLine2.toUpperCase()}
+        </Text>
 
         {hasData ? (
           <View style={styles.table}>
             <View style={styles.row} fixed>
               <View
-                style={[styles.cell, styles.headerCell, { width: UNIT_WIDTH }]}
+                style={[
+                  styles.cell,
+                  { width: UNIT_WIDTH, height: headerHeight },
+                ]}
               >
-                <Text style={styles.headerText}>Jurusan / Bagian</Text>
+                <Text style={styles.headerText}>Jurusan</Text>
               </View>
-              {itemNames.map((name) => (
+
+              <View style={styles.column}>
                 <View
-                  key={name}
-                  style={[styles.cell, styles.headerCell, { width: itemWidth }]}
+                  style={[
+                    styles.cell,
+                    { width: itemsWidth, height: HEADER_BAND_HEIGHT },
+                  ]}
                 >
-                  <Text style={styles.headerText}>{name}</Text>
+                  <Text style={styles.headerText}>Nama Barang</Text>
                 </View>
-              ))}
+                <View style={styles.row}>
+                  {itemNames.map((name) => (
+                    <View
+                      key={name}
+                      style={[
+                        styles.cell,
+                        { width: itemWidth, height: HEADER_BAND_HEIGHT },
+                      ]}
+                    >
+                      <Text style={styles.headerText}>{name}</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+
               <View
-                style={[styles.cell, styles.headerCell, { width: NAME_WIDTH }]}
+                style={[
+                  styles.cell,
+                  { width: NAME_WIDTH, height: headerHeight },
+                ]}
               >
                 <Text style={styles.headerText}>Nama</Text>
               </View>
               <View
                 style={[
                   styles.cell,
-                  styles.headerCell,
-                  { width: SIGNATURE_WIDTH },
+                  { width: SIGNATURE_WIDTH, height: headerHeight },
                 ]}
               >
                 <Text style={styles.headerText}>Tanda Tangan</Text>
@@ -153,13 +175,8 @@ const BapRekapDocument = ({
                   const value = unitRow.quantities?.[name];
 
                   return (
-                    <View
-                      key={name}
-                      style={[styles.cell, { width: itemWidth }]}
-                    >
-                      <Text style={styles.centerText}>
-                        {value ? value : "-"}
-                      </Text>
+                    <View key={name} style={[styles.cell, { width: itemWidth }]}>
+                      <Text style={styles.centerText}>{value || "-"}</Text>
                     </View>
                   );
                 })}
@@ -173,18 +190,8 @@ const BapRekapDocument = ({
             ))}
           </View>
         ) : (
-          <Text style={styles.emptyState}>
-            Tidak ada barang yang disetujui untuk dicetak.
-          </Text>
+          <Text style={styles.emptyState}>Data tidak ditemukan.</Text>
         )}
-
-        <Text
-          fixed
-          style={styles.footer}
-          render={({ pageNumber, totalPages }) =>
-            `Halaman ${pageNumber} dari ${totalPages}`
-          }
-        />
       </Page>
     </Document>
   );
