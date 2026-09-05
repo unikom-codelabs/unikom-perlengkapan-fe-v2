@@ -200,8 +200,6 @@ const getVisiblePages = (currentPage, totalPages) => {
     .sort((a, b) => a - b);
 };
 
-// Filter jumlah disetujui dimatikan sementara untuk keperluan testing.
-// Aktifkan lagi baris "if (row.jumlahBeli <= 0) return;" sebelum dipakai user.
 const buildBapRekap = (rows = [], allUnits = []) => {
   const items = [];
   const unitMap = new Map();
@@ -213,6 +211,10 @@ const buildBapRekap = (rows = [], allUnits = []) => {
   });
 
   rows.forEach((row) => {
+    if (row.jumlahBeli <= 0) {
+      return;
+    }
+
     const name = row.nama_barang || "-";
     const satuan = row.satuan || "-";
     const key = `${name}|${satuan}`;
@@ -227,7 +229,7 @@ const buildBapRekap = (rows = [], allUnits = []) => {
     }
 
     const quantities = unitMap.get(unit);
-    quantities[key] = (quantities[key] ?? 0) + (row.jumlahBeli || row.jumlah);
+    quantities[key] = (quantities[key] ?? 0) + row.jumlahBeli;
   });
 
   const unitRows = Array.from(unitMap.entries()).map(([unit, quantities]) => ({
