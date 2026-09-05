@@ -44,8 +44,7 @@ const normalizeItems = (items = []) =>
           ? subtotalValue
           : safeHarga * safeJumlah,
       };
-    })
-    .filter((row) => row.jumlah > 0);
+    });
 
 const styles = StyleSheet.create({
   page: {

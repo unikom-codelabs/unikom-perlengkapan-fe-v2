@@ -168,12 +168,13 @@ const getVisiblePages = (currentPage, totalPages) => {
     .sort((a, b) => a - b);
 };
 
+// Sementara semua baris ikut dicetak supaya fitur bisa diuji sebelum ada data
+// yang disetujui. Kembalikan ke filter row.jumlahBeli > 0 sebelum dipakai user.
 const buildBapRekap = (rows = []) => {
-  const approvedRows = rows.filter((row) => row.jumlahBeli > 0);
   const itemNames = [];
   const unitMap = new Map();
 
-  approvedRows.forEach((row) => {
+  rows.forEach((row) => {
     const itemName = row.nama_barang || "-";
     const unit = row.bagian || "Tanpa Bagian";
 
@@ -186,7 +187,8 @@ const buildBapRekap = (rows = []) => {
     }
 
     const quantities = unitMap.get(unit);
-    quantities[itemName] = (quantities[itemName] ?? 0) + row.jumlahBeli;
+    quantities[itemName] =
+      (quantities[itemName] ?? 0) + (row.jumlahBeli || row.jumlah);
   });
 
   const unitRows = Array.from(unitMap.entries())
