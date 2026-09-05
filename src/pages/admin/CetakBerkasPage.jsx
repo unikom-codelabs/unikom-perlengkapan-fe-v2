@@ -111,7 +111,6 @@ const normalizeRow = (item = {}, index, kind = "barang") => {
         item.prodi ??
         item.program_studi ??
         item.programStudi ??
-        item.unit ??
         item.pengaju?.bagian ??
         item.user?.bagian ??
         "",
@@ -246,6 +245,7 @@ const CetakBerkasPage = ({ tipe = "rutin" }) => {
   const [isVendorAtkModalOpen, setIsVendorAtkModalOpen] = useState(false);
   const [isPreparingBap, setIsPreparingBap] = useState(false);
   const [prodiList, setProdiList] = useState([]);
+  const [daftarPengajuanRows, setDaftarPengajuanRows] = useState([]);
   const [rekapVendorList, setRekapVendorList] = useState([]);
   const [selectedRekapVendorId, setSelectedRekapVendorId] = useState("");
   const [isLoadingRekapVendor, setIsLoadingRekapVendor] = useState(false);
@@ -359,15 +359,18 @@ const CetakBerkasPage = ({ tipe = "rutin" }) => {
     listDaftarPengajuanAdmin()
       .then((data) => {
         if (isMounted) {
-          const ids = (Array.isArray(data) ? data : [])
+          const rows = Array.isArray(data) ? data : [];
+          const ids = rows
             .map((item) => String(item.aktivasiId || ""))
             .filter(Boolean);
           setValidAktivasiIds(new Set(ids));
+          setDaftarPengajuanRows(rows);
         }
       })
       .catch(() => {
         if (isMounted) {
           setValidAktivasiIds(new Set());
+          setDaftarPengajuanRows([]);
         }
       });
 
@@ -648,9 +651,24 @@ const CetakBerkasPage = ({ tipe = "rutin" }) => {
     [prodiList],
   );
 
+  const bapSourceRows = useMemo(
+    () =>
+      daftarPengajuanRows
+        .filter(
+          (row) => String(row.aktivasiId ?? "") === String(selectedAktivasiId),
+        )
+        .map((row) => ({
+          bagian: String(row.userUnit ?? "").trim(),
+          nama_barang: String(row.namaBarang ?? "").trim(),
+          jumlah: toNumber(row.jumlah, 0),
+          jumlahBeli: toNumber(row.jumlahDisetujui, 0),
+        })),
+    [daftarPengajuanRows, selectedAktivasiId],
+  );
+
   const bapRekap = useMemo(
-    () => buildBapRekap([...mainRows, ...otherRowsWithManualPrice], bapUnits),
-    [bapUnits, mainRows, otherRowsWithManualPrice],
+    () => buildBapRekap(bapSourceRows, bapUnits),
+    [bapSourceRows, bapUnits],
   );
 
   const tahunAkademikLabel = String(
