@@ -305,6 +305,8 @@ const getHistoriAktivasiSortValue = (histori = {}) => {
 const normalizeUnitTypeName = (item = {}) =>
   String(item?.nama ?? item?.name ?? "").trim();
 
+const UJIAN_KELAS_JABATAN = ["dekan", "ketua program studi"];
+
 const isDekanJabatanLabel = (label) =>
   String(label ?? "").trim().toLowerCase().startsWith("dekan");
 
@@ -479,7 +481,9 @@ const HistoriPengajuanAdminPage = () => {
         .map((item) => {
           const label = normalizeUnitTypeName(item);
 
-          return label ? { value: label, label } : null;
+          return UJIAN_KELAS_JABATAN.includes(label.toLowerCase())
+            ? { value: label, label }
+            : null;
         })
         .filter(Boolean),
     [jabatanOptions],

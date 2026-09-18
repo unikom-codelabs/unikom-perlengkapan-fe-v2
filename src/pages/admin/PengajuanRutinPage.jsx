@@ -69,6 +69,8 @@ const normalizeUnitValue = (value) =>
     .trim()
     .toLowerCase();
 
+const UJIAN_KELAS_JABATAN = ["dekan", "ketua program studi"];
+
 const isDekanJabatanLabel = (label) =>
   normalizeUnitValue(label).startsWith("dekan");
 
@@ -318,7 +320,13 @@ const AdminDaftarPengajuanPage = ({ tipe = "rutin" }) => {
       (option) => option.value === selectedAktivasiKelas,
     )?.label ?? "";
 
-  const ujianJabatanOptions = jabatanOptions;
+  const ujianJabatanOptions = useMemo(
+    () =>
+      jabatanOptions.filter((item) =>
+        UJIAN_KELAS_JABATAN.includes(normalizeUnitValue(item.label)),
+      ),
+    [jabatanOptions],
+  );
 
   const selectedJabatanChildOptions = useMemo(() => {
     const jabatan = jabatanOptions.find(
