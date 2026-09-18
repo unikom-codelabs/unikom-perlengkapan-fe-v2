@@ -892,6 +892,14 @@ const AdminDaftarPengajuanPage = ({ tipe = "rutin" }) => {
     [ttdUsers],
   );
 
+  const secondPartyUser = useMemo(
+    () => resolveTtdUser(selectedUnitLabel) ?? resolveTtdUser(bapForm.ttd2Role),
+    [bapForm.ttd2Role, resolveTtdUser, selectedUnitLabel],
+  );
+  const secondPartyName =
+    secondPartyUser?.nama || firstBapRow.user || "-";
+  const secondPartyNip = secondPartyUser?.nip || firstBapRow.userNip || "-";
+
   const ttd3User = useMemo(
     () => resolveTtdUser(bapForm.ttd3Role),
     [bapForm.ttd3Role, resolveTtdUser],
@@ -911,9 +919,9 @@ const AdminDaftarPengajuanPage = ({ tipe = "rutin" }) => {
     mainRows,
     otherRows: lainnyaRows,
     unitLabel: selectedUnitLabel || "-",
-    secondPartyName: firstBapRow.user || "-",
+    secondPartyName,
     secondPartyRole: bapForm.ttd2Role,
-    secondPartyNip: firstBapRow.userNip || "-",
+    secondPartyNip,
     bapNumber: bapForm.bapNumber,
     firstPartyRole: bapForm.ttd1Role,
     knownByPrimary: {
@@ -1024,7 +1032,7 @@ const AdminDaftarPengajuanPage = ({ tipe = "rutin" }) => {
       {shouldRenderBapModal ? (
         <BapPrintModal
           isVisible={showBapModal}
-          form={bapForm}
+          form={{ ...bapForm, secondPartyName }}
           ttdOptions={ttdJabatanOptions}
           isLoadingTtdOptions={isLoadingTtdJabatans}
           isFormValid={Boolean(isBapFormValid)}
