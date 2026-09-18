@@ -489,15 +489,38 @@ const HistoriPengajuanAdminPage = () => {
       return jabatanOptions;
     }
 
+    const prodiFromFakultas = jabatanOptions
+      .filter((item) => {
+        const label = normalizeUnitTypeName(item).toLowerCase();
+        return label.startsWith("fakultas") || label.includes("pasca");
+      })
+      .flatMap((item) => (Array.isArray(item?.children) ? item.children : []));
+    const prodiSource =
+      prodiOptions.length > 0 ? prodiOptions : prodiFromFakultas;
+    const seenProdi = new Set();
+    const prodiChildren = prodiSource
+      .map((prodi) => ({
+        id: prodi?.id,
+        nama: String(prodi?.nama ?? prodi?.name ?? "").trim(),
+      }))
+      .filter((prodi) => {
+        const key = prodi.nama.toLowerCase();
+
+        if (!key || seenProdi.has(key)) {
+          return false;
+        }
+
+        seenProdi.add(key);
+        return true;
+      })
+      .sort((a, b) => a.nama.localeCompare(b.nama, "id-ID"));
+
     return [
       ...jabatanOptions,
       {
         id: "ketua-program-studi",
         nama: KAPRODI_JABATAN_LABEL,
-        children: prodiOptions.map((prodi) => ({
-          id: prodi.id,
-          nama: prodi.nama,
-        })),
+        children: prodiChildren,
       },
     ];
   }, [jabatanOptions, prodiOptions]);
