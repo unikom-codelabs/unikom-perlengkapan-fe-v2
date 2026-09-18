@@ -473,41 +473,27 @@ const HistoriPengajuanAdminPage = () => {
     aktivasiOptionsKelas.find(
       (option) => option.value === selectedAktivasiKelas,
     )?.label ?? "";
-  const ujianJabatanOptions = useMemo(() => {
-    return jabatanOptions
-      .map((item) => {
-        const label = normalizeUnitTypeName(item);
-        const normalizedLabel = label.toLowerCase();
+  const ujianJabatanOptions = useMemo(
+    () =>
+      jabatanOptions
+        .map((item) => {
+          const label = normalizeUnitTypeName(item);
 
-        if (
-          !isDekanJabatanLabel(normalizedLabel) &&
-          !isKaprodiJabatanLabel(normalizedLabel)
-        ) {
-          return null;
-        }
+          return label ? { value: label, label } : null;
+        })
+        .filter(Boolean),
+    [jabatanOptions],
+  );
 
-        return {
-          value: label,
-          label,
-        };
-      })
-      .filter(Boolean);
-  }, [jabatanOptions]);
-
-  const dekanBagianOptions = useMemo(() => {
-    const dekan = jabatanOptions.find((item) =>
-      isDekanJabatanLabel(normalizeUnitTypeName(item)),
+  const selectedJabatanChildNames = useMemo(() => {
+    const target = String(selectedBagianType ?? "").trim().toLowerCase();
+    const jabatan = jabatanOptions.find(
+      (item) => normalizeUnitTypeName(item).toLowerCase() === target,
     );
 
-    return getUnitTypeChildrenNames(dekan);
-  }, [jabatanOptions]);
-  const kaprodiProdiOptions = useMemo(() => {
-    const kaprodi = jabatanOptions.find((item) =>
-      isKaprodiJabatanLabel(normalizeUnitTypeName(item)),
-    );
+    return getUnitTypeChildrenNames(jabatan);
+  }, [jabatanOptions, selectedBagianType]);
 
-    return getUnitTypeChildrenNames(kaprodi);
-  }, [jabatanOptions]);
   useEffect(() => {
     const fetchFilters = async () => {
       setIsLoadingFilters(true);
@@ -829,7 +815,7 @@ const HistoriPengajuanAdminPage = () => {
                 className="w-full border border-gray-300 rounded-full px-4 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 appearance-none bg-white text-gray-500"
               >
                 <option value="">-- Pilih Bagian --</option>
-                {dekanBagianOptions.map((unit) => (
+                {selectedJabatanChildNames.map((unit) => (
                   <option key={unit} value={unit}>
                     {unit}
                   </option>
@@ -849,7 +835,7 @@ const HistoriPengajuanAdminPage = () => {
                 className="w-full border border-gray-300 rounded-full px-4 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 appearance-none bg-white text-gray-500"
               >
                 <option value="">-- Pilih Program Studi --</option>
-                {kaprodiProdiOptions.map((unit) => (
+                {selectedJabatanChildNames.map((unit) => (
                   <option key={unit} value={unit}>
                     {unit}
                   </option>
@@ -910,7 +896,7 @@ const HistoriPengajuanAdminPage = () => {
                 className="w-full border border-gray-300 rounded-full px-4 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 appearance-none bg-white text-gray-500"
               >
                 <option value="">-- Pilih Bagian --</option>
-                {dekanBagianOptions.map((unit) => (
+                {selectedJabatanChildNames.map((unit) => (
                   <option key={unit} value={unit}>
                     {unit}
                   </option>
@@ -930,7 +916,7 @@ const HistoriPengajuanAdminPage = () => {
                 className="w-full border border-gray-300 rounded-full px-4 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 appearance-none bg-white text-gray-500"
               >
                 <option value="">-- Pilih Program Studi --</option>
-                {kaprodiProdiOptions.map((unit) => (
+                {selectedJabatanChildNames.map((unit) => (
                   <option key={unit} value={unit}>
                     {unit}
                   </option>

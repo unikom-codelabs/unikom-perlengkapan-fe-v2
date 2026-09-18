@@ -318,28 +318,15 @@ const AdminDaftarPengajuanPage = ({ tipe = "rutin" }) => {
       (option) => option.value === selectedAktivasiKelas,
     )?.label ?? "";
 
-  const ujianJabatanOptions = useMemo(
-    () =>
-      jabatanOptions.filter(
-        (item) =>
-          isDekanJabatanLabel(item.label) || isKaprodiJabatanLabel(item.label),
-      ),
-    [jabatanOptions],
-  );
+  const ujianJabatanOptions = jabatanOptions;
 
-  const dekanBagianOptions = useMemo(() => {
-    const dekan = jabatanOptions.find((item) =>
-      isDekanJabatanLabel(item.label),
+  const selectedJabatanChildOptions = useMemo(() => {
+    const jabatan = jabatanOptions.find(
+      (item) => normalizeUnitValue(item.label) === normalizeUnitValue(selectedBagianType),
     );
-    return getChildOptions(dekan?.children);
-  }, [jabatanOptions]);
 
-  const kaprodiProdiOptions = useMemo(() => {
-    const kaprodi = jabatanOptions.find((item) =>
-      isKaprodiJabatanLabel(item.label),
-    );
-    return getChildOptions(kaprodi?.children);
-  }, [jabatanOptions]);
+    return getChildOptions(jabatan?.children);
+  }, [jabatanOptions, selectedBagianType]);
 
   const fetchRows = useCallback(async () => {
     setIsLoading(true);
@@ -632,17 +619,21 @@ const AdminDaftarPengajuanPage = ({ tipe = "rutin" }) => {
               value={selectedBagian}
               onChange={setSelectedBagian}
               placeholder="-- Pilih Bagian --"
-              options={dekanBagianOptions}
+              options={selectedJabatanChildOptions}
             />
           ) : null}
 
           {selectedBagianType && !isDekan ? (
             <FilterSelect
-              label="Program Studi"
+              label={
+                isKaprodiJabatanLabel(selectedBagianType)
+                  ? "Program Studi"
+                  : "Bagian"
+              }
               value={selectedProdi}
               onChange={setSelectedProdi}
-              placeholder="-- Pilih Program Studi --"
-              options={kaprodiProdiOptions}
+              placeholder="-- Pilih --"
+              options={selectedJabatanChildOptions}
             />
           ) : null}
 
