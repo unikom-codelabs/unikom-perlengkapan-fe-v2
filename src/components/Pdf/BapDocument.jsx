@@ -7,14 +7,6 @@ const FIRST_PARTY = {
   nip: "41270201012",
 };
 
-const KNOWN_BY = [
-  {
-    title: "Wakil Rektor Bidang Akademik dan Kemahasiswaan",
-    name: "Prof. Dr. Hj. Umi Narimawati, Dra., SE., M.Si.",
-    nip: "41273402015",
-  },
-];
-
 const MONTH_SHORT = [
   "Jan",
   "Feb",
@@ -271,6 +263,11 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     marginTop: 6,
   },
+  signaturesCentered: {
+    flexDirection: "row",
+    justifyContent: "center",
+    marginTop: 6,
+  },
   signatureColumn: {
     width: 220,
     alignItems: "center",
@@ -458,13 +455,10 @@ const BapDocument = ({
     nip: cleanText(secondPartyNip),
   };
   const bapNumberText = cleanText(bapNumber, "/BA-BP/UNIKOM/2023");
-  const knownPrimary = knownByPrimary || KNOWN_BY[0];
-  const knownSecondary = knownBySecondary || {
-    title: `Ketua ${unitLabel}`,
-    role: "",
-    name: secondParty.name,
-    nip: secondParty.nip,
-  };
+  const knownColumns = [knownByPrimary, knownBySecondary].filter(
+    (column) =>
+      cleanText(column?.title, "") || cleanText(column?.name, ""),
+  );
   const tembusanList = Array.isArray(tembusan)
     ? tembusan.map((item) => cleanText(item, "")).filter(Boolean)
     : [];
@@ -559,21 +553,28 @@ const BapDocument = ({
             nip={secondParty.nip}
           />
         </View>
-        <Text style={styles.knownTitle}>Mengetahui,</Text>
-        <View style={styles.signatures}>
-          <SignatureColumn
-            title={cleanText(knownPrimary?.title, "")}
-            role={knownPrimary?.role}
-            name={knownPrimary?.name}
-            nip={knownPrimary?.nip}
-          />
-          <SignatureColumn
-            title={cleanText(knownSecondary?.title, "")}
-            role={knownSecondary?.role}
-            name={knownSecondary?.name}
-            nip={knownSecondary?.nip}
-          />
-        </View>
+        {knownColumns.length > 0 ? (
+          <>
+            <Text style={styles.knownTitle}>Mengetahui,</Text>
+            <View
+              style={
+                knownColumns.length === 1
+                  ? styles.signaturesCentered
+                  : styles.signatures
+              }
+            >
+              {knownColumns.map((column, index) => (
+                <SignatureColumn
+                  key={`${column?.title ?? "ttd"}-${index}`}
+                  title={cleanText(column?.title, "")}
+                  role={column?.role}
+                  name={column?.name}
+                  nip={column?.nip}
+                />
+              ))}
+            </View>
+          </>
+        ) : null}
         <View style={styles.tembusan}>
           <Text>Tembusan :</Text>
           {tembusanList.length > 0 ? (

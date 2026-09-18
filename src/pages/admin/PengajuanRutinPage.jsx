@@ -12,7 +12,6 @@ import {
   approveBarangPengajuanAdmin,
   listDaftarPengajuanAdmin,
 } from "../../api/pengajuanService";
-import { listJabatan } from "../../api/jabatanService";
 import { listUnitTypeTree } from "../../api/unitTypeService";
 import { listUsersPaginated } from "../../api/userService";
 import { STORAGE_BASE_URL as BASE_STORAGE_URL } from "../../config/env";
@@ -123,6 +122,19 @@ const buildDefaultBapNumber = () => {
   return `/BA-BP/UNIKOM/${year}`;
 };
 
+const TTD_NONE_VALUE = "tidak-diketahui";
+
+const buildTtdLabel = (user = {}) => {
+  const jabatan = String(user?.jabatan ?? "").trim();
+  const nama = String(user?.nama ?? "").trim();
+
+  if (jabatan && jabatan !== "-" && nama) {
+    return `${jabatan} - ${nama}`;
+  }
+
+  return nama || jabatan || "-";
+};
+
 const buildDefaultBapForm = (secondPartyRoleValue = "") => ({
   bapNumber: buildDefaultBapNumber(),
   ttd1Role: "Kepala Bagian Perlengkapan",
@@ -173,25 +185,6 @@ const getChildOptions = (children = []) =>
       };
     })
     .filter((item) => item.label);
-
-const normalizeTtdJabatanOptions = (items = []) => {
-  const optionMap = new Map();
-
-  (Array.isArray(items) ? items : []).forEach((item) => {
-    const label = String(item?.nama ?? item?.name ?? "").trim();
-
-    if (!label || optionMap.has(label.toLowerCase())) {
-      return;
-    }
-
-    optionMap.set(label.toLowerCase(), {
-      value: label,
-      label,
-    });
-  });
-
-  return Array.from(optionMap.values());
-};
 
 const getAktivasiSortValue = (row = {}) => {
   const timestamp = new Date(row.tanggal).getTime();
@@ -251,8 +244,6 @@ const AdminDaftarPengajuanPage = ({ tipe = "rutin" }) => {
   const [toastMessage, setToastMessage] = useState("");
   const [ttdUsers, setTtdUsers] = useState([]);
   const [isLoadingTtdUsers, setIsLoadingTtdUsers] = useState(false);
-  const [ttdJabatanOptions, setTtdJabatanOptions] = useState([]);
-  const [isLoadingTtdJabatans, setIsLoadingTtdJabatans] = useState(false);
   const [isBapModalOpen, setIsBapModalOpen] = useState(false);
   const [shouldRenderBapModal, setShouldRenderBapModal] = useState(false);
   const [showBapModal, setShowBapModal] = useState(false);
@@ -758,19 +749,6 @@ const AdminDaftarPengajuanPage = ({ tipe = "rutin" }) => {
     }
   }, []);
 
-  const fetchTtdJabatans = useCallback(async () => {
-    setIsLoadingTtdJabatans(true);
-
-    try {
-      const data = await listJabatan();
-      setTtdJabatanOptions(normalizeTtdJabatanOptions(data));
-    } catch {
-      setTtdJabatanOptions([]);
-    } finally {
-      setIsLoadingTtdJabatans(false);
-    }
-  }, []);
-
   useEffect(() => {
     if (isBapModalOpen) {
       setBapForm(buildDefaultBapForm(secondPartyRole));
@@ -791,23 +769,6 @@ const AdminDaftarPengajuanPage = ({ tipe = "rutin" }) => {
 
     fetchTtdUsers();
   }, [fetchTtdUsers, isBapModalOpen, isLoadingTtdUsers, ttdUsers.length]);
-
-  useEffect(() => {
-    if (
-      !isBapModalOpen ||
-      isLoadingTtdJabatans ||
-      ttdJabatanOptions.length > 0
-    ) {
-      return;
-    }
-
-    fetchTtdJabatans();
-  }, [
-    fetchTtdJabatans,
-    isBapModalOpen,
-    isLoadingTtdJabatans,
-    ttdJabatanOptions.length,
-  ]);
 
   const bapFileName = [
     "bap",
@@ -900,13 +861,35 @@ const AdminDaftarPengajuanPage = ({ tipe = "rutin" }) => {
     secondPartyUser?.nama || firstBapRow.user || "-";
   const secondPartyNip = secondPartyUser?.nip || firstBapRow.userNip || "-";
 
+  const ttdOptions = useMemo(
+    () => [
+      ...ttdUsers
+        .filter((user) => String(user?.nama ?? "").trim())
+        .map((user) => ({
+          value: String(user.id),
+          label: buildTtdLabel(user),
+        }))
+        .sort((a, b) => a.label.localeCompare(b.label, "id-ID")),
+      { value: TTD_NONE_VALUE, label: "Tidak Diketahui" },
+    ],
+    [ttdUsers],
+  );
+
+  const findTtdUserById = useCallback(
+    (value) =>
+      value && value !== TTD_NONE_VALUE
+        ? (ttdUsers.find((user) => String(user.id) === String(value)) ?? null)
+        : null,
+    [ttdUsers],
+  );
+
   const ttd3User = useMemo(
-    () => resolveTtdUser(bapForm.ttd3Role),
-    [bapForm.ttd3Role, resolveTtdUser],
+    () => findTtdUserById(bapForm.ttd3Role),
+    [bapForm.ttd3Role, findTtdUserById],
   );
   const ttd4User = useMemo(
-    () => resolveTtdUser(bapForm.ttd4Role),
-    [bapForm.ttd4Role, resolveTtdUser],
+    () => findTtdUserById(bapForm.ttd4Role),
+    [bapForm.ttd4Role, findTtdUserById],
   );
 
   const isBapFormValid =
@@ -924,18 +907,22 @@ const AdminDaftarPengajuanPage = ({ tipe = "rutin" }) => {
     secondPartyNip,
     bapNumber: bapForm.bapNumber,
     firstPartyRole: bapForm.ttd1Role,
-    knownByPrimary: {
-      title: bapForm.ttd3Role,
-      role: "",
-      name: ttd3User?.nama ?? "",
-      nip: ttd3User?.nip ?? "",
-    },
-    knownBySecondary: {
-      title: bapForm.ttd4Role,
-      role: "",
-      name: ttd4User?.nama ?? "",
-      nip: ttd4User?.nip ?? "",
-    },
+    knownByPrimary: ttd3User
+      ? {
+          title: String(ttd3User.jabatan ?? "").trim(),
+          role: "",
+          name: ttd3User.nama,
+          nip: ttd3User.nip,
+        }
+      : null,
+    knownBySecondary: ttd4User
+      ? {
+          title: String(ttd4User.jabatan ?? "").trim(),
+          role: "",
+          name: ttd4User.nama,
+          nip: ttd4User.nip,
+        }
+      : null,
     tembusan: bapForm.tembusan,
   };
 
@@ -1033,8 +1020,8 @@ const AdminDaftarPengajuanPage = ({ tipe = "rutin" }) => {
         <BapPrintModal
           isVisible={showBapModal}
           form={{ ...bapForm, secondPartyName }}
-          ttdOptions={ttdJabatanOptions}
-          isLoadingTtdOptions={isLoadingTtdJabatans}
+          ttdOptions={ttdOptions}
+          isLoadingTtdOptions={isLoadingTtdUsers}
           isFormValid={Boolean(isBapFormValid)}
           documentData={bapDocumentData}
           fileName={bapFileName}
