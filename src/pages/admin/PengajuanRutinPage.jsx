@@ -125,14 +125,14 @@ const buildDefaultBapNumber = () => {
 const TTD_NONE_VALUE = "tidak-diketahui";
 
 const buildTtdLabel = (user = {}) => {
-  const jabatan = String(user?.jabatan ?? "").trim();
   const nama = String(user?.nama ?? "").trim();
+  const satuan = String(user?.satuan ?? "").trim();
 
-  if (jabatan && jabatan !== "-" && nama) {
-    return `${jabatan} - ${nama}`;
+  if (nama && satuan && satuan !== "-") {
+    return `${nama} - ${satuan}`;
   }
 
-  return nama || jabatan || "-";
+  return nama || satuan || "-";
 };
 
 const buildDefaultBapForm = (secondPartyRoleValue = "") => ({
@@ -140,7 +140,9 @@ const buildDefaultBapForm = (secondPartyRoleValue = "") => ({
   ttd1Role: "Kepala Bagian Perlengkapan",
   ttd2Role: secondPartyRoleValue,
   ttd3Role: "",
+  ttd3UserId: "",
   ttd4Role: "",
+  ttd4UserId: "",
   tembusan: [""],
 });
 
@@ -783,10 +785,15 @@ const AdminDaftarPengajuanPage = ({ tipe = "rutin" }) => {
   const hasBapRows = filteredRows.length > 0;
 
   const updateBapField = (name, value) => {
-    setBapForm((current) => ({
-      ...current,
-      [name]: value,
-    }));
+    setBapForm((current) => {
+      if (name === "ttd3Role" || name === "ttd4Role") {
+        const userField = name === "ttd3Role" ? "ttd3UserId" : "ttd4UserId";
+
+        return { ...current, [name]: value, [userField]: "" };
+      }
+
+      return { ...current, [name]: value };
+    });
   };
 
   const updateTembusan = (index, value) => {
@@ -861,41 +868,90 @@ const AdminDaftarPengajuanPage = ({ tipe = "rutin" }) => {
     secondPartyUser?.nama || firstBapRow.user || "-";
   const secondPartyNip = secondPartyUser?.nip || firstBapRow.userNip || "-";
 
-  const ttdOptions = useMemo(
-    () => [
-      ...ttdUsers
-        .filter((user) => String(user?.nama ?? "").trim())
-        .map((user) => ({
-          value: String(user.id),
-          label: buildTtdLabel(user),
-        }))
-        .sort((a, b) => a.label.localeCompare(b.label, "id-ID")),
+  const ttdJabatanOptions = useMemo(() => {
+    const seen = new Map();
+
+    ttdUsers.forEach((user) => {
+      const jabatan = String(user?.jabatan ?? "").trim();
+
+      if (!jabatan || jabatan === "-" || seen.has(jabatan.toLowerCase())) {
+        return;
+      }
+
+      seen.set(jabatan.toLowerCase(), { value: jabatan, label: jabatan });
+    });
+
+    return [
       { value: TTD_NONE_VALUE, label: "Tidak Diketahui" },
-    ],
+      ...Array.from(seen.values()).sort((a, b) =>
+        a.label.localeCompare(b.label, "id-ID"),
+      ),
+    ];
+  }, [ttdUsers]);
+
+  const getTtdUserOptions = useCallback(
+    (jabatan) => {
+      const normalizedJabatan = normalizeLookupValue(jabatan);
+
+      if (!normalizedJabatan || jabatan === TTD_NONE_VALUE) {
+        return [];
+      }
+
+      return ttdUsers
+        .filter(
+          (user) =>
+            normalizeLookupValue(user?.jabatan) === normalizedJabatan &&
+            String(user?.nama ?? "").trim(),
+        )
+        .map((user) => ({ value: String(user.id), label: buildTtdLabel(user) }))
+        .sort((a, b) => a.label.localeCompare(b.label, "id-ID"));
+    },
     [ttdUsers],
   );
 
   const findTtdUserById = useCallback(
     (value) =>
-      value && value !== TTD_NONE_VALUE
+      value
         ? (ttdUsers.find((user) => String(user.id) === String(value)) ?? null)
         : null,
     [ttdUsers],
   );
 
+  const ttd3UserOptions = useMemo(
+    () => getTtdUserOptions(bapForm.ttd3Role),
+    [bapForm.ttd3Role, getTtdUserOptions],
+  );
+  const ttd4UserOptions = useMemo(
+    () => getTtdUserOptions(bapForm.ttd4Role),
+    [bapForm.ttd4Role, getTtdUserOptions],
+  );
   const ttd3User = useMemo(
-    () => findTtdUserById(bapForm.ttd3Role),
-    [bapForm.ttd3Role, findTtdUserById],
+    () =>
+      bapForm.ttd3Role === TTD_NONE_VALUE
+        ? null
+        : findTtdUserById(bapForm.ttd3UserId),
+    [bapForm.ttd3Role, bapForm.ttd3UserId, findTtdUserById],
   );
   const ttd4User = useMemo(
-    () => findTtdUserById(bapForm.ttd4Role),
-    [bapForm.ttd4Role, findTtdUserById],
+    () =>
+      bapForm.ttd4Role === TTD_NONE_VALUE
+        ? null
+        : findTtdUserById(bapForm.ttd4UserId),
+    [bapForm.ttd4Role, bapForm.ttd4UserId, findTtdUserById],
   );
+
+  const isTtdSelectionValid = (jabatan, userId) => {
+    if (!String(jabatan ?? "").trim()) {
+      return false;
+    }
+
+    return jabatan === TTD_NONE_VALUE || Boolean(String(userId ?? "").trim());
+  };
 
   const isBapFormValid =
     bapForm.bapNumber.trim() &&
-    bapForm.ttd3Role.trim() &&
-    bapForm.ttd4Role.trim() &&
+    isTtdSelectionValid(bapForm.ttd3Role, bapForm.ttd3UserId) &&
+    isTtdSelectionValid(bapForm.ttd4Role, bapForm.ttd4UserId) &&
     bapForm.tembusan.every((item) => item.trim());
 
   const bapDocumentData = {
@@ -1020,7 +1076,10 @@ const AdminDaftarPengajuanPage = ({ tipe = "rutin" }) => {
         <BapPrintModal
           isVisible={showBapModal}
           form={{ ...bapForm, secondPartyName }}
-          ttdOptions={ttdOptions}
+          ttdOptions={ttdJabatanOptions}
+          ttd3UserOptions={ttd3UserOptions}
+          ttd4UserOptions={ttd4UserOptions}
+          noneValue={TTD_NONE_VALUE}
           isLoadingTtdOptions={isLoadingTtdUsers}
           isFormValid={Boolean(isBapFormValid)}
           documentData={bapDocumentData}

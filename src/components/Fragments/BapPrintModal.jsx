@@ -59,10 +59,53 @@ const SignatureSelect = ({ label, value, onChange, options, disabled }) => (
   </div>
 );
 
+const TtdFieldGroup = ({
+  label,
+  jabatanValue,
+  userValue,
+  jabatanOptions,
+  userOptions,
+  isLoadingOptions,
+  noneValue,
+  onJabatanChange,
+  onUserChange,
+}) => {
+  const isNone = jabatanValue === noneValue;
+
+  return (
+    <div className="space-y-2">
+      <SignatureSelect
+        label={label}
+        value={jabatanValue}
+        onChange={onJabatanChange}
+        options={jabatanOptions}
+        disabled={isLoadingOptions}
+      />
+      {jabatanValue && !isNone ? (
+        <Dropdown value={userValue} onChange={(event) => onUserChange(event.target.value)} required>
+          <option value="">
+            {userOptions.length === 0
+              ? "Tidak ada pengguna pada jabatan ini"
+              : `-- Pilih ${jabatanValue} --`}
+          </option>
+          {userOptions.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </Dropdown>
+      ) : null}
+    </div>
+  );
+};
+
 const BapPrintModal = ({
   isVisible,
   form,
   ttdOptions,
+  ttd3UserOptions = [],
+  ttd4UserOptions = [],
+  noneValue,
   isLoadingTtdOptions,
   isFormValid,
   documentData,
@@ -108,19 +151,27 @@ const BapPrintModal = ({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <TextField label="Tanda Tangan 1" value={form.ttd1Role} readOnly />
             <TextField label="Tanda Tangan 2" value={form.ttd2Role} readOnly />
-            <SignatureSelect
+            <TtdFieldGroup
               label="Tanda Tangan 3"
-              value={form.ttd3Role}
-              onChange={(value) => onFieldChange("ttd3Role", value)}
-              options={ttdOptions}
-              disabled={isLoadingTtdOptions}
+              jabatanValue={form.ttd3Role}
+              userValue={form.ttd3UserId}
+              jabatanOptions={ttdOptions}
+              userOptions={ttd3UserOptions}
+              isLoadingOptions={isLoadingTtdOptions}
+              noneValue={noneValue}
+              onJabatanChange={(value) => onFieldChange("ttd3Role", value)}
+              onUserChange={(value) => onFieldChange("ttd3UserId", value)}
             />
-            <SignatureSelect
+            <TtdFieldGroup
               label="Tanda Tangan 4"
-              value={form.ttd4Role}
-              onChange={(value) => onFieldChange("ttd4Role", value)}
-              options={ttdOptions}
-              disabled={isLoadingTtdOptions}
+              jabatanValue={form.ttd4Role}
+              userValue={form.ttd4UserId}
+              jabatanOptions={ttdOptions}
+              userOptions={ttd4UserOptions}
+              isLoadingOptions={isLoadingTtdOptions}
+              noneValue={noneValue}
+              onJabatanChange={(value) => onFieldChange("ttd4Role", value)}
+              onUserChange={(value) => onFieldChange("ttd4UserId", value)}
             />
           </div>
         </div>
