@@ -13,6 +13,7 @@ import {
   listDaftarPengajuanAdmin,
 } from "../../api/pengajuanService";
 import { listUnitTypeTree } from "../../api/unitTypeService";
+import { listDropdownProdi } from "../../api/dropdownService";
 import { listUsersPaginated } from "../../api/userService";
 import { STORAGE_BASE_URL as BASE_STORAGE_URL } from "../../config/env";
 
@@ -69,7 +70,8 @@ const normalizeUnitValue = (value) =>
     .trim()
     .toLowerCase();
 
-const UJIAN_KELAS_JABATAN = ["dekan", "ketua program studi"];
+const KAPRODI_JABATAN_LABEL = "Ketua Program Studi";
+const UJIAN_KELAS_JABATAN = ["dekan", KAPRODI_JABATAN_LABEL.toLowerCase()];
 
 const isDekanJabatanLabel = (label) =>
   normalizeUnitValue(label).startsWith("dekan");
@@ -246,6 +248,7 @@ const AdminDaftarPengajuanPage = ({ tipe = "rutin" }) => {
   const [activeTab, setActiveTab] = useState("tahunan");
   const [rows, setRows] = useState([]);
   const [jabatanOptions, setJabatanOptions] = useState([]);
+  const [prodiOptions, setProdiOptions] = useState([]);
   const [bagianOptions, setBagianOptions] = useState([]);
   const [selectedJabatan, setSelectedJabatan] = useState("");
   const [selectedBagian, setSelectedBagian] = useState("");
@@ -320,21 +323,48 @@ const AdminDaftarPengajuanPage = ({ tipe = "rutin" }) => {
       (option) => option.value === selectedAktivasiKelas,
     )?.label ?? "";
 
+  const ujianJabatanSource = useMemo(() => {
+    const hasKaprodi = jabatanOptions.some(
+      (item) =>
+        normalizeUnitValue(item.label) ===
+        normalizeUnitValue(KAPRODI_JABATAN_LABEL),
+    );
+
+    if (hasKaprodi) {
+      return jabatanOptions;
+    }
+
+    return [
+      ...jabatanOptions,
+      {
+        id: "ketua-program-studi",
+        value: "ketua-program-studi",
+        label: KAPRODI_JABATAN_LABEL,
+        children: prodiOptions.map((prodi) => ({
+          id: prodi.id,
+          nama: prodi.nama,
+        })),
+      },
+    ];
+  }, [jabatanOptions, prodiOptions]);
+
   const ujianJabatanOptions = useMemo(
     () =>
-      jabatanOptions.filter((item) =>
+      ujianJabatanSource.filter((item) =>
         UJIAN_KELAS_JABATAN.includes(normalizeUnitValue(item.label)),
       ),
-    [jabatanOptions],
+    [ujianJabatanSource],
   );
 
   const selectedJabatanChildOptions = useMemo(() => {
-    const jabatan = jabatanOptions.find(
-      (item) => normalizeUnitValue(item.label) === normalizeUnitValue(selectedBagianType),
+    const jabatan = ujianJabatanSource.find(
+      (item) =>
+        normalizeUnitValue(item.label) ===
+        normalizeUnitValue(selectedBagianType),
     );
 
     return getChildOptions(jabatan?.children);
-  }, [jabatanOptions, selectedBagianType]);
+  }, [selectedBagianType, ujianJabatanSource]);
 
   const fetchRows = useCallback(async () => {
     setIsLoading(true);
@@ -360,6 +390,10 @@ const AdminDaftarPengajuanPage = ({ tipe = "rutin" }) => {
   useEffect(() => {
     const fetchFilters = async () => {
       setIsLoadingFilters(true);
+
+      listDropdownProdi()
+        .then((data) => setProdiOptions(Array.isArray(data) ? data : []))
+        .catch(() => setProdiOptions([]));
 
       try {
         const data = await listUnitTypeTree();

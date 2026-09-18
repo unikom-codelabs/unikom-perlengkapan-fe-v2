@@ -4,6 +4,7 @@ import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/outline";
 import Table from "../../components/Element/Table";
 import Dropdown from "../../components/Element/Dropdown";
 import { listUnitTypeTree } from "../../api/unitTypeService";
+import { listDropdownProdi } from "../../api/dropdownService";
 import { getHistoriPengajuanAdmin } from "../../api/historiPengajuanService";
 import { STORAGE_BASE_URL as BASE_STORAGE_URL } from "../../config/env";
 
@@ -305,7 +306,8 @@ const getHistoriAktivasiSortValue = (histori = {}) => {
 const normalizeUnitTypeName = (item = {}) =>
   String(item?.nama ?? item?.name ?? "").trim();
 
-const UJIAN_KELAS_JABATAN = ["dekan", "ketua program studi"];
+const KAPRODI_JABATAN_LABEL = "Ketua Program Studi";
+const UJIAN_KELAS_JABATAN = ["dekan", KAPRODI_JABATAN_LABEL.toLowerCase()];
 
 const isDekanJabatanLabel = (label) =>
   String(label ?? "").trim().toLowerCase().startsWith("dekan");
@@ -335,6 +337,7 @@ const normalizeUnitValue = (value) =>
 const HistoriPengajuanAdminPage = () => {
   const [activeTab, setActiveTab] = useState("ATK Tahunan");
   const [jabatanOptions, setJabatanOptions] = useState([]);
+  const [prodiOptions, setProdiOptions] = useState([]);
   const [bagianOptions, setBagianOptions] = useState([]);
   const [selectedJabatan, setSelectedJabatan] = useState("");
   const [selectedBagian, setSelectedBagian] = useState("");
@@ -475,9 +478,33 @@ const HistoriPengajuanAdminPage = () => {
     aktivasiOptionsKelas.find(
       (option) => option.value === selectedAktivasiKelas,
     )?.label ?? "";
+  const ujianJabatanSource = useMemo(() => {
+    const hasKaprodi = jabatanOptions.some(
+      (item) =>
+        normalizeUnitTypeName(item).toLowerCase() ===
+        KAPRODI_JABATAN_LABEL.toLowerCase(),
+    );
+
+    if (hasKaprodi) {
+      return jabatanOptions;
+    }
+
+    return [
+      ...jabatanOptions,
+      {
+        id: "ketua-program-studi",
+        nama: KAPRODI_JABATAN_LABEL,
+        children: prodiOptions.map((prodi) => ({
+          id: prodi.id,
+          nama: prodi.nama,
+        })),
+      },
+    ];
+  }, [jabatanOptions, prodiOptions]);
+
   const ujianJabatanOptions = useMemo(
     () =>
-      jabatanOptions
+      ujianJabatanSource
         .map((item) => {
           const label = normalizeUnitTypeName(item);
 
@@ -486,17 +513,17 @@ const HistoriPengajuanAdminPage = () => {
             : null;
         })
         .filter(Boolean),
-    [jabatanOptions],
+    [ujianJabatanSource],
   );
 
   const selectedJabatanChildNames = useMemo(() => {
     const target = String(selectedBagianType ?? "").trim().toLowerCase();
-    const jabatan = jabatanOptions.find(
+    const jabatan = ujianJabatanSource.find(
       (item) => normalizeUnitTypeName(item).toLowerCase() === target,
     );
 
     return getUnitTypeChildrenNames(jabatan);
-  }, [jabatanOptions, selectedBagianType]);
+  }, [selectedBagianType, ujianJabatanSource]);
 
   useEffect(() => {
     const fetchFilters = async () => {
@@ -504,15 +531,18 @@ const HistoriPengajuanAdminPage = () => {
       setIsLoadingHistori(true);
 
       try {
-        const [historiDataResponse, unitTypes] = await Promise.all([
+        const [historiDataResponse, unitTypes, prodiList] = await Promise.all([
           getHistoriPengajuanAdmin(),
           listUnitTypeTree().catch(() => []),
+          listDropdownProdi().catch(() => []),
         ]);
 
         const historiList = Array.isArray(historiDataResponse)
           ? historiDataResponse
           : [];
         const jabatanUnits = Array.isArray(unitTypes) ? unitTypes : [];
+
+        setProdiOptions(Array.isArray(prodiList) ? prodiList : []);
 
         setJabatanOptions(jabatanUnits);
         setHistoriData(historiList);
