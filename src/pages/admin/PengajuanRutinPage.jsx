@@ -69,6 +69,21 @@ const normalizeUnitValue = (value) =>
     .trim()
     .toLowerCase();
 
+const isDekanJabatanLabel = (label) =>
+  normalizeUnitValue(label).startsWith("dekan");
+
+const isKaprodiJabatanLabel = (label) => {
+  const value = normalizeUnitValue(label);
+
+  return (
+    value.includes("kaprodi") ||
+    value.includes("ka prodi") ||
+    value.includes("ka. prodi") ||
+    value.includes("ketua program studi") ||
+    value.includes("program studi")
+  );
+};
+
 const normalizeTipe = (value) => {
   const normalized = String(value ?? "")
     .trim()
@@ -276,7 +291,7 @@ const AdminDaftarPengajuanPage = ({ tipe = "rutin" }) => {
   );
   const aktivasiOptionsUjian = useMemo(
     () => {
-      const selectedUnit = selectedBagianType.toLowerCase() === "dekan" ? selectedBagian : selectedProdi;
+      const selectedUnit = isDekanJabatanLabel(selectedBagianType) ? selectedBagian : selectedProdi;
       const filteredByUnit = rowsByTipe.filter(row => row.kategori === "ujian" && shouldIncludeByUnit(row, selectedUnit));
       return buildAktivasiOptions(filteredByUnit);
     },
@@ -284,7 +299,7 @@ const AdminDaftarPengajuanPage = ({ tipe = "rutin" }) => {
   );
   const aktivasiOptionsKelas = useMemo(
     () => {
-      const selectedUnit = selectedBagianType.toLowerCase() === "dekan" ? selectedBagian : selectedProdi;
+      const selectedUnit = isDekanJabatanLabel(selectedBagianType) ? selectedBagian : selectedProdi;
       const filteredByUnit = rowsByTipe.filter(row => row.kategori === "kelas" && shouldIncludeByUnit(row, selectedUnit));
       return buildAktivasiOptions(filteredByUnit);
     },
@@ -305,22 +320,23 @@ const AdminDaftarPengajuanPage = ({ tipe = "rutin" }) => {
 
   const ujianJabatanOptions = useMemo(
     () =>
-      jabatanOptions.filter((item) =>
-        ["dekan", "kaprodi"].includes(item.label.toLowerCase()),
+      jabatanOptions.filter(
+        (item) =>
+          isDekanJabatanLabel(item.label) || isKaprodiJabatanLabel(item.label),
       ),
     [jabatanOptions],
   );
 
   const dekanBagianOptions = useMemo(() => {
-    const dekan = jabatanOptions.find(
-      (item) => item.label.toLowerCase() === "dekan",
+    const dekan = jabatanOptions.find((item) =>
+      isDekanJabatanLabel(item.label),
     );
     return getChildOptions(dekan?.children);
   }, [jabatanOptions]);
 
   const kaprodiProdiOptions = useMemo(() => {
-    const kaprodi = jabatanOptions.find(
-      (item) => item.label.toLowerCase() === "kaprodi",
+    const kaprodi = jabatanOptions.find((item) =>
+      isKaprodiJabatanLabel(item.label),
     );
     return getChildOptions(kaprodi?.children);
   }, [jabatanOptions]);
@@ -397,13 +413,13 @@ const AdminDaftarPengajuanPage = ({ tipe = "rutin" }) => {
   const filteredRows = filteredByTipeAndTab.filter((row) => {
     const hasRequiredSelections = isUjianTab
       ? selectedBagianType &&
-        (selectedBagianType.toLowerCase() === "dekan"
+        (isDekanJabatanLabel(selectedBagianType)
           ? selectedBagian
           : selectedProdi) &&
         selectedAktivasiUjian
       : isKelasTab
         ? selectedBagianType &&
-          (selectedBagianType.toLowerCase() === "dekan"
+          (isDekanJabatanLabel(selectedBagianType)
             ? selectedBagian
             : selectedProdi) &&
           selectedAktivasiKelas
@@ -415,7 +431,7 @@ const AdminDaftarPengajuanPage = ({ tipe = "rutin" }) => {
 
     if (isUjianTab || isKelasTab) {
       const selectedUnit =
-        selectedBagianType.toLowerCase() === "dekan"
+        isDekanJabatanLabel(selectedBagianType)
           ? selectedBagian
           : selectedProdi;
       const selectedAktivasiValue = isUjianTab
@@ -586,7 +602,7 @@ const AdminDaftarPengajuanPage = ({ tipe = "rutin" }) => {
 
   const renderFilters = () => {
     if (isUjianTab || isKelasTab) {
-      const isDekan = selectedBagianType.toLowerCase() === "dekan";
+      const isDekan = isDekanJabatanLabel(selectedBagianType);
       const selectedUnit = isDekan ? selectedBagian : selectedProdi;
       const selectedAktivasiValue = isUjianTab
         ? selectedAktivasiUjian
@@ -681,7 +697,7 @@ const AdminDaftarPengajuanPage = ({ tipe = "rutin" }) => {
     ? "Memuat data pengajuan..."
     : isUjianTab
       ? selectedBagianType &&
-        (selectedBagianType.toLowerCase() === "dekan"
+        (isDekanJabatanLabel(selectedBagianType)
           ? selectedBagian
           : selectedProdi) &&
         selectedAktivasiUjian
@@ -689,7 +705,7 @@ const AdminDaftarPengajuanPage = ({ tipe = "rutin" }) => {
         : "Pilih jabatan, bagian atau program studi, dan aktivasi untuk melihat data"
       : isKelasTab
         ? selectedBagianType &&
-          (selectedBagianType.toLowerCase() === "dekan"
+          (isDekanJabatanLabel(selectedBagianType)
             ? selectedBagian
             : selectedProdi) &&
           selectedAktivasiKelas
@@ -710,7 +726,7 @@ const AdminDaftarPengajuanPage = ({ tipe = "rutin" }) => {
     "";
   const selectedUnitLabel =
     isUjianTab || isKelasTab
-      ? selectedBagianType.toLowerCase() === "dekan"
+      ? isDekanJabatanLabel(selectedBagianType)
         ? selectedBagian
         : selectedProdi
       : selectedBagian;
