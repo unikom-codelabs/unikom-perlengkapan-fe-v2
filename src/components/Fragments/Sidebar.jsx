@@ -1,3 +1,4 @@
+import { canSubmitAllKategori } from "../../utils/jabatanAccess";
 
 import { useEffect, useMemo, useState } from "react";
 import Logo from "/src/assets/img/logo-unikom.png";
@@ -127,8 +128,7 @@ const Sidebar = () => {
   const normalizedJabatan = normalizeJabatanName(currentUser);
   const isUserRole = normalizedRole === "user";
   const isDekan =
-    normalizedJabatan.includes("dekan") ||
-    normalizedJabatan.includes("kaprodi");
+    canSubmitAllKategori(normalizedJabatan);
   const allowedPengajuanKategori = useMemo(() => {
     return isUserRole && !isDekan ? ["tahunan"] : ["tahunan", "ujian", "kelas"];
   }, [isUserRole, isDekan]);

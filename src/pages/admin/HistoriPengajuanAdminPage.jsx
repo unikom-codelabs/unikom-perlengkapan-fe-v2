@@ -7,6 +7,7 @@ import { listUnitTypeTree } from "../../api/unitTypeService";
 import { listDropdownProdi } from "../../api/dropdownService";
 import { getHistoriPengajuanAdmin } from "../../api/historiPengajuanService";
 import { STORAGE_BASE_URL as BASE_STORAGE_URL } from "../../config/env";
+import { normalizeJabatanValue } from "../../utils/jabatanAccess";
 
 const getJenisFromTab = (tab) =>
   ({
@@ -313,13 +314,12 @@ const isDekanJabatanLabel = (label) =>
   String(label ?? "").trim().toLowerCase().startsWith("dekan");
 
 const isKaprodiJabatanLabel = (label) => {
-  const value = String(label ?? "").trim().toLowerCase();
+  const value = normalizeJabatanValue(label);
 
   return (
     value.includes("kaprodi") ||
     value.includes("ka prodi") ||
-    value.includes("ka. prodi") ||
-    value.includes("ketua program studi") ||
+    value.includes("ketua prodi") ||
     value.includes("program studi")
   );
 };

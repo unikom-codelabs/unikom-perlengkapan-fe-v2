@@ -1,3 +1,4 @@
+import { canSubmitAllKategori } from "../../utils/jabatanAccess";
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import PageHelmet from "../../components/Seo/PageHelmet";
 import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/outline";
@@ -494,8 +495,7 @@ const HistoriPengajuanPenggunaPage = () => {
   const { currentUser, authLoading } = useAuth();
   const normalizedJabatan = normalizeJabatanName(currentUser);
   const isDekan =
-    normalizedJabatan.includes("dekan") ||
-    normalizedJabatan.includes("kaprodi");
+    canSubmitAllKategori(normalizedJabatan);
 
   const hasJabatanField = Boolean(
     currentUser &&

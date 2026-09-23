@@ -481,7 +481,11 @@ const AktivasiPage = () => {
       ujian: payloadUjian || selectedCard.pendingUjian,
     });
 
+    // Semester/ujian yang dipilih menentukan baris pengajuan yang dipakai, jadi
+    // hasil pencocokan harus menang atas id bawaan modal.
+    const hasPengajuanCriteria = Boolean(payloadSemester || payloadUjian);
     const resolvedPengajuanId =
+      (hasPengajuanCriteria ? selectedPengajuan?.id : null) ??
       payload.id_pengajuan ??
       selectedPengajuan?.id ??
       selectedCard.pendingPengajuanId ??

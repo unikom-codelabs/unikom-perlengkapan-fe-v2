@@ -1,3 +1,4 @@
+import { canSubmitAllKategori } from "../../utils/jabatanAccess";
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { Helmet } from "react-helmet-async";
 import { useNavigate, useParams } from "react-router-dom";
@@ -145,8 +146,7 @@ const PengajuanAtkPage = () => {
     [currentUser],
   );
   const isDekan =
-    normalizedJabatan.includes("dekan") ||
-    normalizedJabatan.includes("kaprodi");
+    canSubmitAllKategori(normalizedJabatan);
   const kategoriLabel = KATEGORI_LABELS[normalizedKategori] || "Tahunan";
   const [step, setStep] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
@@ -723,8 +723,24 @@ const PengajuanAtkPage = () => {
       return;
     }
 
+    const semesterValue = String(selectedAktivasi.semester ?? "")
+      .trim()
+      .toLowerCase();
+    const ujianValue = String(selectedAktivasi.ujian ?? "")
+      .trim()
+      .toLowerCase();
+
     const formData = new FormData();
     formData.append("aktivasi_pengajuan_id", String(selectedAktivasi.id));
+    formData.append("id_aktivasi", String(selectedAktivasi.id));
+
+    if (["ganjil", "genap", "tahunan"].includes(semesterValue)) {
+      formData.append("semester", semesterValue);
+    }
+
+    if (normalizedKategori === "ujian" && ["uts", "uas"].includes(ujianValue)) {
+      formData.append("ujian", ujianValue);
+    }
     formData.append(
       "surat_pengajuan",
       uploadedFile,

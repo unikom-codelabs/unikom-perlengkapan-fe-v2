@@ -1,3 +1,4 @@
+import { canSubmitAllKategori } from "../../utils/jabatanAccess";
 import { useEffect, useMemo, useState } from "react";
 import PageHelmet from "../../components/Seo/PageHelmet";
 import { listPengajuanSaya } from "../../api/pengajuanService";
@@ -116,8 +117,7 @@ const DaftarPengajuanUserPage = () => {
   const normalizedJabatan = normalizeJabatanName(currentUser);
 
   const isDekan =
-    normalizedJabatan.includes("dekan") ||
-    normalizedJabatan.includes("kaprodi");
+    canSubmitAllKategori(normalizedJabatan);
 
   const allowedKategori = useMemo(() => {
     if (normalizedRole === "user" && !isDekan) {
