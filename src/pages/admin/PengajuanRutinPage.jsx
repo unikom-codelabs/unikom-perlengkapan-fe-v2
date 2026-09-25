@@ -1099,19 +1099,21 @@ const AdminDaftarPengajuanPage = ({ tipe = "rutin" }) => {
             onJumlahBlur={handleJumlahBlur}
             onStatusChange={handleStatusChange}
           />
-          <PengajuanApprovalTable
-            title="Pengajuan Lainnya"
-            rows={lainnyaRows}
-            emptyMessage={emptyMessage}
-            updatingRowId={updatingRowId}
-            inputErrors={inputErrors}
-            formatKategori={formatKategori}
-            formatStatus={formatStatus}
-            statusBadgeClass={statusBadgeClass}
-            onJumlahChange={handleJumlahChange}
-            onJumlahBlur={handleJumlahBlur}
-            onStatusChange={handleStatusChange}
-          />
+          {isTahunanTab ? (
+            <PengajuanApprovalTable
+              title="Pengajuan Lainnya"
+              rows={lainnyaRows}
+              emptyMessage={emptyMessage}
+              updatingRowId={updatingRowId}
+              inputErrors={inputErrors}
+              formatKategori={formatKategori}
+              formatStatus={formatStatus}
+              statusBadgeClass={statusBadgeClass}
+              onJumlahChange={handleJumlahChange}
+              onJumlahBlur={handleJumlahBlur}
+              onStatusChange={handleStatusChange}
+            />
+          ) : null}
           <div className="flex flex-col sm:flex-row sm:items-center gap-3">
             {suratURL ? (
               <a

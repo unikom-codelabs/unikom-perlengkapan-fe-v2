@@ -433,7 +433,18 @@ const normalizeSummaryBarang = (items = []) =>
         qty: toNullableNumber(pickValue(item.qty, item.jumlah, item.jumlah_diajukan, 0)) ?? 0,
         jumlahDisetujui: toNullableNumber(pickValue(item.jumlah_disetujui, item.jumlahDisetujui, 0)) ?? 0,
         status: pickValue(item.status, 0),
-        vendor: String(pickValue(item.vendor, item.nama_vendor, item.vendor_nama, item.vendor?.nama, "-")).trim(),
+        // Barang master mengirim vendor sebagai string, barang lainnya sebagai
+        // objek {id, nama}. Nama harus dicoba lebih dulu, kalau tidak objeknya
+        // ikut ter-String() dan tampil sebagai [object Object].
+        vendor: String(
+            pickValue(
+                item.vendor?.nama,
+                typeof item.vendor === "string" ? item.vendor : undefined,
+                item.nama_vendor,
+                item.vendor_nama,
+                "-",
+            ),
+        ).trim(),
     }));
 
 const normalizeAktivasiSummary = (payload = {}) => {
