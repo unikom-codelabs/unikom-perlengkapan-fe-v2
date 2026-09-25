@@ -309,7 +309,7 @@ const DaftarPengajuanUserPage = () => {
                 onPageChange={setMainPage}
               />
 
-              <div hidden={activeTab !== "tahunan"}>
+              <div hidden={activeTab !== "tahunan" && lainnyaRows.length === 0}>
                 <h2 className="text-[17px] font-bold text-gray-700 mb-4">
                   Pengajuan Lainnya
                 </h2>

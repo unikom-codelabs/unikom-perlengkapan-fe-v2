@@ -1099,7 +1099,9 @@ const AdminDaftarPengajuanPage = ({ tipe = "rutin" }) => {
             onJumlahBlur={handleJumlahBlur}
             onStatusChange={handleStatusChange}
           />
-          {isTahunanTab ? (
+          {/* Pengajuan lainnya hanya berlaku untuk ATK Tahunan, tapi data lama
+              di Kelas dan Ujian tetap harus bisa ditinjau dan disetujui. */}
+          {isTahunanTab || lainnyaRows.length > 0 ? (
             <PengajuanApprovalTable
               title="Pengajuan Lainnya"
               rows={lainnyaRows}
