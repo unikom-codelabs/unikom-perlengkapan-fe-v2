@@ -148,6 +148,9 @@ const PengajuanAtkPage = () => {
   const isDekan =
     canSubmitAllKategori(normalizedJabatan);
   const kategoriLabel = KATEGORI_LABELS[normalizedKategori] || "Tahunan";
+  // Pengajuan lainnya hanya untuk ATK Tahunan. Kelas dan Ujian wajib memilih
+  // dari master barang, dan backend menolak barang_lainnya untuk keduanya.
+  const bolehLainnya = normalizedKategori === "tahunan";
   const [step, setStep] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
   const [uploadedFile, setUploadedFile] = useState(null);
@@ -491,7 +494,7 @@ const PengajuanAtkPage = () => {
     }
 
     if (!hasSelectedItem) {
-      setSubmitError("Pilih minimal satu barang atau tambah barang lainnya.");
+      setSubmitError(bolehLainnya ? "Pilih minimal satu barang atau tambah barang lainnya." : "Pilih minimal satu barang.");
       return;
     }
 
@@ -695,7 +698,7 @@ const PengajuanAtkPage = () => {
     }
 
     if (!hasSelectedItem) {
-      setSubmitError("Pilih minimal satu barang atau tambah barang lainnya.");
+      setSubmitError(bolehLainnya ? "Pilih minimal satu barang atau tambah barang lainnya." : "Pilih minimal satu barang.");
       setIsSubmittingPengajuan(false);
       return;
     }
@@ -749,7 +752,7 @@ const PengajuanAtkPage = () => {
     formData.append("tipe", normalizedKategori);
     formData.append("barang", JSON.stringify(buildBarangPayload()));
 
-    if (pengajuanLainnya.length > 0) {
+    if (bolehLainnya && pengajuanLainnya.length > 0) {
       appendBarangLainnyaToFormData(formData);
     }
 
@@ -1024,7 +1027,7 @@ const PengajuanAtkPage = () => {
                 ) : null}
               </div>
 
-              <div className="mb-6">
+              <div className="mb-6" hidden={!bolehLainnya}>
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 mb-3">
                   <h2 className="text-lg font-semibold text-gray-700">
                     {pengajuanLainnyaTitle}
@@ -1144,7 +1147,7 @@ const PengajuanAtkPage = () => {
                 />
               </div>
 
-              <div className="mb-6">
+              <div className="mb-6" hidden={!bolehLainnya}>
                 <h2 className="text-lg font-semibold text-gray-700 mb-3">
                   {pengajuanLainnyaTitle}
                 </h2>
