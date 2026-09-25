@@ -514,12 +514,16 @@ const normalizeAdminSubmission = (submission = {}, barangMasterById = new Map())
             submission.kategori,
             submission.jenis_pengajuan,
             submission.tipe_pengajuan,
+            // Sumber sebenarnya dari kategori pengajuan. Tanpa ini kategori
+            // hanya ditebak dari barang master, sehingga pengajuan yang isinya
+            // murni barang lainnya selalu jatuh ke "tahunan".
+            aktivasi.pengajuan?.tipe,
             aktivasi.jenis_pengajuan,
             aktivasi.kategori,
             "",
         ),
-        submission.semester ?? aktivasi.semester,
-        submission.ujian ?? aktivasi.ujian,
+        submission.semester ?? aktivasi.semester ?? aktivasi.pengajuan?.semester,
+        submission.ujian ?? aktivasi.ujian ?? aktivasi.pengajuan?.ujian,
     );
     const kategori = inferAdminSubmissionKategori(
         submission,
