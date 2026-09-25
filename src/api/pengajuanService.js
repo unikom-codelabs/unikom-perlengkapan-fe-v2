@@ -37,8 +37,11 @@ const normalizeKnownKategori = (value, semesterValue = "", ujianValue = "") => {
     const raw = String(value ?? "").toLowerCase().trim();
     const semester = String(semesterValue ?? "").toLowerCase().trim();
     const ujian = String(ujianValue ?? "").toLowerCase().trim();
+    // Katalog pengajuan memakai "Default" sebagai penanda bukan ujian, jadi
+    // nilai itu tidak boleh dianggap sebagai jenis ujian yang sebenarnya.
+    const ujianNyata = ujian && ujian !== "default" ? ujian : "";
 
-    if (raw.includes("ujian") || raw.includes("atk_ujian") || ujian) {
+    if (raw.includes("ujian") || raw.includes("atk_ujian") || ujianNyata) {
         return "ujian";
     }
 
