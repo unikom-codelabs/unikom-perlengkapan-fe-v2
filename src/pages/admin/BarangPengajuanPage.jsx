@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import PageHelmet from "../../components/Seo/PageHelmet";
 import {
   MagnifyingGlassIcon,
+  PencilSquareIcon,
   TrashIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
@@ -16,6 +17,7 @@ import {
   createBarang,
   deleteBarang,
   listBarang,
+  updateBarang,
 } from "../../api/barangService";
 
 const getApiErrorMessage = (error, fallbackMessage) => {
@@ -54,6 +56,7 @@ const BarangPengajuanPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isModalHapusOpen, setIsModalHapusOpen] = useState(false);
   const [selectedBarang, setSelectedBarang] = useState(null);
+  const [barangDiedit, setBarangDiedit] = useState(null);
   const itemsPerPage = 10;
 
   const getVendorLabel = (vendor) => {
@@ -153,20 +156,47 @@ const BarangPengajuanPage = () => {
 
   const handleOpenTambahBarang = () => {
     setCreateError("");
+    setBarangDiedit(null);
     setIsModalOpen(true);
   };
 
-  const handleCreateBarang = async (payload) => {
+  const handleOpenEditBarang = (barang) => {
+    setCreateError("");
+    setBarangDiedit(barang);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModalBarang = () => {
+    if (isSubmitting) {
+      return;
+    }
+
+    setIsModalOpen(false);
+    setBarangDiedit(null);
+  };
+
+  const handleSimpanBarang = async (payload) => {
     setCreateError("");
     setIsSubmitting(true);
 
     try {
-      await createBarang(payload);
+      if (barangDiedit?.id) {
+        await updateBarang(barangDiedit.id, payload);
+      } else {
+        await createBarang(payload);
+      }
+
       setIsModalOpen(false);
+      setBarangDiedit(null);
       await fetchBarang();
     } catch (error) {
       setCreateError(
-        getApiErrorMessage(error, "Gagal menambahkan barang. Coba lagi."),
+        getApiErrorMessage(
+          error,
+          barangDiedit?.id
+            ? "Gagal menyimpan perubahan barang. Coba lagi."
+            : "Gagal menambahkan barang. Coba lagi.",
+        ),
       );
     } finally {
       setIsSubmitting(false);
@@ -360,6 +390,12 @@ const BarangPengajuanPage = () => {
                 <td className="px-6 py-4 text-center">
                   <div className="flex items-center justify-center gap-2">
                     <ActionIconButton
+                      label="Edit"
+                      icon={PencilSquareIcon}
+                      onClick={() => handleOpenEditBarang(item)}
+                      disabled={isSubmitting}
+                    />
+                    <ActionIconButton
                       label="Hapus"
                       icon={TrashIcon}
                       onClick={() => handleOpenDeleteModal(item)}
@@ -416,10 +452,11 @@ const BarangPengajuanPage = () => {
       </div>
       <ModalTambahBarang
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onSubmit={handleCreateBarang}
+        onClose={handleCloseModalBarang}
+        onSubmit={handleSimpanBarang}
         isSubmitting={isSubmitting}
         errorMessage={createError}
+        initialData={barangDiedit}
       />
       <ModalKonfirmasiHapus
         isOpen={isModalHapusOpen}

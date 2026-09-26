@@ -47,6 +47,14 @@ const normalizeBarang = (item = {}) => ({
         "-",
     ),
     kategori: normalizeKategori(pickValue(item.kategori, item.jenis, item.tipe, item.category, "tahunan")),
+    // Nilai mentah sesuai kolom database, dipakai mengisi form edit. Field
+    // `kategori` di atas sudah diringkas jadi tahunan/ujian/kelas sehingga
+    // tidak bisa dikirim balik ke backend apa adanya.
+    kategoriAsli: pickValue(item.kategori, ""),
+    tipe: pickValue(item.tipe, ""),
+    unit: pickValue(item.unit, item.satuan, ""),
+    harga: item.harga ?? null,
+    vendorId: pickValue(item.vendor?.id, item.vendor_id, null),
 });
 
 const extractListData = (payload) => {

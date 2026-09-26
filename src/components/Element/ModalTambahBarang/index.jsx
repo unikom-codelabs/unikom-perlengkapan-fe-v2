@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { listVendor } from "../../../api/vendorService";
 import Dropdown from "../Dropdown";
 
@@ -8,7 +8,10 @@ const ModalTambahBarang = ({
   onSubmit,
   isSubmitting = false,
   errorMessage = "",
+  // Diisi saat mengubah barang yang sudah ada; null berarti tambah baru.
+  initialData = null,
 }) => {
+  const isEdit = Boolean(initialData);
   const satuanOptions = [
     "pcs",
     "unit",
@@ -61,9 +64,28 @@ const ModalTambahBarang = ({
     fetchVendors();
   }, []);
 
+  const isiDariData = (data) => {
+    setNamaBarang(String(data.nama ?? ""));
+    setSatuan(String(data.unit ?? data.satuan ?? ""));
+    setKategori(String(data.kategoriAsli || "atk_tahunan"));
+    setTipe(String(data.tipe ?? "habis_pakai"));
+    setHarga(data.harga === null || data.harga === undefined ? "" : String(data.harga));
+    setVendorId(data.vendorId ? String(data.vendorId) : "");
+  };
+
+  // Disimpan di ref supaya form hanya diisi ulang saat modal dibuka, bukan
+  // setiap induknya render ulang -- kalau tidak, ketikan bisa tertimpa.
+  const initialDataRef = useRef(initialData);
+  initialDataRef.current = initialData;
+
   useEffect(() => {
     if (isOpen) {
-      resetForm();
+      if (initialDataRef.current) {
+        isiDariData(initialDataRef.current);
+      } else {
+        resetForm();
+      }
+
       setRender(true);
       const timer = setTimeout(() => setShow(true), 10);
       return () => clearTimeout(timer);
@@ -132,7 +154,9 @@ const ModalTambahBarang = ({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="bg-[#4279df] text-white px-6 py-4 flex justify-between items-center">
-          <h2 className="text-xl font-medium">Tambah Barang</h2>
+          <h2 className="text-xl font-medium">
+            {isEdit ? "Edit Barang" : "Tambah Barang"}
+          </h2>
         </div>
 
         <form
@@ -258,7 +282,11 @@ const ModalTambahBarang = ({
               className="px-6 py-2 bg-[#4279df] text-white hover:bg-blue-600 font-medium rounded-full text-sm disabled:bg-gray-200 disabled:text-gray-500 disabled:cursor-not-allowed"
               disabled={isSubmitting || isInvalid}
             >
-              {isSubmitting ? "Menyimpan..." : "Simpan"}
+              {isSubmitting
+                ? "Menyimpan..."
+                : isEdit
+                  ? "Simpan Perubahan"
+                  : "Simpan"}
             </button>
           </div>
         </form>
