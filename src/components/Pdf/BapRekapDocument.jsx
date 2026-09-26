@@ -1,4 +1,8 @@
-import { Document, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
+import { Document, Font, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
+
+// Tanpa ini react-pdf memenggal kata di tengah pada kolom sempit, sehingga
+// nama barang terbaca sebagai "Pengha-pus" atau "Tinta Spi-dol".
+Font.registerHyphenationCallback((word) => [word]);
 
 const cleanText = (value, fallback = "-") => {
   const text = String(value ?? "").trim();
@@ -46,6 +50,12 @@ const styles = StyleSheet.create({
     fontFamily: "Helvetica-Bold",
     textAlign: "center",
   },
+  headerItemText: {
+    fontFamily: "Helvetica-Bold",
+    fontSize: 7,
+    textAlign: "center",
+    lineHeight: 1.2,
+  },
   headerUnitText: {
     fontFamily: "Helvetica",
     fontSize: 7,
@@ -68,7 +78,9 @@ const styles = StyleSheet.create({
 const UNIT_WIDTH = 120;
 const NAME_WIDTH = 70;
 const SIGNATURE_WIDTH = 85;
-const MIN_ITEM_WIDTH = 44;
+// Nama barang bisa panjang, jadi kolom dibuat cukup lebar dulu sebelum
+// dokumen dipaksa ke landscape.
+const MIN_ITEM_WIDTH = 68;
 const TOP_BAND_HEIGHT = 20;
 const ITEM_BAND_HEIGHT = 30;
 const PORTRAIT_CONTENT = 535;
@@ -125,7 +137,7 @@ const BapRekapDocument = ({
               <View
                 style={[
                   styles.cell,
-                  { width: UNIT_WIDTH, height: headerHeight },
+                  { width: UNIT_WIDTH, minHeight: headerHeight },
                 ]}
               >
                 <Text style={styles.headerText}>Jurusan</Text>
@@ -146,10 +158,10 @@ const BapRekapDocument = ({
                       key={item.key}
                       style={[
                         styles.cell,
-                        { width: itemWidth, height: ITEM_BAND_HEIGHT },
+                        { width: itemWidth, minHeight: ITEM_BAND_HEIGHT },
                       ]}
                     >
-                      <Text style={styles.headerText}>{item.name}</Text>
+                      <Text style={styles.headerItemText}>{item.name}</Text>
                       <Text style={styles.headerUnitText}>
                         {`(${cleanText(item.satuan)})`}
                       </Text>
@@ -161,7 +173,7 @@ const BapRekapDocument = ({
               <View
                 style={[
                   styles.cell,
-                  { width: NAME_WIDTH, height: headerHeight },
+                  { width: NAME_WIDTH, minHeight: headerHeight },
                 ]}
               >
                 <Text style={styles.headerText}>Nama</Text>
@@ -169,7 +181,7 @@ const BapRekapDocument = ({
               <View
                 style={[
                   styles.cell,
-                  { width: SIGNATURE_WIDTH, height: headerHeight },
+                  { width: SIGNATURE_WIDTH, minHeight: headerHeight },
                 ]}
               >
                 <Text style={styles.headerText}>Tanda Tangan</Text>
