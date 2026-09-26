@@ -279,6 +279,19 @@ const CetakBerkasPage = ({ tipe = "rutin" }) => {
         /\b((?:19|20)\d{2})\s*[/-]\s*((?:19|20)\d{2})\b/,
       );
 
+      // Periode dikelompokkan menurut tahun berjalannya, bukan tahun akhir
+      // tahun akademik. Periode 2026/2027 yang mulai September 2026 masuk ke
+      // 2026; yang mulai Januari 2027 masuk ke 2027.
+      const tanggalMulai = item?.aktifMulai ?? item?.aktifSelesai;
+
+      if (tanggalMulai) {
+        const parsed = new Date(tanggalMulai);
+
+        if (!Number.isNaN(parsed.getTime())) {
+          return String(parsed.getFullYear());
+        }
+      }
+
       if (academicYearMatch) {
         return kategori === "tahunan"
           ? academicYearMatch[1]
