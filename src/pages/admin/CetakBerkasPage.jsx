@@ -15,7 +15,6 @@ import VendorAtkDownloadModal from "../../components/Fragments/VendorAtkDownload
 import BapRekapDocument from "../../components/Pdf/BapRekapDocument";
 import { fetchRekapVendor } from "../../api/vendorService";
 import { listDaftarPengajuanAdmin } from "../../api/pengajuanService";
-import { listDropdownProdi } from "../../api/dropdownService";
 
 const ITEMS_PER_PAGE = 10;
 const TABS = ["ATK Tahunan", "ATK Ujian", "ATK Kelas"];
@@ -257,7 +256,6 @@ const CetakBerkasPage = ({ tipe = "rutin" }) => {
   const [otherPrices, setOtherPrices] = useState({});
   const [isVendorAtkModalOpen, setIsVendorAtkModalOpen] = useState(false);
   const [isPreparingBap, setIsPreparingBap] = useState(false);
-  const [prodiList, setProdiList] = useState([]);
   const [daftarPengajuanRows, setDaftarPengajuanRows] = useState([]);
   const [rekapVendorList, setRekapVendorList] = useState([]);
   const [selectedRekapVendorId, setSelectedRekapVendorId] = useState("");
@@ -367,18 +365,6 @@ const CetakBerkasPage = ({ tipe = "rutin" }) => {
       .finally(() => {
         if (isMounted) {
           setIsLoadingAktivasi(false);
-        }
-      });
-
-    listDropdownProdi()
-      .then((data) => {
-        if (isMounted) {
-          setProdiList(Array.isArray(data) ? data : []);
-        }
-      })
-      .catch(() => {
-        if (isMounted) {
-          setProdiList([]);
         }
       });
 
@@ -672,11 +658,6 @@ const CetakBerkasPage = ({ tipe = "rutin" }) => {
     setIsVendorAtkModalOpen(false);
   };
 
-  const bapUnits = useMemo(
-    () => prodiList.map((item) => String(item?.nama ?? "").trim()).filter(Boolean),
-    [prodiList],
-  );
-
   const bapSourceRows = useMemo(
     () =>
       daftarPengajuanRows
@@ -691,6 +672,17 @@ const CetakBerkasPage = ({ tipe = "rutin" }) => {
           jumlahBeli: toNumber(row.jumlahDisetujui, 0),
         })),
     [daftarPengajuanRows, selectedAktivasiId],
+  );
+
+  // Semua jurusan yang mengajukan di periode ini ikut tampil, termasuk yang
+  // belum ada barangnya disetujui -- kolomnya diisi "-" supaya daftar
+  // penerimaan tetap memuat baris tanda tangannya.
+  const bapUnits = useMemo(
+    () =>
+      Array.from(
+        new Set(bapSourceRows.map((row) => row.bagian).filter(Boolean)),
+      ),
+    [bapSourceRows],
   );
 
   const bapRekap = useMemo(
@@ -1095,19 +1087,24 @@ const CetakBerkasPage = ({ tipe = "rutin" }) => {
             showActions: true,
           })}
 
-          {renderTableBlock({
-            title: "Total Harga Pengajuan Lainnya",
-            subtitle: `${contentSubtitle} - Pengajuan Lainnya`,
-            rows: paginatedOtherRows,
-            columns: otherColumns,
-            renderRow: renderOtherRow,
-            currentPage: safeOtherPage,
-            totalPages: otherTotalPages,
-            setPage: setOtherPage,
-            total: otherTotal,
-            searchValue: otherSearchQuery,
-            onSearchChange: setOtherSearchQuery,
-          })}
+          {/* Pengajuan lainnya hanya berlaku untuk ATK Tahunan. Di Kelas dan
+              Ujian bloknya disembunyikan, kecuali masih ada data lama yang
+              perlu ikut terhitung. */}
+          {isTahunanTab || otherRows.length > 0
+            ? renderTableBlock({
+                title: "Total Harga Pengajuan Lainnya",
+                subtitle: `${contentSubtitle} - Pengajuan Lainnya`,
+                rows: paginatedOtherRows,
+                columns: otherColumns,
+                renderRow: renderOtherRow,
+                currentPage: safeOtherPage,
+                totalPages: otherTotalPages,
+                setPage: setOtherPage,
+                total: otherTotal,
+                searchValue: otherSearchQuery,
+                onSearchChange: setOtherSearchQuery,
+              })
+            : null}
         </div>
       </div>
     </>
