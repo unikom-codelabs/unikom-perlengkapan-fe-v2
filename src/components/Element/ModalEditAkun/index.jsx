@@ -271,7 +271,7 @@ const ModalEditAkun = ({ isOpen, onClose, user, onSuccess }) => {
                 value={formValues.unit_id}
                 onChange={(event) => updateField("unit_id", event.target.value)}
                 required
-                disabled
+                disabled={isSubmitting || isLoadingOptions}
               >
                 <option value="">
                   {isLoadingOptions ? "Memuat bagian..." : "Pilih bagian"}
@@ -282,7 +282,6 @@ const ModalEditAkun = ({ isOpen, onClose, user, onSuccess }) => {
                   </option>
                 ))}
               </Dropdown>
-              <p className="text-xs text-gray-400">Tidak dapat diubah.</p>
             </div>
 
             <div className="flex flex-col gap-1.5">
