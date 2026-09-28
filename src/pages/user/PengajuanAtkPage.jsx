@@ -17,6 +17,7 @@ import Dropdown from "../../components/Element/Dropdown";
 import Table from "../../components/Element/Table";
 import FileUploadDropzone from "../../components/Element/FileUploadDropzone";
 import { useAuth } from "../../context/useAuth";
+import { isDalamPeriode } from "../../utils/periode";
 
 const getApiErrorMessage = (error, fallbackMessage) => {
   const responseData = error?.response?.data;
@@ -205,30 +206,12 @@ const PengajuanAtkPage = () => {
   }, []);
 
   const isActivationActive = (aktivasi = {}) => {
-    const now = Date.now();
-    const startValue = aktivasi.aktifMulai || aktivasi.tanggalMulai || null;
-    const endValue = aktivasi.aktifSelesai || aktivasi.tanggalSelesai || null;
-    const startTime = startValue ? new Date(startValue).getTime() : null;
-    const endTime = endValue ? new Date(endValue).getTime() : null;
+    const dalamPeriode = isDalamPeriode(
+      aktivasi.aktifMulai || aktivasi.tanggalMulai,
+      aktivasi.aktifSelesai || aktivasi.tanggalSelesai,
+    );
 
-    if (
-      startTime &&
-      endTime &&
-      Number.isFinite(startTime) &&
-      Number.isFinite(endTime)
-    ) {
-      return now >= startTime && now <= endTime;
-    }
-
-    if (startTime && Number.isFinite(startTime) && now < startTime) {
-      return false;
-    }
-
-    if (endTime && Number.isFinite(endTime) && now > endTime) {
-      return false;
-    }
-
-    return Boolean(aktivasi?.statusAktif);
+    return dalamPeriode ?? Boolean(aktivasi?.statusAktif);
   };
 
   const pickKategoriAktivasi = useCallback((list = [], kategoriValue) => {

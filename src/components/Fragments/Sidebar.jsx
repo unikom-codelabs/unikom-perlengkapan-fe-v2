@@ -6,6 +6,7 @@ import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/useAuth";
 import ModalKonfirmasiHapus from "../Element/ModalKonfirmasiHapus";
 import { listAktivasiPengajuan } from "../../api/aktivasiPengajuanService";
+import { isDalamPeriode } from "../../utils/periode";
 import {
   HomeIcon as HomeOutline,
   ArchiveBoxIcon as ArchiveOutline,
@@ -89,27 +90,12 @@ const isAktivasiCurrent = (aktivasi = {}) => {
     return true;
   }
 
-  const now = Date.now();
-  const startTime = toTimestamp(
-    aktivasi.tanggalMulai || aktivasi.aktifMulai || aktivasi.mulai,
+  return (
+    isDalamPeriode(
+      aktivasi.tanggalMulai || aktivasi.aktifMulai || aktivasi.mulai,
+      aktivasi.tanggalSelesai || aktivasi.aktifSelesai || aktivasi.selesai,
+    ) ?? false
   );
-  const endTime = toTimestamp(
-    aktivasi.tanggalSelesai || aktivasi.aktifSelesai || aktivasi.selesai,
-  );
-
-  if (startTime && endTime) {
-    return now >= startTime && now <= endTime;
-  }
-
-  if (startTime && !endTime) {
-    return now >= startTime;
-  }
-
-  if (!startTime && endTime) {
-    return now <= endTime;
-  }
-
-  return false;
 };
 
 const Sidebar = () => {
