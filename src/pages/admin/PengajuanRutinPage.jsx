@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import PageHelmet from "../../components/Seo/PageHelmet";
 import BapPrintModal from "../../components/Fragments/BapPrintModal";
 import FilterSelect from "../../components/Fragments/FilterSelect";
@@ -788,6 +788,20 @@ const AdminDaftarPengajuanPage = ({ tipe = "rutin" }) => {
       : selectedBagian;
   const firstBapRow = filteredRows[0] ?? {};
   const pengajuLabel = firstBapRow.user || "-";
+  // Pemilik akun di bagian terpilih, dicocokkan dengan aturan yang sama
+  // seperti baris pengajuan. Berguna saat bagian itu belum mengajukan atau
+  // belum ada aktivasinya, supaya admin tetap tahu siapa penanggung jawabnya.
+  const pemilikAkunLabel = selectedUnitLabel
+    ? ttdUsers
+        .filter(
+          (user) =>
+            normalizeUnitValue(user.satuan) ===
+            normalizeUnitValue(selectedUnitLabel),
+        )
+        .map((user) => user.nama)
+        .filter(Boolean)
+        .join(", ")
+    : "";
   const secondPartyRole =
     firstBapRow.userJabatan ||
     (isUjianTab || isKelasTab ? selectedBagianType : selectedJabatanLabel) ||
@@ -843,6 +857,24 @@ const AdminDaftarPengajuanPage = ({ tipe = "rutin" }) => {
 
     fetchTtdUsers();
   }, [fetchTtdUsers, isBapModalOpen, isLoadingTtdUsers, ttdUsers.length]);
+
+  // Daftar pengguna dimuat sekali begitu ada bagian yang dipilih, untuk
+  // menampilkan pemilik akun. Ref menjaga agar request yang gagal tidak
+  // diulang terus-menerus.
+  const sudahMuatPenggunaRef = useRef(false);
+
+  useEffect(() => {
+    if (
+      !selectedUnitLabel ||
+      sudahMuatPenggunaRef.current ||
+      ttdUsers.length > 0
+    ) {
+      return;
+    }
+
+    sudahMuatPenggunaRef.current = true;
+    fetchTtdUsers();
+  }, [fetchTtdUsers, selectedUnitLabel, ttdUsers.length]);
 
   const bapFileName = [
     "bap",
@@ -1080,9 +1112,22 @@ const AdminDaftarPengajuanPage = ({ tipe = "rutin" }) => {
           <AlertMessage>{actionError}</AlertMessage>
 
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
-            <div className="text-sm text-gray-600">
-              <span className="font-bold text-gray-700">Pengaju:</span>{" "}
-              {pengajuLabel}
+            <div className="text-sm text-gray-600 space-y-1">
+              <div>
+                <span className="font-bold text-gray-700">Pengaju:</span>{" "}
+                {pengajuLabel}
+              </div>
+              {!firstBapRow.user && selectedUnitLabel ? (
+                <div>
+                  <span className="font-bold text-gray-700">
+                    Pemilik akun:
+                  </span>{" "}
+                  {isLoadingTtdUsers && !pemilikAkunLabel
+                    ? "Memuat..."
+                    : pemilikAkunLabel ||
+                      "Belum ada akun terdaftar di bagian ini"}
+                </div>
+              ) : null}
             </div>
           </div>
 
