@@ -197,7 +197,20 @@ const ModalAktivasiPengajuan = ({
   const minSelectableDate = (() => {
     const oneWeekBeforeToday = new Date();
     oneWeekBeforeToday.setDate(oneWeekBeforeToday.getDate() - 7);
-    return toDateInputValue(oneWeekBeforeToday);
+    const batasUmum = toDateInputValue(oneWeekBeforeToday);
+
+    if (!isEditMode) {
+      return batasUmum;
+    }
+
+    // Periode yang sudah berakhir tanggal mulainya jauh di masa lalu. Tanpa
+    // ini browser menganggap tanggal aslinya tidak valid dan menolak simpan,
+    // sehingga periode lama tidak bisa diedit tanpa ikut mengubah tanggal.
+    const mulaiAsli = String(defaultValues?.aktif_mulai ?? "").slice(0, 10);
+
+    return /^\d{4}-\d{2}-\d{2}$/.test(mulaiAsli) && mulaiAsli < batasUmum
+      ? mulaiAsli
+      : batasUmum;
   })();
 
   const yearValue = String(formValues.tahun_akademik || "").trim();

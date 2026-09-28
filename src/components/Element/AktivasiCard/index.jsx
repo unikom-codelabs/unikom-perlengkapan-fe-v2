@@ -45,6 +45,10 @@ const AktivasiCard = ({
   isActivating,
   isDeleting,
   showManageActions,
+  // Default mengikuti perilaku lama: tombol Aktivasi hanya muncul saat menu
+  // kelola tidak ditampilkan.
+  showActivate = !showManageActions,
+  showDelete = true,
   onActivate,
   onEdit,
   onDelete,
@@ -133,6 +137,7 @@ const AktivasiCard = ({
             <p className="text-xs text-gray-400 mt-1">{periodName}</p>
           ) : null}
         </div>
+        <div className="flex items-center gap-2 shrink-0">
         {showManageActions ? (
           <div className="relative" ref={menuRef}>
             <button
@@ -168,21 +173,24 @@ const AktivasiCard = ({
                 >
                   Edit
                 </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsMenuOpen(false);
-                    onDelete?.();
-                  }}
-                  disabled={isDeleting || isActivating}
-                  className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-                >
-                  {isDeleting ? "Menghapus..." : "Hapus"}
-                </button>
+                {showDelete ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsMenuOpen(false);
+                      onDelete?.();
+                    }}
+                    disabled={isDeleting || isActivating}
+                    className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                  >
+                    {isDeleting ? "Menghapus..." : "Hapus"}
+                  </button>
+                ) : null}
               </div>
             ) : null}
           </div>
-        ) : (
+        ) : null}
+        {showActivate ? (
           <button
             type="button"
             onClick={onActivate}
@@ -191,7 +199,8 @@ const AktivasiCard = ({
           >
             {activateButtonLabel}
           </button>
-        )}
+        ) : null}
+        </div>
       </div>
       <div className="border-b border-gray-200 mb-4" />
       <div className="text-xs text-gray-500 mb-3">

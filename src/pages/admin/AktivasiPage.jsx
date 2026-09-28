@@ -699,6 +699,10 @@ const AktivasiPage = () => {
       ) : null}
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mt-6">
+        {/* Periode yang sudah ada selalu bisa diedit, termasuk yang sudah
+            berakhir; periode berakhir juga tetap bisa diaktivasi ulang.
+            Hapus disembunyikan untuk periode berakhir karena menghapus
+            periode ikut menghapus seluruh pengajuan di dalamnya. */}
         {cards.map((card) => (
           <AktivasiCard
             key={card.kategori}
@@ -710,8 +714,12 @@ const AktivasiPage = () => {
             isActive={card.statusAktif}
             isActivating={activatingKategori === card.kategori}
             isDeleting={isDeleting && deleteTarget?.kategori === card.kategori}
-            showManageActions={
-              Boolean(card.id) &&
+            showManageActions={Boolean(card.id)}
+            showActivate={
+              !card.id ||
+              isPeriodeEnded(card.tanggalSelesai || card.aktifSelesai)
+            }
+            showDelete={
               !isPeriodeEnded(card.tanggalSelesai || card.aktifSelesai)
             }
             onActivate={() => handleOpenAktivasiModal(card.kategori)}
