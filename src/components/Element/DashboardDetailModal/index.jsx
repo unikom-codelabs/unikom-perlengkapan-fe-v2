@@ -6,8 +6,6 @@ import {
   EyeIcon,
   XMarkIcon,
 } from "@heroicons/react/24/outline";
-import ExcelJS from "exceljs";
-import { saveAs } from "file-saver";
 import { getAktivasiPengajuanSummary } from "../../../api/aktivasiPengajuanService";
 import { listBarang } from "../../../api/barangService";
 import ActionIconButton from "../ActionIconButton";
@@ -221,6 +219,13 @@ const exportToExcel = async (
   rows = [],
   filename = "ringkasan-pengajuan.xlsx",
 ) => {
+  // Dimuat saat tombol export diklik. Diimport di atas, exceljs (~900 KB)
+  // ikut terunduh setiap kali dashboard dibuka meski tidak pernah dipakai.
+  const [{ default: ExcelJS }, { saveAs }] = await Promise.all([
+    import("exceljs"),
+    import("file-saver"),
+  ]);
+
   const workbook = new ExcelJS.Workbook();
   const worksheet = workbook.addWorksheet("Ringkasan");
   const COLUMN_COUNT = 5;

@@ -1,4 +1,4 @@
-import { StrictMode } from "react";
+import { StrictMode, Suspense } from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
@@ -7,42 +7,43 @@ import MainLayout from "./components/Layouts/MainLayout";
 import ProtectedRoute from "./components/Auth/ProtectedRoute";
 import { AuthProvider } from "./context/AuthContext";
 import ErrorPage from "./pages/404";
-import DashboardPage from "./pages/DashboardPage";
-import BarangPengajuanPage from "./pages/admin/BarangPengajuanPage";
-import PengajuanRutinPage from "./pages/admin/PengajuanRutinPage";
-import PengajuanAtkTahunanPage from "./pages/user/PengajuanAtkPage";
-import DaftarPengajuanUserPage from "./pages/user/DaftarPengajuanUserPage";
-import CetakBerkasRutinPage from "./pages/admin/CetakBerkasRutinPage";
-import ManajemenPenggunaPage from "./pages/admin/ManajemenPenggunaPage";
-import VendorPage from "./pages/admin/VendorPage";
-import JabatanPage from "./pages/admin/JabatanPage";
-import BagianPage from "./pages/admin/BagianPage";
-import AktivasiPage from "./pages/admin/AktivasiPage";
-import PengajuanNonRutinPage from "./pages/admin/PengajuanNonRutinPage";
-import CetakBerkasNonRutinPage from "./pages/admin/CetakBerkasNonRutinPage";
-import HistoriPengajuanPenggunaPage from "./pages/user/HistoriPengajuanPenggunaPage";
-import HistoriPengajuanAdminPage from "./pages/admin/HistoriPengajuanAdminPage";
-import PengumumanPage from "./pages/admin/PengumumanPage";
-import ProfilPage from "./pages/ProfilPage";
 import LoginPage from "./pages/LoginPage";
+import {
+  AktivasiPage,
+  BagianPage,
+  BarangPengajuanPage,
+  CetakBerkasNonRutinPage,
+  CetakBerkasRutinPage,
+  DaftarPengajuanUserPage,
+  DashboardPage,
+  HistoriPengajuanAdminPage,
+  HistoriPengajuanPenggunaPage,
+  JabatanPage,
+  ManajemenPenggunaPage,
+  MemuatHalaman,
+  PengajuanAtkTahunanPage,
+  PengajuanNonRutinPage,
+  PengajuanRutinPage,
+  PengumumanPage,
+  ProfilPage,
+  VendorPage,
+} from "./routes/halaman";
 
-const withProtectedLayout = (page) => (
-  <ProtectedRoute>
-    <MainLayout>{page}</MainLayout>
+// Suspense diletakkan di dalam MainLayout supaya sidebar dan header tetap
+// tampil selama isi halaman sedang diunduh.
+const withLayout = (page, allowedRoles) => (
+  <ProtectedRoute allowedRoles={allowedRoles}>
+    <MainLayout>
+      <Suspense fallback={<MemuatHalaman />}>{page}</Suspense>
+    </MainLayout>
   </ProtectedRoute>
 );
 
-const withAdminLayout = (page) => (
-  <ProtectedRoute allowedRoles={["admin"]}>
-    <MainLayout>{page}</MainLayout>
-  </ProtectedRoute>
-);
+const withProtectedLayout = (page) => withLayout(page);
 
-const withUserLayout = (page) => (
-  <ProtectedRoute allowedRoles={["user"]}>
-    <MainLayout>{page}</MainLayout>
-  </ProtectedRoute>
-);
+const withAdminLayout = (page) => withLayout(page, ["admin"]);
+
+const withUserLayout = (page) => withLayout(page, ["user"]);
 
 const router = createBrowserRouter([
   {
