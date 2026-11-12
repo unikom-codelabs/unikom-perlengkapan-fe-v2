@@ -9,6 +9,18 @@ const cleanText = (value, fallback = "-") => {
   return text || fallback;
 };
 
+const quantityFormatter = new Intl.NumberFormat("id-ID");
+
+const formatQuantity = (value) => {
+  const numericValue = Number(value);
+
+  if (!Number.isFinite(numericValue) || numericValue === 0) {
+    return "-";
+  }
+
+  return quantityFormatter.format(numericValue);
+};
+
 const styles = StyleSheet.create({
   page: {
     paddingHorizontal: 30,
@@ -65,6 +77,9 @@ const styles = StyleSheet.create({
   centerText: {
     textAlign: "center",
   },
+  totalText: {
+    fontFamily: "Helvetica-Bold",
+  },
   emptyState: {
     borderWidth: 1,
     borderColor: "#9ca3af",
@@ -117,6 +132,15 @@ const BapRekapDocument = ({
   const itemsWidth = itemWidth * Math.max(1, items.length);
   const headerHeight = TOP_BAND_HEIGHT + ITEM_BAND_HEIGHT;
   const hasData = unitRows.length > 0 && items.length > 0;
+  const itemTotals = items.reduce((totals, item) => {
+    totals[item.key] = unitRows.reduce((sum, unitRow) => {
+      const value = Number(unitRow.quantities?.[item.key] ?? 0);
+
+      return sum + (Number.isFinite(value) ? value : 0);
+    }, 0);
+
+    return totals;
+  }, {});
 
   return (
     <Document
@@ -213,6 +237,28 @@ const BapRekapDocument = ({
                 </View>
               </View>
             ))}
+
+            <View style={styles.row} wrap={false}>
+              <View style={[styles.cell, { width: UNIT_WIDTH }]}>
+                <Text style={styles.totalText}>Total</Text>
+              </View>
+              {items.map((item) => (
+                <View
+                  key={item.key}
+                  style={[styles.cell, { width: itemWidth }]}
+                >
+                  <Text style={[styles.centerText, styles.totalText]}>
+                    {formatQuantity(itemTotals[item.key])}
+                  </Text>
+                </View>
+              ))}
+              <View style={[styles.cell, { width: NAME_WIDTH }]}>
+                <Text> </Text>
+              </View>
+              <View style={[styles.cell, { width: SIGNATURE_WIDTH }]}>
+                <Text> </Text>
+              </View>
+            </View>
           </View>
         ) : (
           <Text style={styles.emptyState}>Data tidak ditemukan.</Text>
